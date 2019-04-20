@@ -600,3 +600,14 @@ impl<'a> Rasterizer<'a> {
 			// printf("comparisons: %d\n", comparisons);
 		}
 	}
+
+#[test]
+fn simple_test() {
+	let mut arena = Arena::new();
+	let mut r = Rasterizer::new(&mut arena, 200, 200);
+	r.add_edge(Point { x: 50., y: 50. }, Point { x: 100., y: 70. }, false, Point { x: 0., y: 0. });
+	r.add_edge(Point { x: 100., y: 70. }, Point { x: 110., y: 150. }, false, Point { x: 0., y: 0. });
+	r.add_edge(Point { x: 110., y: 150. }, Point { x: 40., y: 180. }, false, Point { x: 0., y: 0. });
+	r.add_edge(Point { x: 40., y: 180. }, Point { x: 50., y: 50. }, false, Point { x: 0., y: 0. });
+	r.rasterize();
+}
