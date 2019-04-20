@@ -5,4 +5,5 @@ name = "raster-rs"
 version = "0.1.0"
 
 [dependencies]
+png = "0.14.0"
 typed-arena = "1.4.1"

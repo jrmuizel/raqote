@@ -52,7 +52,7 @@ struct Edge {
 // 1 shift
 //
 // some example counts 5704 curves, 1720 lines 7422 edges
-struct ActiveEdge {
+pub struct ActiveEdge {
 	x2: i32,
 	y2: i32,
 	next: Option<NonNull<ActiveEdge>>,
@@ -124,7 +124,7 @@ impl ActiveEdge {
 	}
 }
 
-struct Rasterizer<'a>
+pub struct Rasterizer<'a>
 {
 	/*
 	Rasterizer(int width, int height);
@@ -135,7 +135,7 @@ struct Rasterizer<'a>
 	width: i32,
 	height: i32,
 	cur_y: i32,
-	buf: Vec<u32>,
+	pub buf: Vec<u32>,
 	active_edges: Option<NonNull<ActiveEdge>>,
 
 	edge_arena: &'a mut Arena<ActiveEdge>,
@@ -143,7 +143,7 @@ struct Rasterizer<'a>
 
 
 impl<'a> Rasterizer<'a> {
-	fn new(edge_arena: &'a mut Arena<ActiveEdge>, width: i32, height: i32) -> Rasterizer<'a> {
+	pub fn new(edge_arena: &'a mut Arena<ActiveEdge>, width: i32, height: i32) -> Rasterizer<'a> {
 
 		let mut edge_starts = Vec::new();
 		for _ in 0..(height * 4) {
@@ -258,7 +258,7 @@ const SUPER_Mask: i32 =  ((1 << SHIFT) - 1);
 // can go as high as edge count: 374640
 // with curve count: 67680
 impl<'a> Rasterizer<'a> {
-	fn add_edge(&'a mut self, mut start: Point, mut end: Point, curve: bool, control: Point)
+	pub fn add_edge(&mut self, mut start: Point, mut end: Point, curve: bool, control: Point)
 	{
 		//static int count;
 		//printf("edge count: %d\n",++count);
@@ -543,7 +543,7 @@ impl<'a> Rasterizer<'a> {
 //   0.00   28.53  347.10  427.60  787.20 1286.00    2.00
 		fn sort_edges(&mut self)
 		{
-			if (self.active_edges.is_some()) {
+			if (self.active_edges.is_none()) {
 				return;
 			}
 			let mut swapped;
@@ -571,7 +571,7 @@ impl<'a> Rasterizer<'a> {
 			}
 		}
 
-		fn rasterize(&mut self) {
+		pub fn rasterize(&mut self) {
 			let mut cur_y = 0;
 			while cur_y < self.height {
 				// we do 4x4 super-sampling so we need
