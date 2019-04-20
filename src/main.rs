@@ -43,10 +43,8 @@ fn main() {
     let mut encoder = png::Encoder::new(w, 400, 400); // Width is 2 pixels and height is 1.
     encoder.set(png::ColorType::RGBA).set(png::BitDepth::Eight);
     let mut writer = encoder.write_header().unwrap();
-    let mut buf = r.buf[..].as_mut_ptr();
+    let buf = r.buf[..].as_mut_ptr();
     let mut buf8 = unsafe { std::slice::from_raw_parts_mut(buf as *mut u8, r.buf.len() * 4) };
     unpremultiply(&mut buf8);
     writer.write_image_data(buf8).unwrap();
-
-
 }
