@@ -5,6 +5,9 @@ use types::Point;
 use std::fs::*;
 use std::io::BufWriter;
 
+mod path_builder;
+use path_builder::PathBuilder;
+
 use png::HasParameters;
 
 
@@ -32,10 +35,14 @@ fn main() {
 
     let mut arena = Arena::new();
     let mut r = rasterizer::Rasterizer::new(&mut arena, 400, 400);
-    r.add_edge(Point{x: 50., y: 50.}, Point{x: 100., y: 70.}, false, Point{x: 0., y: 0.});
-    r.add_edge(Point{x: 100., y: 70.}, Point{x: 110., y: 150.}, false, Point{x: 0., y: 0.});
-    r.add_edge(Point{x: 110., y: 150.}, Point{x: 40., y: 180.}, false, Point{x: 0., y: 0.});
-    r.add_edge(Point{x: 40., y: 180.}, Point{x: 50., y: 50.}, false, Point{x: 0., y: 0.});
+
+    let mut p = PathBuilder::new(&mut r);
+    p.move_to(50., 50.);
+    p.line_to(100., 70.);
+    p.line_to(110., 150.);
+    p.line_to(40., 180.);
+    p.close();
+
     r.rasterize();
     let file = File::create("out.png").unwrap();
     let ref mut w = BufWriter::new(file);
