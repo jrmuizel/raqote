@@ -29,13 +29,13 @@ use crate::types::Point;
 use std::ptr::NonNull;
 
 struct Edge {
-	//XXX: it is probably worth renaming this to top and bottom
-	x1: i32,
-	y1: i32,
-	x2: i32,
-	y2: i32,
-	control_x: i32,
-	control_y: i32,
+    //XXX: it is probably worth renaming this to top and bottom
+    x1: i32,
+    y1: i32,
+    x2: i32,
+    y2: i32,
+    control_x: i32,
+    control_y: i32,
 }
 
 
@@ -53,133 +53,147 @@ struct Edge {
 //
 // some example counts 5704 curves, 1720 lines 7422 edges
 pub struct ActiveEdge {
-	x2: i32,
-	y2: i32,
-	next: Option<NonNull<ActiveEdge>>,
-	slope_x: i32,
-	fullx: i32,
-	next_x: i32,
-	next_y: i32,
+    x2: i32,
+    y2: i32,
+    next: Option<NonNull<ActiveEdge>>,
+    slope_x: i32,
+    fullx: i32,
+    next_x: i32,
+    next_y: i32,
 
-	dx: i32,
-	ddx: i32,
-	dy: i32,
-	ddy: i32,
+    dx: i32,
+    ddx: i32,
+    dy: i32,
+    ddy: i32,
 
-	old_x: i32,
-	old_y: i32,
+    old_x: i32,
+    old_y: i32,
 
-	shift: i32,
-	// we need to use count so that we make sure that we always line the last point up
-	// exactly. i.e. we don't have a great way to know when we're at the end implicitly.
-	count: i32,
-	winding: i8,
+    shift: i32,
+    // we need to use count so that we make sure that we always line the last point up
+    // exactly. i.e. we don't have a great way to know when we're at the end implicitly.
+    count: i32,
+    winding: i8,
 }
 
 impl ActiveEdge {
-	fn new() -> ActiveEdge {
-		ActiveEdge {x2: 0, y2: 0, next: None, slope_x: 0, fullx: 0, next_x: 0, next_y: 0,
-		dx: 0, ddx: 0, dy:0, ddy: 0, old_x: 0, old_y: 0, shift: 0, count: 0, winding: 0}
-	}
+    fn new() -> ActiveEdge {
+        ActiveEdge {
+            x2: 0,
+            y2: 0,
+            next: None,
+            slope_x: 0,
+            fullx: 0,
+            next_x: 0,
+            next_y: 0,
+            dx: 0,
+            ddx: 0,
+            dy: 0,
+            ddy: 0,
+            old_x: 0,
+            old_y: 0,
+            shift: 0,
+            count: 0,
+            winding: 0,
+        }
+    }
 
-	// we want this to inline into step_edges() to
-	// avoid the call overhead
-	fn step(&mut self, cury: i32) {
-		// if we have a shift that means we have a curve
-		if self.shift != 0 {
-			//printf("inner cur %d,%d next %d %d %f\n", curx, cury, next_x>>16, next_y>>16, fnext_y);
-			if cury >= (self.next_y>>16) {
-				self.old_y = self.next_y;
-				self.old_x = self.next_x;
-				self.fullx = self.next_x;
-				// increment until we have a next_y that's greater
-				while (self.count > 0 && (cury >= (self.next_y>>16))) {
-					self.next_x += self.dx >> self.shift;
-					self.dx += self.ddx;
-					self.next_y += self.dy >> self.shift;
-					self.dy += self.ddy;
-					self.count -= 1;
-				}
-				if self.count == 0 {
-					// for the last line sgement we can
-					// just set next_y,x to the end point
-					self.next_y = self.y2<<16;
-					self.next_x = self.x2<<16;
-				}
-				// update slope if we're going to be using it
-				// we want to avoid dividing by 0 which can happen if we exited the loop above early
-				if (cury+1) < self.y2 {
-					// the maximum our x value can be is 4095 (which is 12 bits).
-					// 12 + 3 + 16 = 31 which gives us an extra bit of room
-					// to handle overflow.
-					self.slope_x = ((self.next_x - self.old_x)<<3)/((self.next_y - self.old_y)>>13);
-				}
-			}
-			self.fullx += self.slope_x;
-			assert!((self.fullx>>16) < 300);
+    // we want this to inline into step_edges() to
+    // avoid the call overhead
+    fn step(&mut self, cury: i32) {
+        // if we have a shift that means we have a curve
+        if self.shift != 0 {
+            //printf("inner cur %d,%d next %d %d %f\n", curx, cury, next_x>>16, next_y>>16, fnext_y);
+            if cury >= (self.next_y >> 16) {
+                self.old_y = self.next_y;
+                self.old_x = self.next_x;
+                self.fullx = self.next_x;
+                // increment until we have a next_y that's greater
+                while (self.count > 0 && (cury >= (self.next_y >> 16))) {
+                    self.next_x += self.dx >> self.shift;
+                    self.dx += self.ddx;
+                    self.next_y += self.dy >> self.shift;
+                    self.dy += self.ddy;
+                    self.count -= 1;
+                }
+                if self.count == 0 {
+                    // for the last line sgement we can
+                    // just set next_y,x to the end point
+                    self.next_y = self.y2 << 16;
+                    self.next_x = self.x2 << 16;
+                }
+                // update slope if we're going to be using it
+                // we want to avoid dividing by 0 which can happen if we exited the loop above early
+                if (cury + 1) < self.y2 {
+                    // the maximum our x value can be is 4095 (which is 12 bits).
+                    // 12 + 3 + 16 = 31 which gives us an extra bit of room
+                    // to handle overflow.
+                    self.slope_x = ((self.next_x - self.old_x) << 3) / ((self.next_y - self.old_y) >> 13);
+                }
+            }
+            self.fullx += self.slope_x;
+            assert!((self.fullx >> 16) < 300);
+        } else {
+            // XXX: look into bresenham to control error here
 
-		} else {
-			// XXX: look into bresenham to control error here
-
-			self.fullx += self.slope_x;
-		}
-		//cury += 1;
-	}
+            self.fullx += self.slope_x;
+        }
+        //cury += 1;
+    }
 }
 
 pub struct Rasterizer<'a>
 {
-	/*
-	Rasterizer(int width, int height);
-	~Rasterizer() { delete[] edge_starts; };
+    /*
+    Rasterizer(int width, int height);
+    ~Rasterizer() { delete[] edge_starts; };
 */
 
-	edge_starts: Vec<Option<NonNull<ActiveEdge>>>,
-	width: i32,
-	height: i32,
-	cur_y: i32,
-	pub buf: Vec<u32>,
-	active_edges: Option<NonNull<ActiveEdge>>,
+    edge_starts: Vec<Option<NonNull<ActiveEdge>>>,
+    width: i32,
+    height: i32,
+    cur_y: i32,
+    pub buf: Vec<u32>,
+    active_edges: Option<NonNull<ActiveEdge>>,
 
-	edge_arena: &'a mut Arena<ActiveEdge>,
+    edge_arena: &'a mut Arena<ActiveEdge>,
 }
 
 
 impl<'a> Rasterizer<'a> {
-	pub fn new(edge_arena: &'a mut Arena<ActiveEdge>, width: i32, height: i32) -> Rasterizer<'a> {
-
-		let mut edge_starts = Vec::new();
-		for _ in 0..(height * 4) {
-			edge_starts.push(None);
-		}
-		Rasterizer {
-			width: width * 4,
-			height: height * 4,
-			cur_y: 0,
-			buf: vec![0; (width * height) as usize],
-			edge_starts,
-			edge_arena,
-			active_edges: None
-		}
-	}
+    pub fn new(edge_arena: &'a mut Arena<ActiveEdge>, width: i32, height: i32) -> Rasterizer<'a> {
+        let mut edge_starts = Vec::new();
+        for _ in 0..(height * 4) {
+            edge_starts.push(None);
+        }
+        Rasterizer {
+            width: width * 4,
+            height: height * 4,
+            cur_y: 0,
+            buf: vec![0; (width * height) as usize],
+            edge_starts,
+            edge_arena,
+            active_edges: None,
+        }
+    }
 }
 
-	/*
+/*
 
 void
 Rasterizer::reset() {
-	cur_y = 0;
-	active_edges = nullptr;
-	shapes = nullptr;
-	for (int i = 0; i < this->height; i++) {
-		edge_starts[i] = NULL;
-	}
+cur_y = 0;
+active_edges = nullptr;
+shapes = nullptr;
+for (int i = 0; i < this->height; i++) {
+    edge_starts[i] = NULL;
+}
 }*/
 
 fn Sk2Abs32(mut value: i32) -> i32 {
     if (value < 0) {
-		value = -value;
-	}
+        value = -value;
+    }
     return value;
 }
 
@@ -188,7 +202,7 @@ fn Sk2CLZ(x: u32) -> u32 {
         return 32;
     }
 
-	let mut zeros = ((x >> 16) - 1) >> 31 << 4;
+    let mut zeros = ((x >> 16) - 1) >> 31 << 4;
     let mut x = x << zeros;
 
     let mut nonzero = ((x >> 24) - 1) >> 31 << 3;
@@ -215,10 +229,10 @@ fn cheap_distance(mut dx: i32, mut dy: i32) -> i32
     dy = Sk2Abs32(dy);
     // return max + min/2
     if (dx > dy) {
-		dx += dy >> 1;
-	} else {
-		dx = dy + (dx >> 1);
-	}
+        dx += dy >> 1;
+    } else {
+        dx = dy + (dx >> 1);
+    }
     return dx;
 }
 
@@ -237,17 +251,17 @@ fn diff_to_shift(dx: i32, dy: i32) -> i32
     dist = (dist + (1 << 4)) >> 5;
 
     // each subdivision (shift value) cuts this dist (error) by 1/4
-    return ((32 - Sk2CLZ(dist as u32) as i32))>> 1;
+    return ((32 - Sk2CLZ(dist as u32) as i32)) >> 1;
 }
 
 // this metric is taken from skia
 fn compute_curve_steps(e: &Edge) -> i32
 {
-	let dx = ((e.control_x << 1) - e.x1 - e.x2);
-	let dy = ((e.control_y << 1) - e.y1 - e.y2);
-	let shift = diff_to_shift(dx<<4, dy<<4);
-	assert!(shift >= 0);
-	return shift;
+    let dx = ((e.control_x << 1) - e.x1 - e.x2);
+    let dy = ((e.control_y << 1) - e.y1 - e.y2);
+    let shift = diff_to_shift(dx << 4, dy << 4);
+    assert!(shift >= 0);
+    return shift;
 }
 
 const SAMPLE_SIZE: f32 = 4.;
@@ -255,35 +269,36 @@ const SAMPLE_SHIFT: i32 = 2;
 
 const SHIFT: i32 = 2;
 const SCALE: i32 = (1 << SHIFT);
-const MASK: i32 =   (SCALE - 1);
-const SUPER_Mask: i32 =  ((1 << SHIFT) - 1);
+const MASK: i32 = (SCALE - 1);
+const SUPER_Mask: i32 = ((1 << SHIFT) - 1);
+
 // An example number of edges is 7422 but
 // can go as high as edge count: 374640
 // with curve count: 67680
 impl<'a> Rasterizer<'a> {
-	pub fn add_edge(&mut self, mut start: Point, mut end: Point, curve: bool, control: Point)
-	{
-		println!("add_edge {}, {} - {}, {}", start.x, start.y, end.x, end.y);
-		//static int count;
-		//printf("edge count: %d\n",++count);
-		// order the points from top to bottom
-		if (end.y < start.y) {
-			std::mem::swap(&mut start, &mut end);
-		}
+    pub fn add_edge(&mut self, mut start: Point, mut end: Point, curve: bool, control: Point)
+    {
+        println!("add_edge {}, {} - {}, {}", start.x, start.y, end.x, end.y);
+        //static int count;
+        //printf("edge count: %d\n",++count);
+        // order the points from top to bottom
+        if (end.y < start.y) {
+            std::mem::swap(&mut start, &mut end);
+        }
 
-		// how do we deal with edges to the right and left of the canvas?
-		let e = self.edge_arena.alloc(ActiveEdge::new());
-		let mut edge = Edge {
-			x1: (start.x * SAMPLE_SIZE) as i32,
-			y1: (start.y * SAMPLE_SIZE) as i32,
-			control_x: (control.x * SAMPLE_SIZE) as i32,
-			control_y: (control.y * SAMPLE_SIZE) as i32,
-			x2: (end.x * SAMPLE_SIZE) as i32,
-			y2: (end.y * SAMPLE_SIZE) as i32,
-		};
-		e.x2 = edge.x2;
-		e.y2 = edge.y2;
-		/*
+        // how do we deal with edges to the right and left of the canvas?
+        let e = self.edge_arena.alloc(ActiveEdge::new());
+        let mut edge = Edge {
+            x1: (start.x * SAMPLE_SIZE) as i32,
+            y1: (start.y * SAMPLE_SIZE) as i32,
+            control_x: (control.x * SAMPLE_SIZE) as i32,
+            control_y: (control.y * SAMPLE_SIZE) as i32,
+            x2: (end.x * SAMPLE_SIZE) as i32,
+            y2: (end.y * SAMPLE_SIZE) as i32,
+        };
+        e.x2 = edge.x2;
+        e.y2 = edge.y2;
+        /*
         if (curve)
         printf("%d %d, %d %d, %d %d\n",
         e.edge.x1,
@@ -293,123 +308,123 @@ impl<'a> Rasterizer<'a> {
         e.edge.x2,
         e.edge.y2);
         */
-		e.next = None;
-		//e.curx = e.edge.x1;
-		let mut cury = edge.y1;
-		e.fullx = edge.x1 << 16;
+        e.next = None;
+        //e.curx = e.edge.x1;
+        let mut cury = edge.y1;
+        e.fullx = edge.x1 << 16;
 
-		// if the edge is completely above or completely below we can drop it
-		if (edge.y2 < 0 || edge.y1 > self.height) {
-			return;
-		}
+        // if the edge is completely above or completely below we can drop it
+        if (edge.y2 < 0 || edge.y1 > self.height) {
+            return;
+        }
 
-		// drop horizontal edges
-		if (cury >= e.y2) {
-			return;
-		}
+        // drop horizontal edges
+        if (cury >= e.y2) {
+            return;
+        }
 
-		if (curve) {
-			// Based on Skia
-			// we'll iterate t from 0..1 (0-256)
-			// range of A is 4 times coordinate-range
-			// we can get more accuracy here by using the input points instead of the rounded versions
-			let mut A = (edge.x1 - edge.control_x - edge.control_x + edge.x2) << 15;
-			let mut B = (edge.control_x - edge.x1);
-			let mut C = edge.x1;
-			let shift = compute_curve_steps(&edge);
-			e.shift = shift;
-			e.count = 1 << shift;
-			e.dx = 2 * A * (1 << (16 - shift)) + B * 65536;
-			e.dx = 2 * (A >> shift) + 2 * B * 65536;
-			e.ddx = 2 * (A >> (shift - 1));
+        if (curve) {
+            // Based on Skia
+            // we'll iterate t from 0..1 (0-256)
+            // range of A is 4 times coordinate-range
+            // we can get more accuracy here by using the input points instead of the rounded versions
+            let mut A = (edge.x1 - edge.control_x - edge.control_x + edge.x2) << 15;
+            let mut B = (edge.control_x - edge.x1);
+            let mut C = edge.x1;
+            let shift = compute_curve_steps(&edge);
+            e.shift = shift;
+            e.count = 1 << shift;
+            e.dx = 2 * A * (1 << (16 - shift)) + B * 65536;
+            e.dx = 2 * (A >> shift) + 2 * B * 65536;
+            e.ddx = 2 * (A >> (shift - 1));
 
-			A = (edge.y1 - edge.control_y - edge.control_y + edge.y2) << 15;
-			B = (edge.control_y - edge.y1);
-			C = edge.y1;
-			e.dy = 2 * A * (1 << (16 - shift)) + (B) * 65536;
-			e.ddy = 2 * A * (1 << (16 - shift));
-			e.dy = 2 * (A >> shift) + 2 * B * 65536;
-			e.ddy = 2 * (A >> (shift - 1));
+            A = (edge.y1 - edge.control_y - edge.control_y + edge.y2) << 15;
+            B = (edge.control_y - edge.y1);
+            C = edge.y1;
+            e.dy = 2 * A * (1 << (16 - shift)) + (B) * 65536;
+            e.ddy = 2 * A * (1 << (16 - shift));
+            e.dy = 2 * (A >> shift) + 2 * B * 65536;
+            e.ddy = 2 * (A >> (shift - 1));
 
-			// compute the first next_x,y
-			e.count -= 1;
-			e.next_x = (e.fullx) + (e.dx >> e.shift);
-			e.next_y = (cury * 65536) + (e.dy >> e.shift);
-			e.dx += e.ddx;
-			e.dy += e.ddy;
+            // compute the first next_x,y
+            e.count -= 1;
+            e.next_x = (e.fullx) + (e.dx >> e.shift);
+            e.next_y = (cury * 65536) + (e.dy >> e.shift);
+            e.dx += e.ddx;
+            e.dy += e.ddy;
 
-			// skia does this part in UpdateQuad. unfortunately we duplicate it
-			while (e.count > 0 && cury >= (e.next_y >> 16)) {
-				e.next_x += e.dx >> shift;
-				e.dx += e.ddx;
-				e.next_y += e.dy >> shift;
-				e.dy += e.ddy;
-				e.count -= 1;
-			}
-			if (e.count == 0) {
-				e.next_y = edge.y2 << 16;
-				e.next_x = edge.x2 << 16;
-			}
-			e.slope_x = ((e.next_x - (e.fullx)) << 2) / ((e.next_y - (cury << 16)) >> 14);
-		} else {
-			e.shift = 0;
-			e.slope_x = ((edge.x2 - edge.x1) * (1 << 16)) / (edge.y2 - edge.y1);
-		}
+            // skia does this part in UpdateQuad. unfortunately we duplicate it
+            while (e.count > 0 && cury >= (e.next_y >> 16)) {
+                e.next_x += e.dx >> shift;
+                e.dx += e.ddx;
+                e.next_y += e.dy >> shift;
+                e.dy += e.ddy;
+                e.count -= 1;
+            }
+            if (e.count == 0) {
+                e.next_y = edge.y2 << 16;
+                e.next_x = edge.x2 << 16;
+            }
+            e.slope_x = ((e.next_x - (e.fullx)) << 2) / ((e.next_y - (cury << 16)) >> 14);
+        } else {
+            e.shift = 0;
+            e.slope_x = ((edge.x2 - edge.x1) * (1 << 16)) / (edge.y2 - edge.y1);
+        }
 
-		if (cury < 0) {
-			// XXX: we could compute an intersection with the top and bottom so we don't need to step them into view
-			// for curves we can just step them into place.
-			while (cury < 0) {
-				e.step(cury);
-				cury += 1;
-			}
+        if (cury < 0) {
+            // XXX: we could compute an intersection with the top and bottom so we don't need to step them into view
+            // for curves we can just step them into place.
+            while (cury < 0) {
+                e.step(cury);
+                cury += 1;
+            }
 
-			// cury was adjusted so check again for horizontal edges
-			if (cury >= e.y2) {
-				return;
-			}
-		}
+            // cury was adjusted so check again for horizontal edges
+            if (cury >= e.y2) {
+                return;
+            }
+        }
 
-		// add to the begining of the edge start list
-		// if edges are added from left to right
-		// the'll be in this list from right to left
-		// this works out later during insertion
-		e.next = self.edge_starts[cury as usize];
-		self.edge_starts[cury as usize] = Some(unsafe { NonNull::new_unchecked(e as *mut _) });
-	}
+        // add to the begining of the edge start list
+        // if edges are added from left to right
+        // the'll be in this list from right to left
+        // this works out later during insertion
+        e.next = self.edge_starts[cury as usize];
+        self.edge_starts[cury as usize] = Some(unsafe { NonNull::new_unchecked(e as *mut _) });
+    }
 
-	fn step_edges(&mut self)
-	{
-		let mut prev_ptr = &mut self.active_edges as *mut _;
-		let mut edge = self.active_edges;
-		let cury = self.cur_y; // avoid any aliasing problems
-		while let Some(mut e_ptr) = edge {
-			let e = unsafe { e_ptr.as_mut() };
-			e.step(cury);
-			// avoid aliasing between edge->next and prev_ptr so that we can reuse next
-			let next = e.next;
-			// remove any finished edges
-			if ((cury+1) >= e.y2) {
-				// remove from active list
-				unsafe { *prev_ptr = next } ;
-			} else {
-				prev_ptr = &mut e.next;
-			}
-			edge = next;
-		}
-	}
-	/*
-	int comparisons;
-	static inline void dump_edges(ActiveEdge *e)
-	{
-	while (e) {
-	printf("%d ", e.fullx);
-	e = e.next;
-	}
-	printf("\n");
-	}
+    fn step_edges(&mut self)
+    {
+        let mut prev_ptr = &mut self.active_edges as *mut _;
+        let mut edge = self.active_edges;
+        let cury = self.cur_y; // avoid any aliasing problems
+        while let Some(mut e_ptr) = edge {
+            let e = unsafe { e_ptr.as_mut() };
+            e.step(cury);
+            // avoid aliasing between edge->next and prev_ptr so that we can reuse next
+            let next = e.next;
+            // remove any finished edges
+            if ((cury + 1) >= e.y2) {
+                // remove from active list
+                unsafe { *prev_ptr = next };
+            } else {
+                prev_ptr = &mut e.next;
+            }
+            edge = next;
+        }
+    }
+    /*
+    int comparisons;
+    static inline void dump_edges(ActiveEdge *e)
+    {
+    while (e) {
+    printf("%d ", e.fullx);
+    e = e.next;
+    }
+    printf("\n");
+    }
 */
-	// Insertion sort the new edges into the active list
+    // Insertion sort the new edges into the active list
 // The new edges could be showing up at any x coordinate
 // but existing active edges will be sorted.
 //
@@ -418,119 +433,120 @@ impl<'a> Rasterizer<'a> {
 // Note: we could do just O(1) append the list of new active edges
 // to the existing active edge list, but then we'd have to sort
 // the entire resulting list
-	fn insert_starting_edges(&mut self)
-	{
-		let mut new_edges: Option<NonNull<ActiveEdge>> = None;
-		let mut edge = self.edge_starts[self.cur_y as usize];
-		// insertion sort all of the new edges
-		while let Some(mut e_ptr) = edge {
-			println!("new edge");
-			let e = unsafe { e_ptr.as_mut() };
-			let mut prev_ptr = &mut new_edges as *mut _;
-			let mut new = new_edges;
-			while let Some(mut new_ptr) = new {
-				let a = unsafe { new_ptr.as_mut() };
-				if e.fullx <= a.fullx { break; }
-				// comparisons++;
-				prev_ptr = &mut a.next;
-				new = a.next;
-			}
-			edge = e.next;
-			e.next = new;
-			unsafe { *prev_ptr  = Some(e_ptr) };
-		}
+    fn insert_starting_edges(&mut self)
+    {
+        let mut new_edges: Option<NonNull<ActiveEdge>> = None;
+        let mut edge = self.edge_starts[self.cur_y as usize];
+        // insertion sort all of the new edges
+        while let Some(mut e_ptr) = edge {
+            println!("new edge");
+            let e = unsafe { e_ptr.as_mut() };
+            let mut prev_ptr = &mut new_edges as *mut _;
+            let mut new = new_edges;
+            while let Some(mut new_ptr) = new {
+                let a = unsafe { new_ptr.as_mut() };
+                if e.fullx <= a.fullx { break; }
+                // comparisons++;
+                prev_ptr = &mut a.next;
+                new = a.next;
+            }
+            edge = e.next;
+            e.next = new;
+            unsafe { *prev_ptr = Some(e_ptr) };
+        }
 
 
-		// merge the sorted new_edges into active_edges
-		let mut prev_ptr = &mut self.active_edges as *mut _;
-		let mut active = self.active_edges;
-		let mut edge = new_edges;
-		while let Some(mut e_ptr) = edge {
-			let e = unsafe { e_ptr.as_mut() };
-			while let Some(mut a_ptr) = active {
-				let a = unsafe { a_ptr.as_mut() };
-				if e.fullx <= a.fullx { break; }
+        // merge the sorted new_edges into active_edges
+        let mut prev_ptr = &mut self.active_edges as *mut _;
+        let mut active = self.active_edges;
+        let mut edge = new_edges;
+        while let Some(mut e_ptr) = edge {
+            let e = unsafe { e_ptr.as_mut() };
+            while let Some(mut a_ptr) = active {
+                let a = unsafe { a_ptr.as_mut() };
+                if e.fullx <= a.fullx { break; }
 
-				// comparisons++;
-				prev_ptr = &mut a.next;
-				active = a.next;
-			}
-			edge = e.next;
-			e.next = active;
-			let next_prev_ptr = &mut e.next as *mut _;
-			unsafe { *prev_ptr = Some(e_ptr) };
-			prev_ptr = next_prev_ptr;
-		}
-	}
+                // comparisons++;
+                prev_ptr = &mut a.next;
+                active = a.next;
+            }
+            edge = e.next;
+            e.next = active;
+            let next_prev_ptr = &mut e.next as *mut _;
+            unsafe { *prev_ptr = Some(e_ptr) };
+            prev_ptr = next_prev_ptr;
+        }
+    }
 }
-		fn coverage_to_alpha(mut aa: i32) -> u32
-		{
-			aa <<= 8 - 2 * SHIFT;
-			aa -= aa >> (8 - SHIFT - 1);
-			return aa as u32;
-		}
+
+fn coverage_to_alpha(mut aa: i32) -> u32
+{
+    aa <<= 8 - 2 * SHIFT;
+    aa -= aa >> (8 - SHIFT - 1);
+    return aa as u32;
+}
 
 impl<'a> Rasterizer<'a> {
-		// Skia does stepping and scanning of edges in a single
+    // Skia does stepping and scanning of edges in a single
 // pass over the edge list.
-		fn scan_edges(&mut self)
-		{
-			let mut edge = self.active_edges;
-			let mut winding = 0;
+    fn scan_edges(&mut self)
+    {
+        let mut edge = self.active_edges;
+        let mut winding = 0;
 
-			// handle edges that begin to the left of the bitmap
-			while let Some(mut e_ptr) = edge {
-				let e = unsafe { e_ptr.as_mut() };
-				if (e.fullx >= 0) { break }
-				winding += 1;
-				edge = e.next;
-			}
+        // handle edges that begin to the left of the bitmap
+        while let Some(mut e_ptr) = edge {
+            let e = unsafe { e_ptr.as_mut() };
+            if (e.fullx >= 0) { break; }
+            winding += 1;
+            edge = e.next;
+        }
 
-			let mut prevx = 0;
-			while let Some(mut e_ptr) = edge {
-				let e = unsafe { e_ptr.as_mut() };
+        let mut prevx = 0;
+        while let Some(mut e_ptr) = edge {
+            let e = unsafe { e_ptr.as_mut() };
 
-				if ((e.fullx >> 16) >= self.width) {
-					break;
-				}
+            if ((e.fullx >> 16) >= self.width) {
+                break;
+            }
 
-				if (winding & 1 != 0) {
-					self.blit_span((prevx + (1 << 15)) >> 16, (e.fullx + (1 << 15)) >> 16);
-				}
-				winding += 1;
-				prevx = e.fullx;
-				edge = e.next;
-			}
+            if (winding & 1 != 0) {
+                self.blit_span((prevx + (1 << 15)) >> 16, (e.fullx + (1 << 15)) >> 16);
+            }
+            winding += 1;
+            prevx = e.fullx;
+            edge = e.next;
+        }
 
-			// we don't need to worry about any edges beyond width
-		}
+        // we don't need to worry about any edges beyond width
+    }
 
-		fn blit_span(&mut self, x1: i32, x2: i32)
-		{
-			println!("{} {}", x1, x2);
-			let max: u32 = ((1 << (8 - SHIFT)) - (((self.cur_y & MASK) + 1) >> SHIFT)) as u32;
-			let mut b: *mut u32 = &mut self.buf[(self.cur_y / 4 * self.width / 4 + (x1 >> SHIFT)) as usize];
+    fn blit_span(&mut self, x1: i32, x2: i32)
+    {
+        println!("{} {}", x1, x2);
+        let max: u32 = ((1 << (8 - SHIFT)) - (((self.cur_y & MASK) + 1) >> SHIFT)) as u32;
+        let mut b: *mut u32 = &mut self.buf[(self.cur_y / 4 * self.width / 4 + (x1 >> SHIFT)) as usize];
 
-			let mut fb = x1 & SUPER_Mask;
-			let fe = x2 & SUPER_Mask;
-			let mut n = (x2 >> SHIFT) - (x1 >> SHIFT) - 1;
+        let mut fb = x1 & SUPER_Mask;
+        let fe = x2 & SUPER_Mask;
+        let mut n = (x2 >> SHIFT) - (x1 >> SHIFT) - 1;
 
-			// invert the alpha on the left side
-			if (n < 0) {
-				unsafe { *b += coverage_to_alpha(fe - fb) * 0x1010101 };
-			} else {
-				fb = (1 << SHIFT) - fb;
-				unsafe { *b += coverage_to_alpha(fb) * 0x1010101 };
-				unsafe {  b = b.offset(1); };
-				while (n != 0) {
-					unsafe { *b += max * 0x1010101 };
-					unsafe { b = b.offset(1) };
+        // invert the alpha on the left side
+        if (n < 0) {
+            unsafe { *b += coverage_to_alpha(fe - fb) * 0x1010101 };
+        } else {
+            fb = (1 << SHIFT) - fb;
+            unsafe { *b += coverage_to_alpha(fb) * 0x1010101 };
+            unsafe { b = b.offset(1); };
+            while (n != 0) {
+                unsafe { *b += max * 0x1010101 };
+                unsafe { b = b.offset(1) };
 
-					n -= 1;
-				}
-				unsafe { *b  += coverage_to_alpha(fe) * 0x1010101 };
-			}
-		}
+                n -= 1;
+            }
+            unsafe { *b += coverage_to_alpha(fe) * 0x1010101 };
+        }
+    }
 
 // You may have heard that one should never use a bubble sort.
 // However in our situation a bubble sort is actually a good choice.
@@ -538,7 +554,7 @@ impl<'a> Rasterizer<'a> {
 // that have need to be swapped. Further it is common that our edges are
 // already sorted and bubble sort lets us avoid doing any memory writes.
 
-		// Some statistics from using a bubble sort on an
+    // Some statistics from using a bubble sort on an
 // example scene. You can see that bubble sort does
 // noticably better than O (n lg n).
 // summary(edges*bubble_sort_iterations)
@@ -547,67 +563,67 @@ impl<'a> Rasterizer<'a> {
 // summary(edges*log2(edges))
 //   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's
 //   0.00   28.53  347.10  427.60  787.20 1286.00    2.00
-		fn sort_edges(&mut self)
-		{
-			if (self.active_edges.is_none()) {
-				return;
-			}
-			let mut swapped;
-			loop {
-				swapped = false;
-				let mut edge = self.active_edges.unwrap();
-				let mut next_edge = unsafe { edge.as_mut() }.next;
-				let mut prev = &mut self.active_edges as *mut _;
-				while let Some(mut next_ptr) = next_edge {
-					let next = unsafe { next_ptr.as_mut()};
-					if (unsafe { edge.as_mut() }.fullx > next.fullx) {
-						// swap edge and next
-						unsafe { edge.as_mut() }.next = next.next;
-						next.next = Some(edge);
-						unsafe { (*prev) = Some(next_ptr) };
-						swapped = true;
-						println!("swapped");
-					}
-					prev = (&mut unsafe { edge.as_mut() }.next) as *mut _;
-					edge = next_ptr;
-					next_edge = unsafe { edge.as_mut() }.next;
-				}
-				if !swapped {
-					break
-				}
-			}
-		}
+    fn sort_edges(&mut self)
+    {
+        if (self.active_edges.is_none()) {
+            return;
+        }
+        let mut swapped;
+        loop {
+            swapped = false;
+            let mut edge = self.active_edges.unwrap();
+            let mut next_edge = unsafe { edge.as_mut() }.next;
+            let mut prev = &mut self.active_edges as *mut _;
+            while let Some(mut next_ptr) = next_edge {
+                let next = unsafe { next_ptr.as_mut() };
+                if (unsafe { edge.as_mut() }.fullx > next.fullx) {
+                    // swap edge and next
+                    unsafe { edge.as_mut() }.next = next.next;
+                    next.next = Some(edge);
+                    unsafe { (*prev) = Some(next_ptr) };
+                    swapped = true;
+                    println!("swapped");
+                }
+                prev = (&mut unsafe { edge.as_mut() }.next) as *mut _;
+                edge = next_ptr;
+                next_edge = unsafe { edge.as_mut() }.next;
+            }
+            if !swapped {
+                break;
+            }
+        }
+    }
 
-		pub fn rasterize(&mut self) {
-			self.cur_y = 0;
-			while self.cur_y < self.height {
-				// we do 4x4 super-sampling so we need
-				// to scan 4 times before painting a line of pixels
-				for _ in 0..4 {
-					// insert the new edges into the sorted list
-					self.insert_starting_edges();
-					// scan over the edge list producing a list of spans
-					self.scan_edges();
-					// step all of the edges to the next scanline
-					// dropping the ones that end
-					self.step_edges();
-					// sort the remaning edges
-					self.sort_edges();
-					self.cur_y += 1;
-				}
-			}
-			// edge_arena.reset();
-			// printf("comparisons: %d\n", comparisons);
-		}
-	}
+    pub fn rasterize(&mut self) {
+        self.cur_y = 0;
+        while self.cur_y < self.height {
+            // we do 4x4 super-sampling so we need
+            // to scan 4 times before painting a line of pixels
+            for _ in 0..4 {
+                // insert the new edges into the sorted list
+                self.insert_starting_edges();
+                // scan over the edge list producing a list of spans
+                self.scan_edges();
+                // step all of the edges to the next scanline
+                // dropping the ones that end
+                self.step_edges();
+                // sort the remaning edges
+                self.sort_edges();
+                self.cur_y += 1;
+            }
+        }
+        // edge_arena.reset();
+        // printf("comparisons: %d\n", comparisons);
+    }
+}
 
 #[test]
 fn simple_test() {
-	let mut arena = Arena::new();
-	let mut r = Rasterizer::new(&mut arena, 200, 200);
-	r.add_edge(Point { x: 50., y: 50. }, Point { x: 100., y: 70. }, false, Point { x: 0., y: 0. });
-	r.add_edge(Point { x: 100., y: 70. }, Point { x: 110., y: 150. }, false, Point { x: 0., y: 0. });
-	r.add_edge(Point { x: 110., y: 150. }, Point { x: 40., y: 180. }, false, Point { x: 0., y: 0. });
-	r.add_edge(Point { x: 40., y: 180. }, Point { x: 50., y: 50. }, false, Point { x: 0., y: 0. });
-	r.rasterize();
+    let mut arena = Arena::new();
+    let mut r = Rasterizer::new(&mut arena, 200, 200);
+    r.add_edge(Point { x: 50., y: 50. }, Point { x: 100., y: 70. }, false, Point { x: 0., y: 0. });
+    r.add_edge(Point { x: 100., y: 70. }, Point { x: 110., y: 150. }, false, Point { x: 0., y: 0. });
+    r.add_edge(Point { x: 110., y: 150. }, Point { x: 40., y: 180. }, false, Point { x: 0., y: 0. });
+    r.add_edge(Point { x: 40., y: 180. }, Point { x: 50., y: 50. }, false, Point { x: 0., y: 0. });
+    r.rasterize();
 }
