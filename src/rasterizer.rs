@@ -116,8 +116,11 @@ impl ActiveEdge {
 				}
 			}
 			self.fullx += self.slope_x;
+			assert!((self.fullx>>16) < 300);
+
 		} else {
 			// XXX: look into bresenham to control error here
+
 			self.fullx += self.slope_x;
 		}
 		//cury += 1;
@@ -260,6 +263,7 @@ const SUPER_Mask: i32 =  ((1 << SHIFT) - 1);
 impl<'a> Rasterizer<'a> {
 	pub fn add_edge(&mut self, mut start: Point, mut end: Point, curve: bool, control: Point)
 	{
+		println!("add_edge {}, {} - {}, {}", start.x, start.y, end.x, end.y);
 		//static int count;
 		//printf("edge count: %d\n",++count);
 		// order the points from top to bottom
@@ -420,12 +424,13 @@ impl<'a> Rasterizer<'a> {
 		let mut edge = self.edge_starts[self.cur_y as usize];
 		// insertion sort all of the new edges
 		while let Some(mut e_ptr) = edge {
+			println!("new edge");
 			let e = unsafe { e_ptr.as_mut() };
 			let mut prev_ptr = &mut new_edges as *mut _;
 			let mut new = new_edges;
 			while let Some(mut new_ptr) = new {
 				let a = unsafe { new_ptr.as_mut() };
-				if e.fullx > a.fullx { break; }
+				if e.fullx <= a.fullx { break; }
 				// comparisons++;
 				prev_ptr = &mut a.next;
 				new = a.next;
@@ -444,7 +449,7 @@ impl<'a> Rasterizer<'a> {
 			let e = unsafe { e_ptr.as_mut() };
 			while let Some(mut a_ptr) = active {
 				let a = unsafe { a_ptr.as_mut() };
-				if e.fullx > a.fullx { break; }
+				if e.fullx <= a.fullx { break; }
 
 				// comparisons++;
 				prev_ptr = &mut a.next;
@@ -476,7 +481,7 @@ impl<'a> Rasterizer<'a> {
 			// handle edges that begin to the left of the bitmap
 			while let Some(mut e_ptr) = edge {
 				let e = unsafe { e_ptr.as_mut() };
-				if (e.fullx < 0) { break }
+				if (e.fullx >= 0) { break }
 				winding += 1;
 				edge = e.next;
 			}
@@ -484,6 +489,7 @@ impl<'a> Rasterizer<'a> {
 			let mut prevx = 0;
 			while let Some(mut e_ptr) = edge {
 				let e = unsafe { e_ptr.as_mut() };
+
 				if ((e.fullx >> 16) >= self.width) {
 					break;
 				}
@@ -501,7 +507,7 @@ impl<'a> Rasterizer<'a> {
 
 		fn blit_span(&mut self, x1: i32, x2: i32)
 		{
-			//printf("%d %d\n", x1, x2);
+			println!("{} {}", x1, x2);
 			let max: u32 = ((1 << (8 - SHIFT)) - (((self.cur_y & MASK) + 1) >> SHIFT)) as u32;
 			let mut b: *mut u32 = &mut self.buf[(self.cur_y / 4 * self.width / 4 + (x1 >> SHIFT)) as usize];
 
@@ -560,20 +566,21 @@ impl<'a> Rasterizer<'a> {
 						next.next = Some(edge);
 						unsafe { (*prev) = Some(next_ptr) };
 						swapped = true;
+						println!("swapped");
 					}
 					prev = (&mut unsafe { edge.as_mut() }.next) as *mut _;
 					edge = next_ptr;
 					next_edge = unsafe { edge.as_mut() }.next;
 				}
-				if swapped {
+				if !swapped {
 					break
 				}
 			}
 		}
 
 		pub fn rasterize(&mut self) {
-			let mut cur_y = 0;
-			while cur_y < self.height {
+			self.cur_y = 0;
+			while self.cur_y < self.height {
 				// we do 4x4 super-sampling so we need
 				// to scan 4 times before painting a line of pixels
 				for _ in 0..4 {
@@ -586,7 +593,7 @@ impl<'a> Rasterizer<'a> {
 					self.step_edges();
 					// sort the remaning edges
 					self.sort_edges();
-					cur_y += 1;
+					self.cur_y += 1;
 				}
 			}
 			// edge_arena.reset();
