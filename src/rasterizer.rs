@@ -423,14 +423,14 @@ impl<'a> Rasterizer<'a> {
     }
 */
     // Insertion sort the new edges into the active list
-// The new edges could be showing up at any x coordinate
-// but existing active edges will be sorted.
-//
-// Merge in the new edges. Since both lists are sorted we can do
-// this in a single pass.
-// Note: we could do just O(1) append the list of new active edges
-// to the existing active edge list, but then we'd have to sort
-// the entire resulting list
+    // The new edges could be showing up at any x coordinate
+    // but existing active edges will be sorted.
+    //
+    // Merge in the new edges. Since both lists are sorted we can do
+    // this in a single pass.
+    // Note: we could do just O(1) append the list of new active edges
+    // to the existing active edge list, but then we'd have to sort
+    // the entire resulting list
     fn insert_starting_edges(&mut self)
     {
         let mut new_edges: Option<NonNull<ActiveEdge>> = None;
@@ -486,7 +486,7 @@ fn coverage_to_alpha(mut aa: i32) -> u32
 
 impl<'a> Rasterizer<'a> {
     // Skia does stepping and scanning of edges in a single
-// pass over the edge list.
+    // pass over the edge list.
     fn scan_edges(&mut self)
     {
         let mut edge = self.active_edges;
@@ -546,21 +546,21 @@ impl<'a> Rasterizer<'a> {
         }
     }
 
-// You may have heard that one should never use a bubble sort.
-// However in our situation a bubble sort is actually a good choice.
-// The input list will be mostly sorted except for a couple of lines
-// that have need to be swapped. Further it is common that our edges are
-// already sorted and bubble sort lets us avoid doing any memory writes.
+    // You may have heard that one should never use a bubble sort.
+    // However in our situation a bubble sort is actually a good choice.
+    // The input list will be mostly sorted except for a couple of lines
+    // that have need to be swapped. Further it is common that our edges are
+    // already sorted and bubble sort lets us avoid doing any memory writes.
 
     // Some statistics from using a bubble sort on an
-// example scene. You can see that bubble sort does
-// noticably better than O (n lg n).
-// summary(edges*bubble_sort_iterations)
-//   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
-//    0.0     9.0    69.0   131.5   206.0  1278.0
-// summary(edges*log2(edges))
-//   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's
-//   0.00   28.53  347.10  427.60  787.20 1286.00    2.00
+    // example scene. You can see that bubble sort does
+    // noticably better than O (n lg n).
+    // summary(edges*bubble_sort_iterations)
+    //   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+    //    0.0     9.0    69.0   131.5   206.0  1278.0
+    // summary(edges*log2(edges))
+    //   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's
+    //   0.00   28.53  347.10  427.60  787.20 1286.00    2.00
     fn sort_edges(&mut self)
     {
         if self.active_edges.is_none() {
