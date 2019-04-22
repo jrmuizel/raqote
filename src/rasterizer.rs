@@ -25,6 +25,7 @@
 use typed_arena::Arena;
 
 use crate::types::Point;
+use crate::blitter::Blitter;
 
 use std::ptr::NonNull;
 
@@ -150,7 +151,6 @@ pub struct Rasterizer<'a>
     width: i32,
     height: i32,
     cur_y: i32,
-    pub buf: Vec<u32>,
     active_edges: Option<NonNull<ActiveEdge>>,
 
     edge_arena: &'a mut Arena<ActiveEdge>,
@@ -167,7 +167,6 @@ impl<'a> Rasterizer<'a> {
             width: width * 4,
             height: height * 4,
             cur_y: 0,
-            buf: vec![0; (width * height) as usize],
             edge_starts,
             edge_arena,
             active_edges: None,
@@ -477,17 +476,11 @@ impl<'a> Rasterizer<'a> {
     }
 }
 
-fn coverage_to_alpha(mut aa: i32) -> u32
-{
-    aa <<= 8 - 2 * SHIFT;
-    aa -= aa >> (8 - SHIFT - 1);
-    return aa as u32;
-}
 
 impl<'a> Rasterizer<'a> {
     // Skia does stepping and scanning of edges in a single
     // pass over the edge list.
-    fn scan_edges(&mut self)
+    fn scan_edges(&mut self, blitter: &mut Blitter)
     {
         let mut edge = self.active_edges;
         let mut winding = 0;
@@ -509,7 +502,7 @@ impl<'a> Rasterizer<'a> {
             }
 
             if winding & 1 != 0 {
-                self.blit_span((prevx + (1 << 15)) >> 16, (e.fullx + (1 << 15)) >> 16);
+                blitter.blit_span(self.cur_y, (prevx + (1 << 15)) >> 16, (e.fullx + (1 << 15)) >> 16);
             }
             winding += 1;
             prevx = e.fullx;
@@ -517,33 +510,6 @@ impl<'a> Rasterizer<'a> {
         }
 
         // we don't need to worry about any edges beyond width
-    }
-
-    fn blit_span(&mut self, x1: i32, x2: i32)
-    {
-        println!("{} {}", x1, x2);
-        let max: u32 = ((1 << (8 - SHIFT)) - (((self.cur_y & MASK) + 1) >> SHIFT)) as u32;
-        let mut b: *mut u32 = &mut self.buf[(self.cur_y / 4 * self.width / 4 + (x1 >> SHIFT)) as usize];
-
-        let mut fb = x1 & SUPER_Mask;
-        let fe = x2 & SUPER_Mask;
-        let mut n = (x2 >> SHIFT) - (x1 >> SHIFT) - 1;
-
-        // invert the alpha on the left side
-        if n < 0 {
-            unsafe { *b += coverage_to_alpha(fe - fb) * 0x1010101 };
-        } else {
-            fb = (1 << SHIFT) - fb;
-            unsafe { *b += coverage_to_alpha(fb) * 0x1010101 };
-            unsafe { b = b.offset(1); };
-            while n != 0 {
-                unsafe { *b += max * 0x1010101 };
-                unsafe { b = b.offset(1) };
-
-                n -= 1;
-            }
-            unsafe { *b += coverage_to_alpha(fe) * 0x1010101 };
-        }
     }
 
     // You may have heard that one should never use a bubble sort.
@@ -593,7 +559,7 @@ impl<'a> Rasterizer<'a> {
         }
     }
 
-    pub fn rasterize(&mut self) {
+    pub fn rasterize(&mut self, blitter: &mut Blitter) {
         self.cur_y = 0;
         while self.cur_y < self.height {
             // we do 4x4 super-sampling so we need
@@ -602,7 +568,7 @@ impl<'a> Rasterizer<'a> {
                 // insert the new edges into the sorted list
                 self.insert_starting_edges();
                 // scan over the edge list producing a list of spans
-                self.scan_edges();
+                self.scan_edges(blitter);
                 // step all of the edges to the next scanline
                 // dropping the ones that end
                 self.step_edges();
@@ -620,11 +586,17 @@ impl<'a> Rasterizer<'a> {
 fn simple_test() {
     let mut arena = Arena::new();
     let mut r = Rasterizer::new(&mut arena, 200, 200);
+    struct MockBlitter {};
+    impl Blitter for MockBlitter {
+        fn blit_span(&mut self, _: i32, _: i32, _: i32) {}
+    }
+    let mut blitter = MockBlitter {};
+
     let mut p = crate::path_builder::PathBuilder::new(&mut r);
     p.move_to(50., 50.);
     p.line_to(100., 70.);
     p.line_to(110., 150.);
     p.line_to(40., 180.);
     p.close();
-    r.rasterize();
+    r.rasterize(&mut blitter);
 }
