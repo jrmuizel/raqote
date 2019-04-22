@@ -248,7 +248,7 @@ fn diff_to_shift(dx: i32, dy: i32) -> i32
     dist = (dist + (1 << 4)) >> 5;
 
     // each subdivision (shift value) cuts this dist (error) by 1/4
-    return ((32 - Sk2CLZ(dist as u32) as i32)) >> 1;
+    return ((32 - ((dist as u32).leading_zeros() )as i32)) >> 1;
 }
 
 // this metric is taken from skia
@@ -335,15 +335,12 @@ impl<'a> Rasterizer<'a> {
             let shift = compute_curve_steps(&edge);
             e.shift = shift;
             e.count = 1 << shift;
-            e.dx = 2 * A * (1 << (16 - shift)) + B * 65536;
             e.dx = 2 * (A >> shift) + 2 * B * 65536;
             e.ddx = 2 * (A >> (shift - 1));
 
             A = (edge.y1 - edge.control_y - edge.control_y + edge.y2) << 15;
             B = edge.control_y - edge.y1;
             C = edge.y1;
-            e.dy = 2 * A * (1 << (16 - shift)) + (B) * 65536;
-            e.ddy = 2 * A * (1 << (16 - shift));
             e.dy = 2 * (A >> shift) + 2 * B * 65536;
             e.ddy = 2 * (A >> (shift - 1));
 

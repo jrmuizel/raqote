@@ -30,8 +30,7 @@ pub fn Sk2ScalarIsNaN(a: f32) -> bool
 // we can do this 
 pub fn valid_unit_divide(mut numer: f32, mut denom: f32, ratio: &mut f32) -> bool
 {
-    if (numer < 0.)
-    {
+    if numer < 0. {
         numer = -numer;
         denom = -denom;
     }
