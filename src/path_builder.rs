@@ -2,6 +2,11 @@ use crate::types::Point;
 use crate::rasterizer::Rasterizer;
 use crate::geom::*;
 
+
+use lyon_geom::cubic_to_quadratic::cubic_to_quadratics;
+use lyon_geom::CubicBezierSegment;
+use euclid::Point2D;
+
 pub struct PathBuilder<'a, 'b> {
     current_point: Point,
     first_point: Point,
@@ -29,7 +34,10 @@ impl<'a, 'b> PathBuilder<'a, 'b> {
     pub fn quad_to(&mut self, cx: f32, cy: f32, x: f32, y: f32) {
         let mut curve = [self.current_point, Point {x: cx, y: cy}, Point { x, y}];
         self.current_point = curve[2];
+        self.add_quad(curve);
+    }
 
+    fn add_quad(&mut self, mut curve: [Point; 3]) {
         let a = curve[0].y;
         let b = curve[1].y;
         let c = curve[2].y;
@@ -50,6 +58,22 @@ impl<'a, 'b> PathBuilder<'a, 'b> {
         }
         self.rasterizer.add_edge(curve[0], curve[2], true, curve[1]);
 
+    }
+
+    pub fn cubic_to(&mut self, c1x: f32, c1y: f32, c2x: f32, c2y: f32, x: f32, y: f32) {
+        let c = CubicBezierSegment {
+            from: Point2D::new(self.current_point.x, self.current_point.y),
+            ctrl1: Point2D::new(c1x, c1y),
+            ctrl2: Point2D::new(c2x, c2y),
+            to: Point2D::new(x, y)
+        };
+        cubic_to_quadratics(&c, 0.01, &mut|q| {
+            fn e2r(p: Point2D<f32>) -> Point {
+                Point{ x: p.x, y: p.y }
+            }
+            let curve = [e2r(q.from), e2r(q.ctrl), e2r(q.to)];
+            self.add_quad(curve);
+        })
     }
 
     pub fn close(&mut self) {

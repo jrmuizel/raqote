@@ -5,5 +5,7 @@ name = "raster-rs"
 version = "0.1.0"
 
 [dependencies]
+euclid = "0.19.8"
+lyon_geom = "0.12.4"
 png = "0.14.0"
 typed-arena = "1.4.1"
