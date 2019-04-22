@@ -1,5 +1,7 @@
 mod rasterizer;
 mod types;
+mod geom;
+
 use typed_arena::Arena;
 use types::Point;
 use std::fs::*;
@@ -42,6 +44,13 @@ fn main() {
     p.line_to(110., 150.);
     p.line_to(40., 180.);
     p.close();
+
+    p.move_to(100., 10.);
+    p.quad_to(150., 40., 200., 10.);
+    p.quad_to(120., 100., 80., 200.);
+    p.quad_to(150., 180., 200., 200.);
+    p.close();
+
 
     r.rasterize();
     let file = File::create("out.png").unwrap();

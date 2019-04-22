@@ -1,5 +1,6 @@
 use crate::types::Point;
 use crate::rasterizer::Rasterizer;
+use crate::geom::*;
 
 pub struct PathBuilder<'a, 'b> {
     current_point: Point,
@@ -23,6 +24,32 @@ impl<'a, 'b> PathBuilder<'a, 'b> {
         let p = Point {x, y};
         self.rasterizer.add_edge(self.current_point, p, false, Point {x: 0., y: 0.});
         self.current_point = p;
+    }
+
+    pub fn quad_to(&mut self, cx: f32, cy: f32, x: f32, y: f32) {
+        let mut curve = [self.current_point, Point {x: cx, y: cy}, Point { x, y}];
+        self.current_point = curve[2];
+
+        let a = curve[0].y;
+        let b = curve[1].y;
+        let c = curve[2].y;
+        if is_not_monotonic(a, b, c) {
+            let mut tValue = 0.;
+            if valid_unit_divide(a - b, a - b - b + c, &mut tValue) {
+                let mut dst = [Point{ x: 0., y: 0.}; 5];
+                chop_quad_at(&curve, &mut dst, tValue);
+                flatten_double_quad_extrema(&mut dst);
+                self.rasterizer.add_edge(dst[0], dst[2], true, dst[1]);
+                self.rasterizer.add_edge(dst[2], dst[4], true, dst[3]);
+                return
+            }
+            // if we get here, we need to force dst to be monotonic, even though
+            // we couldn't compute a unit_divide value (probably underflow).
+            let b = if Sk2ScalarAbs(a - b) < Sk2ScalarAbs(b - c) { a } else { c };
+            curve[1].y = b;
+        }
+        self.rasterizer.add_edge(curve[0], curve[2], true, curve[1]);
+
     }
 
     pub fn close(&mut self) {

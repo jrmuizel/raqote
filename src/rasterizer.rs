@@ -130,7 +130,6 @@ impl ActiveEdge {
                 }
             }
             self.fullx += self.slope_x;
-            assert!((self.fullx >> 16) < 300);
         } else {
             // XXX: look into bresenham to control error here
 
@@ -276,7 +275,11 @@ const SUPER_Mask: i32 = ((1 << SHIFT) - 1);
 impl<'a> Rasterizer<'a> {
     pub fn add_edge(&mut self, mut start: Point, mut end: Point, curve: bool, control: Point)
     {
-        println!("add_edge {}, {} - {}, {}", start.x, start.y, end.x, end.y);
+        if curve {
+            println!("add_edge {}, {} - {}, {} - {}, {}", start.x, start.y, control.x, control.y, end.x, end.y);
+        } else {
+            println!("add_edge {}, {} - {}, {}", start.x, start.y, end.x, end.y);
+        }
         //static int count;
         //printf("edge count: %d\n",++count);
         // order the points from top to bottom
@@ -566,6 +569,7 @@ impl<'a> Rasterizer<'a> {
         if self.active_edges.is_none() {
             return;
         }
+
         let mut swapped;
         loop {
             swapped = false;
