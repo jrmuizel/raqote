@@ -268,6 +268,13 @@ const SCALE: i32 = (1 << SHIFT);
 const MASK: i32 = (SCALE - 1);
 const SUPER_Mask: i32 = ((1 << SHIFT) - 1);
 
+/*  We store 1<<shift in a (signed) byte, so its maximum value is 1<<6 == 64.
+    Note that this limits the number of lines we use to approximate a curve.
+    If we need to increase this, we need to store fCurveCount in something
+    larger than int8_t.
+*/
+const MAX_COEFF_SHIFT: i32 = 6;
+
 // An example number of edges is 7422 but
 // can go as high as edge count: 374640
 // with curve count: 67680
@@ -331,7 +338,13 @@ impl<'a> Rasterizer<'a> {
             let mut A = (edge.x1 - edge.control_x - edge.control_x + edge.x2) << 15;
             let mut B = edge.control_x - edge.x1;
             let mut C = edge.x1;
-            let shift = compute_curve_steps(&edge);
+            let mut shift = compute_curve_steps(&edge);
+
+            if shift == 0 {
+                shift = 1;
+            } else if shift > MAX_COEFF_SHIFT {
+                shift = MAX_COEFF_SHIFT;
+            }
             e.shift = shift;
             e.count = 1 << shift;
             e.dx = 2 * (A >> shift) + 2 * B * 65536;
