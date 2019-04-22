@@ -45,12 +45,19 @@ fn main() {
     p.line_to(40., 180.);
     p.close();
 
+    /*
     p.move_to(100., 10.);
     p.quad_to(150., 40., 200., 10.);
     p.quad_to(120., 100., 80., 200.);
     p.quad_to(150., 180., 200., 200.);
     p.close();
+    */
 
+    p.move_to(100., 10.);
+    p.cubic_to(150., 40., 175., 0., 200., 10.);
+    p.quad_to(120., 100., 80., 200.);
+    p.quad_to(150., 180., 200., 200.);
+    p.close();
 
     r.rasterize();
     let file = File::create("out.png").unwrap();

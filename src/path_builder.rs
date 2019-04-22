@@ -73,7 +73,8 @@ impl<'a, 'b> PathBuilder<'a, 'b> {
             }
             let curve = [e2r(q.from), e2r(q.ctrl), e2r(q.to)];
             self.add_quad(curve);
-        })
+        });
+        self.current_point = Point { x, y };
     }
 
     pub fn close(&mut self) {
