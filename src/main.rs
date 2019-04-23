@@ -73,7 +73,7 @@ fn main() {
     r.rasterize(&mut blitter);
 
     for i in 0..400*400 {
-        dest[i] = over_in(0xffff00ff, dest[i], blitter.buf[i] & 0xff)
+        dest[i] = over_in(0xff0000ff, dest[i], blitter.buf[i] as u32)
     }
 
 
