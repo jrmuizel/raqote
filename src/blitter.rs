@@ -5,7 +5,7 @@ pub trait Blitter {
 pub struct MaskSuperBlitter {
     width: i32,
     height: i32,
-    pub buf: Vec<u32>,
+    pub buf: Vec<u8>,
 }
 
 const SHIFT: i32 = 2;

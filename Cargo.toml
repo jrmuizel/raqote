@@ -9,3 +9,4 @@ euclid = "0.19.8"
 lyon_geom = "0.12.4"
 png = "0.14.0"
 typed-arena = "1.4.1"
+sw-composite = {git = "https://github.com/jrmuizel/sw-composite" }
