@@ -12,6 +12,7 @@ use lyon_geom::CubicBezierSegment;
 use euclid::Point2D;
 use euclid::Transform2D;
 use euclid::Box2D;
+use crate::rasterizer::Winding;
 
 type Rect = Box2D<i32>;
 
@@ -139,7 +140,7 @@ impl DrawTarget {
 
         // XXX: restrict to clipped area
         let mut blitter = MaskSuperBlitter::new(self.width, self.height);
-        self.rasterizer.rasterize(&mut blitter);
+        self.rasterizer.rasterize(&mut blitter, Winding::NonZero);
 
         if let Some(last) = self.clip_stack.last() {
             // combine with previous mask
@@ -154,6 +155,10 @@ impl DrawTarget {
         self.rasterizer.reset();
     }
 
+    pub fn stroke(&mut self, path: &Path, src: Source) {
+
+    }
+
     pub fn fill(&mut self, path: &Path, src: Source) {
         for op in &path.ops {
             match *op {
@@ -165,7 +170,7 @@ impl DrawTarget {
             }
         }
         let mut blitter = MaskSuperBlitter::new(self.width, self.height);
-        self.rasterizer.rasterize(&mut blitter);
+        self.rasterizer.rasterize(&mut blitter, Winding::NonZero);
 
         let color = match src {
             Source::Solid(c) => {

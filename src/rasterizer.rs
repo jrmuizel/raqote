@@ -74,6 +74,7 @@ pub struct ActiveEdge {
     // we need to use count so that we make sure that we always line the last point up
     // exactly. i.e. we don't have a great way to know when we're at the end implicitly.
     count: i32,
+    winding: i8,
 }
 
 impl ActiveEdge {
@@ -94,6 +95,7 @@ impl ActiveEdge {
             old_y: 0,
             shift: 0,
             count: 0,
+            winding: 0,
         }
     }
 
@@ -138,6 +140,12 @@ impl ActiveEdge {
         }
         //cury += 1;
     }
+}
+
+#[derive(Clone, Copy)]
+pub enum Winding {
+    EvenOdd,
+    NonZero,
 }
 
 pub struct Rasterizer
@@ -289,12 +297,16 @@ impl Rasterizer {
         //static int count;
         //printf("edge count: %d\n",++count);
         // order the points from top to bottom
-        if end.y < start.y {
-            std::mem::swap(&mut start, &mut end);
-        }
+
 
         // how do we deal with edges to the right and left of the canvas?
         let e = self.edge_arena.alloc(ActiveEdge::new());
+        if end.y < start.y {
+            std::mem::swap(&mut start, &mut end);
+            e.winding = -1;
+        } else {
+            e.winding = 1;
+        }
         let edge = Edge {
             x1: (start.x * SAMPLE_SIZE) as i32,
             y1: (start.y * SAMPLE_SIZE) as i32,
@@ -493,7 +505,7 @@ impl Rasterizer {
 impl Rasterizer {
     // Skia does stepping and scanning of edges in a single
     // pass over the edge list.
-    fn scan_edges(&mut self, blitter: &mut Blitter)
+    fn scan_edges(&mut self, blitter: &mut Blitter, winding_mode: Winding)
     {
         let mut edge = self.active_edges;
         let mut winding = 0;
@@ -502,7 +514,7 @@ impl Rasterizer {
         while let Some(mut e_ptr) = edge {
             let e = unsafe { e_ptr.as_mut() };
             if e.fullx >= 0 { break; }
-            winding += 1;
+            winding += (e.winding as i32);
             edge = e.next;
         }
 
@@ -514,10 +526,15 @@ impl Rasterizer {
                 break;
             }
 
-            if winding & 1 != 0 {
+            let inside = match winding_mode {
+                Winding::EvenOdd => winding & 1 != 0,
+                Winding::NonZero => winding != 0
+            };
+
+            if inside {
                 blitter.blit_span(self.cur_y, (prevx + (1 << 15)) >> 16, (e.fullx + (1 << 15)) >> 16);
             }
-            winding += 1;
+            winding += (e.winding as i32);
             prevx = e.fullx;
             edge = e.next;
         }
@@ -572,7 +589,7 @@ impl Rasterizer {
         }
     }
 
-    pub fn rasterize(&mut self, blitter: &mut Blitter) {
+    pub fn rasterize(&mut self, blitter: &mut Blitter, winding_mode: Winding) {
         self.cur_y = 0;
         while self.cur_y < self.height {
             // we do 4x4 super-sampling so we need
@@ -581,7 +598,7 @@ impl Rasterizer {
                 // insert the new edges into the sorted list
                 self.insert_starting_edges();
                 // scan over the edge list producing a list of spans
-                self.scan_edges(blitter);
+                self.scan_edges(blitter, winding_mode);
                 // step all of the edges to the next scanline
                 // dropping the ones that end
                 self.step_edges();

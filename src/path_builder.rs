@@ -4,9 +4,11 @@ use crate::geom::*;
 
 
 use lyon_geom::cubic_to_quadratic::cubic_to_quadratics;
+use lyon_geom::QuadraticBezierSegment;
 use lyon_geom::CubicBezierSegment;
 use euclid::Point2D;
 
+#[derive(Clone)]
 pub enum PathOp {
     MoveTo(f32, f32),
     LineTo(f32, f32),
@@ -17,6 +19,51 @@ pub enum PathOp {
 
 pub struct Path {
     pub ops: Vec<PathOp>
+}
+
+impl Path {
+    fn flatten(&self, tolerance: f32) -> Path {
+        let mut cur_x: f32 = 0.;
+        let mut cur_y: f32 = 0.;
+        let mut flattened = Path { ops: Vec::new() };
+        for op in &self.ops {
+            match *op {
+                PathOp::MoveTo(x, y) |
+                PathOp::LineTo(x, y) => {
+                    cur_x = x;
+                    cur_y = y;
+                    flattened.ops.push(op.clone())
+                }
+                PathOp::Close => flattened.ops.push(op.clone()),
+                PathOp::QuadTo(cx, cy, x, y) => {
+                    let c = QuadraticBezierSegment {
+                        from: Point2D::new(cur_x, cur_y),
+                        ctrl: Point2D::new(cx, cy),
+                        to: Point2D::new(x, y)
+                    };
+                    for l in c.flattened(tolerance) {
+                        flattened.ops.push(PathOp::LineTo(l.x, l.y));
+                    }
+                    cur_x = x;
+                    cur_y = y;
+                }
+                PathOp::CubicTo(c1x, c1y, c2x, c2y, x, y) => {
+                    let c = CubicBezierSegment {
+                        from: Point2D::new(cur_x, cur_y),
+                        ctrl1: Point2D::new(c1x, c1y),
+                        ctrl2: Point2D::new(c2x, c2y),
+                        to: Point2D::new(x, y)
+                    };
+                    for l in c.flattened(tolerance) {
+                        flattened.ops.push(PathOp::LineTo(l.x, l.y));
+                    }
+                    cur_x = x;
+                    cur_y = y;
+                }
+            }
+        }
+        flattened
+    }
 }
 
 pub struct PathBuilder {
