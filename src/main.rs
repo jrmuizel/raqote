@@ -9,7 +9,6 @@ use types::Point;
 use std::fs::*;
 use std::io::BufWriter;
 
-
 mod path_builder;
 use path_builder::PathBuilder;
 
@@ -68,7 +67,7 @@ fn main() {
     dt.close();
 
     dt.fill(Source::Solid(SolidSource{r: 0xff, g: 0xff, b: 0, a: 0xff}));
-    
+
     let file = File::create("out.png").unwrap();
     let ref mut w = BufWriter::new(file);
 

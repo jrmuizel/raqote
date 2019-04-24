@@ -1,7 +1,7 @@
 use crate::rasterizer::Rasterizer;
 
 use crate::blitter::MaskSuperBlitter;
-use sw_composite::over_in;
+use sw_composite::*;
 
 use crate::types::Point;
 use crate::geom::*;
@@ -10,6 +10,7 @@ use crate::geom::*;
 use lyon_geom::cubic_to_quadratic::cubic_to_quadratics;
 use lyon_geom::CubicBezierSegment;
 use euclid::Point2D;
+use euclid::Transform2D;
 
 pub struct SolidSource {
     pub r: u8,
@@ -18,8 +19,11 @@ pub struct SolidSource {
     pub a: u8,
 }
 
+
 pub enum Source {
-    Solid(SolidSource)
+    Solid(SolidSource),
+    Bitmap(Bitmap, Transform2D<f32>),
+    Gradient(Gradient, Transform2D<f32>)
 }
 
 
@@ -111,15 +115,40 @@ impl DrawTarget {
 
         let color = match src {
             Source::Solid(c) => {
-                ((c.a as u32) << 24) |
+                let color = ((c.a as u32) << 24) |
                     ((c.r as u32) << 16) |
                     ((c.g as u32) << 8) |
-                    ((c.b as u32) << 0)
+                    ((c.b as u32) << 0);
+                for i in 0..((self.width*self.height) as usize) {
+                    self.buf[i] = over_in(color, self.buf[i], blitter.buf[i] as u32)
+                }
+            },
+            Source::Bitmap(ref bitmap, transform) => {
+                let tfm = MatrixFixedPoint {
+                    // Is the order right?
+                    xx: float_to_fixed(transform.m11),
+                    xy: float_to_fixed(transform.m12),
+                    yx: float_to_fixed(transform.m21),
+                    yy: float_to_fixed(transform.m22),
+                    x0: float_to_fixed(transform.m31),
+                    y0: float_to_fixed(transform.m32)
+                };
+                for y in 0..self.height {
+                    for x in 0..self.width {
+                        let p = tfm.transform(x as u16, y as u16);
+                        let color = fetch_bilinear(bitmap, p.x, p.y);
+                        self.buf[(y* self.width + x) as usize]
+                            = over_in(color,
+                                      self.buf[(y* self.width + x) as usize],
+                                      blitter.buf[(y* self.width + x) as usize] as u32);
+                    }
+                }
+            }
+            Source::Gradient(ref gradient, transform) => {
+                panic!()
             }
         };
-        for i in 0..((self.width*self.height) as usize) {
-            self.buf[i] = over_in(color, self.buf[i], blitter.buf[i] as u32)
-        }
+
         self.rasterizer.reset();
     }
 }
