@@ -6,7 +6,6 @@ use sw_composite::*;
 use crate::types::Point;
 use crate::geom::*;
 
-
 use lyon_geom::cubic_to_quadratic::cubic_to_quadratics;
 use lyon_geom::CubicBezierSegment;
 use euclid::Point2D;
@@ -19,13 +18,11 @@ pub struct SolidSource {
     pub a: u8,
 }
 
-
 pub enum Source {
     Solid(SolidSource),
     Bitmap(Bitmap, Transform2D<f32>),
     Gradient(Gradient, Transform2D<f32>)
 }
-
 
 pub struct DrawTarget {
     width: i32,
@@ -145,7 +142,25 @@ impl DrawTarget {
                 }
             }
             Source::Gradient(ref gradient, transform) => {
-                panic!()
+                let tfm = MatrixFixedPoint {
+                    // Is the order right?
+                    xx: float_to_fixed(transform.m11),
+                    xy: float_to_fixed(transform.m12),
+                    yx: float_to_fixed(transform.m21),
+                    yy: float_to_fixed(transform.m22),
+                    x0: float_to_fixed(transform.m31),
+                    y0: float_to_fixed(transform.m32)
+                };
+                let gs = gradient.make_source(&tfm);
+                for y in 0..self.height {
+                    for x in 0..self.width {
+                        let color = gs.radial_gradient_eval(x as u16, y as u16);
+                        self.buf[(y* self.width + x) as usize]
+                            = over_in(color,
+                                      self.buf[(y* self.width + x) as usize],
+                                      blitter.buf[(y* self.width + x) as usize] as u32);
+                    }
+                }
             }
         };
 

@@ -16,11 +16,11 @@ use png::HasParameters;
 
 use crate::draw_target::{DrawTarget, Source, SolidSource};
 
-use sw_composite::over_in;
+use sw_composite::*;
 use crate::blitter::MaskSuperBlitter;
 
 
-pub fn unpremultiply(data: &mut [u8]) {
+fn unpremultiply(data: &mut [u8]) {
     for pixel in data.chunks_mut(4) {
         let a = pixel[3] as u32;
         let mut b = pixel[2] as u32;
@@ -39,8 +39,6 @@ pub fn unpremultiply(data: &mut [u8]) {
         pixel[0] = b as u8;
     }
 }
-
-
 
 
 fn main() {
@@ -66,7 +64,22 @@ fn main() {
     dt.quad_to(150., 180., 200., 200.);
     dt.close();
 
-    dt.fill(Source::Solid(SolidSource{r: 0xff, g: 0xff, b: 0, a: 0xff}));
+    let decoder = png::Decoder::new(File::open("photo.png").unwrap());
+    let (info, mut reader) = decoder.read_info().unwrap();
+    let mut buf = vec![0; info.buffer_size()];
+    reader.next_frame(&mut buf).unwrap();
+
+    println!("{:?}", info.color_type);
+
+    let mut image : Vec<u32> = Vec::new();
+    for i in buf.chunks(3) {
+        image.push(0xff << 24 | ((i[0]as u32) << 16) | ((i[1] as u32) << 8) | (i[2] as u32))
+    }
+    let bitmap = Bitmap { width: info.width as i32, height: info.height as i32, data: image};
+
+    //dt.fill(Source::Solid(SolidSource{r: 0xff, g: 0xff, b: 0, a: 0xff}));
+    dt.fill(Source::Bitmap(bitmap, euclid::Transform2D::create_scale(2., 2.)));
+
 
     let file = File::create("out.png").unwrap();
     let ref mut w = BufWriter::new(file);
