@@ -118,6 +118,7 @@ impl DrawTarget {
     }
 
     pub fn push_clip_rect(&mut self, rect: Rect) {
+        // XXX: intersect with current clip
         self.clip_stack.push(Clip {rect, mask: None });
     }
 
@@ -135,10 +136,19 @@ impl DrawTarget {
                 PathOp::Close => self.close(),
             }
         }
+
+        // XXX: restrict to clipped area
         let mut blitter = MaskSuperBlitter::new(self.width, self.height);
         self.rasterizer.rasterize(&mut blitter);
-        // XXX: intersect with mask below
 
+        if let Some(last) = self.clip_stack.last() {
+            // combine with previous mask
+            if let Some(last_mask) = &last.mask {
+                for i in 0..((self.width * self.height) as usize) {
+                    blitter.buf[i] = muldiv255(blitter.buf[i], last_mask[i])
+                }
+            }
+        }
         self.clip_stack.push(Clip {rect: self.clip_stack.last().unwrap().rect, mask: Some(blitter.buf) });
     }
 
