@@ -149,7 +149,9 @@ impl DrawTarget {
                 }
             }
         }
+        //XXX: handle interleaving of clip rect/masks better
         self.clip_stack.push(Clip {rect: self.clip_stack.last().unwrap().rect, mask: Some(blitter.buf) });
+        self.rasterizer.reset();
     }
 
     pub fn fill(&mut self, path: &Path, src: Source) {
