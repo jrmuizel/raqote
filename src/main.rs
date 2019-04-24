@@ -78,8 +78,12 @@ fn main() {
     let bitmap = Bitmap { width: info.width as i32, height: info.height as i32, data: image};
 
     //dt.fill(Source::Solid(SolidSource{r: 0xff, g: 0xff, b: 0, a: 0xff}));
-    dt.fill(Source::Bitmap(bitmap, euclid::Transform2D::create_scale(2., 2.)));
+    //dt.fill(Source::Bitmap(bitmap, euclid::Transform2D::create_scale(2., 2.)));
 
+    dt.fill(Source::Gradient(Gradient { stops: vec![GradientStop{position: 0.2, color: 0xff00ff00},
+                                                    GradientStop{position: 0.8, color: 0xffffffff},
+                                                    GradientStop{position: 1., color: 0xffff00ff}]},
+            euclid::Transform2D::create_translation(-50., -50.)));
 
     let file = File::create("out.png").unwrap();
     let ref mut w = BufWriter::new(file);
