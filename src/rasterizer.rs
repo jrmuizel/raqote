@@ -140,7 +140,7 @@ impl ActiveEdge {
     }
 }
 
-pub struct Rasterizer<'a>
+pub struct Rasterizer
 {
     /*
     Rasterizer(int width, int height);
@@ -153,12 +153,12 @@ pub struct Rasterizer<'a>
     cur_y: i32,
     active_edges: Option<NonNull<ActiveEdge>>,
 
-    edge_arena: &'a mut Arena<ActiveEdge>,
+    edge_arena: Arena<ActiveEdge>,
 }
 
 
-impl<'a> Rasterizer<'a> {
-    pub fn new(edge_arena: &'a mut Arena<ActiveEdge>, width: i32, height: i32) -> Rasterizer<'a> {
+impl Rasterizer {
+    pub fn new(width: i32, height: i32) -> Rasterizer {
         let mut edge_starts = Vec::new();
         for _ in 0..(height * 4) {
             edge_starts.push(None);
@@ -168,7 +168,7 @@ impl<'a> Rasterizer<'a> {
             height: height * 4,
             cur_y: 0,
             edge_starts,
-            edge_arena,
+            edge_arena: Arena::new(),
             active_edges: None,
         }
     }
@@ -278,7 +278,7 @@ const MAX_COEFF_SHIFT: i32 = 6;
 // An example number of edges is 7422 but
 // can go as high as edge count: 374640
 // with curve count: 67680
-impl<'a> Rasterizer<'a> {
+impl Rasterizer {
     pub fn add_edge(&mut self, mut start: Point, mut end: Point, curve: bool, control: Point)
     {
         if curve {
@@ -490,7 +490,7 @@ impl<'a> Rasterizer<'a> {
 }
 
 
-impl<'a> Rasterizer<'a> {
+impl Rasterizer {
     // Skia does stepping and scanning of edges in a single
     // pass over the edge list.
     fn scan_edges(&mut self, blitter: &mut Blitter)
@@ -593,23 +593,30 @@ impl<'a> Rasterizer<'a> {
         // edge_arena.reset();
         // printf("comparisons: %d\n", comparisons);
     }
+
+    pub fn reset(&mut self) {
+        self.active_edges = None;
+        for e in &mut self.edge_starts {
+            *e = None;
+        }
+        self.edge_arena = Arena::new();
+    }
 }
 
 #[test]
 fn simple_test() {
-    let mut arena = Arena::new();
-    let mut r = Rasterizer::new(&mut arena, 200, 200);
+    let mut r = Rasterizer::new(200, 200);
     struct MockBlitter {};
     impl Blitter for MockBlitter {
         fn blit_span(&mut self, _: i32, _: i32, _: i32) {}
     }
     let mut blitter = MockBlitter {};
-
+/*
     let mut p = crate::path_builder::PathBuilder::new(&mut r);
     p.move_to(50., 50.);
     p.line_to(100., 70.);
     p.line_to(110., 150.);
     p.line_to(40., 180.);
     p.close();
-    r.rasterize(&mut blitter);
+    r.rasterize(&mut blitter);*/
 }
