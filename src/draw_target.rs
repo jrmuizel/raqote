@@ -5,6 +5,7 @@ use sw_composite::*;
 
 use crate::types::Point;
 use crate::geom::*;
+use crate::path_builder::*;
 
 use lyon_geom::cubic_to_quadratic::cubic_to_quadratics;
 use lyon_geom::CubicBezierSegment;
@@ -28,7 +29,8 @@ pub enum Source {
 }
 
 struct Clip {
-    rect: Box2D<i32>
+    rect: Box2D<i32>,
+    mask: Option<Vec<u8>>
 }
 
 pub struct DrawTarget {
@@ -54,18 +56,18 @@ impl DrawTarget {
         }
     }
 
-    pub fn move_to(&mut self, x: f32, y: f32) {
+    fn move_to(&mut self, x: f32, y: f32) {
         self.current_point = Point { x, y };
         self.first_point = Point { x, y };
     }
 
-    pub fn line_to(&mut self, x: f32, y: f32) {
+    fn line_to(&mut self, x: f32, y: f32) {
         let p = Point {x, y};
         self.rasterizer.add_edge(self.current_point, p, false, Point {x: 0., y: 0.});
         self.current_point = p;
     }
 
-    pub fn quad_to(&mut self, cx: f32, cy: f32, x: f32, y: f32) {
+    fn quad_to(&mut self, cx: f32, cy: f32, x: f32, y: f32) {
         let mut curve = [self.current_point, Point {x: cx, y: cy}, Point { x, y}];
         self.current_point = curve[2];
         self.add_quad(curve);
@@ -94,7 +96,7 @@ impl DrawTarget {
 
     }
 
-    pub fn cubic_to(&mut self, c1x: f32, c1y: f32, c2x: f32, c2y: f32, x: f32, y: f32) {
+    fn cubic_to(&mut self, c1x: f32, c1y: f32, c2x: f32, c2y: f32, x: f32, y: f32) {
         let c = CubicBezierSegment {
             from: Point2D::new(self.current_point.x, self.current_point.y),
             ctrl1: Point2D::new(c1x, c1y),
@@ -111,19 +113,45 @@ impl DrawTarget {
         self.current_point = Point { x, y };
     }
 
-    pub fn close(&mut self) {
+    fn close(&mut self) {
         self.rasterizer.add_edge(self.current_point, self.first_point, false, Point {x: 0., y: 0.});
     }
 
     pub fn push_clip_rect(&mut self, rect: Rect) {
-        self.clip_stack.push(Clip {rect });
+        self.clip_stack.push(Clip {rect, mask: None });
     }
-    
+
     pub fn pop_clip(&mut self) {
         self.clip_stack.pop();
     }
 
-    pub fn fill(&mut self, src: Source) {
+    pub fn push_clip(&mut self, path: &Path) {
+        for op in &path.ops {
+            match *op {
+                PathOp::MoveTo(x, y) => self.move_to(x, y),
+                PathOp::LineTo(x, y) => self.line_to(x, y),
+                PathOp::QuadTo(cx, cy, x, y) => self.quad_to(cx, cy, x, y),
+                PathOp::CubicTo(cx1, cy1, cx2, cy2, x, y) => self.cubic_to(cx1, cy1, cx2, cy2, x, y),
+                PathOp::Close => self.close(),
+            }
+        }
+        let mut blitter = MaskSuperBlitter::new(self.width, self.height);
+        self.rasterizer.rasterize(&mut blitter);
+        // XXX: intersect with mask below
+
+        self.clip_stack.push(Clip {rect: self.clip_stack.last().unwrap().rect, mask: Some(blitter.buf) });
+    }
+
+    pub fn fill(&mut self, path: &Path, src: Source) {
+        for op in &path.ops {
+            match *op {
+                PathOp::MoveTo(x, y) => self.move_to(x, y),
+                PathOp::LineTo(x, y) => self.line_to(x, y),
+                PathOp::QuadTo(cx, cy, x, y) => self.quad_to(cx, cy, x, y),
+                PathOp::CubicTo(cx1, cy1, cx2, cy2, x, y) => self.cubic_to(cx1, cy1, cx2, cy2, x, y),
+                PathOp::Close => self.close(),
+            }
+        }
         let mut blitter = MaskSuperBlitter::new(self.width, self.height);
         self.rasterizer.rasterize(&mut blitter);
 

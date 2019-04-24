@@ -44,11 +44,12 @@ fn unpremultiply(data: &mut [u8]) {
 fn main() {
 
     let mut dt = DrawTarget::new(400, 400);
-    dt.move_to(50., 50.);
-    dt.line_to(100., 70.);
-    dt.line_to(110., 150.);
-    dt.line_to(40., 180.);
-    dt.close();
+    let mut pb = PathBuilder::new();
+    pb.move_to(50., 50.);
+    pb.line_to(100., 70.);
+    pb.line_to(110., 150.);
+    pb.line_to(40., 180.);
+    pb.close();
 
     /*
     dt.move_to(100., 10.);
@@ -58,11 +59,13 @@ fn main() {
     dt.close();
     */
 
-    dt.move_to(100., 10.);
-    dt.cubic_to(150., 40., 175., 0., 200., 10.);
-    dt.quad_to(120., 100., 80., 200.);
-    dt.quad_to(150., 180., 200., 200.);
-    dt.close();
+    pb.move_to(100., 10.);
+    pb.cubic_to(150., 40., 175., 0., 200., 10.);
+    pb.quad_to(120., 100., 80., 200.);
+    pb.quad_to(150., 180., 200., 200.);
+    pb.close();
+
+    let path = pb.finish();
 
     let decoder = png::Decoder::new(File::open("photo.png").unwrap());
     let (info, mut reader) = decoder.read_info().unwrap();
@@ -80,7 +83,7 @@ fn main() {
     //dt.fill(Source::Solid(SolidSource{r: 0xff, g: 0xff, b: 0, a: 0xff}));
     //dt.fill(Source::Bitmap(bitmap, euclid::Transform2D::create_scale(2., 2.)));
 
-    dt.fill(Source::Gradient(Gradient { stops: vec![GradientStop{position: 0.2, color: 0xff00ff00},
+    dt.fill(&path, Source::Gradient(Gradient { stops: vec![GradientStop{position: 0.2, color: 0xff00ff00},
                                                     GradientStop{position: 0.8, color: 0xffffffff},
                                                     GradientStop{position: 1., color: 0xffff00ff}]},
             euclid::Transform2D::create_translation(-50., -50.)));
