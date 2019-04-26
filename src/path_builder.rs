@@ -6,7 +6,9 @@ use crate::geom::*;
 use lyon_geom::cubic_to_quadratic::cubic_to_quadratics;
 use lyon_geom::QuadraticBezierSegment;
 use lyon_geom::CubicBezierSegment;
-use euclid::Point2D;
+use lyon_geom::Arc;
+use euclid::{Point2D, Vector2D, };
+use lyon_geom::math::Angle;
 
 #[derive(Clone)]
 pub enum PathOp {
@@ -93,6 +95,20 @@ impl PathBuilder {
 
     pub fn close(&mut self) {
         self.path.ops.push(PathOp::Close)
+    }
+
+    pub fn arc(&mut self, x: f32, y: f32, r: f32, angle1: f32, angle2: f32) {
+        //XXX: handle the current point being the wrong spot
+        let a: Arc<f32> = Arc {
+            center: Point2D::new(x, y),
+            radii: Vector2D::new(r, r),
+            start_angle: Angle::radians(angle1),
+            sweep_angle: Angle::radians(angle2),
+            x_rotation: Angle::zero(),
+        };
+        a.for_each_quadratic_bezier(&mut |q| {
+                self.quad_to(q.ctrl.x, q.ctrl.y, q.to.x, q.to.y);
+            });
     }
 
     pub fn finish(self) -> Path {

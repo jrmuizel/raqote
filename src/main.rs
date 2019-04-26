@@ -3,6 +3,7 @@ mod types;
 mod geom;
 mod blitter;
 mod draw_target;
+mod stroke;
 
 use typed_arena::Arena;
 use types::Point;
