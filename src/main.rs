@@ -81,7 +81,7 @@ fn main() {
     for i in buf.chunks(3) {
         image.push(0xff << 24 | ((i[0]as u32) << 16) | ((i[1] as u32) << 8) | (i[2] as u32))
     }
-    let bitmap = Bitmap { width: info.width as i32, height: info.height as i32, data: image};
+    let bitmap = Image { width: info.width as i32, height: info.height as i32, data: image};
 
     //dt.fill(Source::Solid(SolidSource{r: 0xff, g: 0xff, b: 0, a: 0xff}));
     //dt.fill(Source::Bitmap(bitmap, euclid::Transform2D::create_scale(2., 2.)));

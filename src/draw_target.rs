@@ -19,6 +19,12 @@ use crate::stroke::*;
 
 type Rect = Box2D<i32>;
 
+pub struct Mask {
+    pub width: i32,
+    pub height: i32,
+    pub data: Vec<u8>,
+}
+
 pub struct SolidSource {
     pub r: u8,
     pub g: u8,
@@ -28,7 +34,7 @@ pub struct SolidSource {
 
 pub enum Source {
     Solid(SolidSource),
-    Bitmap(Bitmap, Transform2D<f32>),
+    Image(Image, Transform2D<f32>),
     Gradient(Gradient, Transform2D<f32>)
 }
 
@@ -158,6 +164,10 @@ impl DrawTarget {
         self.rasterizer.reset();
     }
 
+    pub fn mask(&mut self, src: &Source, mask: &Mask) {
+
+    }
+
     pub fn stroke(&mut self, path: &Path, style: &StrokeStyle, src: &Source) {
         let mut path = path.flatten(0.1);
         if !style.dash_array.is_empty() {
@@ -190,7 +200,7 @@ impl DrawTarget {
                     self.buf[i] = over_in(color, self.buf[i], blitter.buf[i] as u32)
                 }
             },
-            Source::Bitmap(ref bitmap, transform) => {
+            Source::Image(ref image, transform) => {
                 let tfm = MatrixFixedPoint {
                     // Is the order right?
                     xx: float_to_fixed(transform.m11),
@@ -203,7 +213,7 @@ impl DrawTarget {
                 for y in 0..self.height {
                     for x in 0..self.width {
                         let p = tfm.transform(x as u16, y as u16);
-                        let color = fetch_bilinear(bitmap, p.x, p.y);
+                        let color = fetch_bilinear(image, p.x, p.y);
                         self.buf[(y* self.width + x) as usize]
                             = over_in(color,
                                       self.buf[(y* self.width + x) as usize],
