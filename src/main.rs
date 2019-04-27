@@ -16,6 +16,7 @@ use path_builder::PathBuilder;
 use png::HasParameters;
 
 use crate::draw_target::{DrawTarget, Source, SolidSource};
+use crate::stroke::*;
 
 use sw_composite::*;
 use crate::blitter::MaskSuperBlitter;
@@ -84,10 +85,20 @@ fn main() {
     //dt.fill(Source::Solid(SolidSource{r: 0xff, g: 0xff, b: 0, a: 0xff}));
     //dt.fill(Source::Bitmap(bitmap, euclid::Transform2D::create_scale(2., 2.)));
 
-    dt.fill(&path, Source::Gradient(Gradient { stops: vec![GradientStop{position: 0.2, color: 0xff00ff00},
-                                                    GradientStop{position: 0.8, color: 0xffffffff},
-                                                    GradientStop{position: 1., color: 0xffff00ff}]},
-            euclid::Transform2D::create_translation(-50., -50.)));
+    let gradient = Source::Gradient(Gradient { stops: vec![GradientStop{position: 0.2, color: 0xff00ff00},
+                                                           GradientStop{position: 0.8, color: 0xffffffff},
+                                                           GradientStop{position: 1., color: 0xffff00ff}]},
+                                    euclid::Transform2D::create_translation(-50., -50.));
+    dt.fill(&path, &gradient);
+
+    let mut pb = PathBuilder::new();
+    pb.move_to(200., 200.);
+    pb.line_to(300., 300.);
+    pb.line_to(200., 300.);
+
+    let path = pb.finish();
+    dt.stroke(&path, &StrokeStyle { cap: LineCap::Butt, join: LineJoin::Bevel, width: 10., mitre_limit: 2. }, &gradient);
+    //dt.fill(&path, &gradient);
 
     let file = File::create("out.png").unwrap();
     let ref mut w = BufWriter::new(file);

@@ -24,7 +24,7 @@ pub struct Path {
 }
 
 impl Path {
-    fn flatten(&self, tolerance: f32) -> Path {
+    pub fn flatten(&self, tolerance: f32) -> Path {
         let mut cur_x: f32 = 0.;
         let mut cur_y: f32 = 0.;
         let mut flattened = Path { ops: Vec::new() };

@@ -14,6 +14,8 @@ use euclid::Transform2D;
 use euclid::Box2D;
 use crate::rasterizer::Winding;
 
+use crate::stroke::*;
+
 type Rect = Box2D<i32>;
 
 pub struct SolidSource {
@@ -155,11 +157,13 @@ impl DrawTarget {
         self.rasterizer.reset();
     }
 
-    pub fn stroke(&mut self, path: &Path, src: Source) {
-
+    pub fn stroke(&mut self, path: &Path, style: &StrokeStyle, src: &Source) {
+        let flattened = path.flatten(0.1);
+        let stroked = stroke_to_path(&flattened, style);
+        self.fill(&stroked, src);
     }
 
-    pub fn fill(&mut self, path: &Path, src: Source) {
+    pub fn fill(&mut self, path: &Path, src: &Source) {
         for op in &path.ops {
             match *op {
                 PathOp::MoveTo(x, y) => self.move_to(x, y),
