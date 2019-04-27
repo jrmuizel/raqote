@@ -6,14 +6,6 @@
  */
 use crate::types::Point;
 
-pub fn Sk2ScalarDiv(a: f32, b: f32) -> f32 {
-    return a / b;
-}
-
-pub fn Sk2ScalarMul(a: f32, b: f32) -> f32 {
-    return a * b;
-}
-
 pub fn Sk2ScalarAbs(a: f32) -> f32 {
     if a < 0. {
         return -a;
@@ -21,7 +13,7 @@ pub fn Sk2ScalarAbs(a: f32) -> f32 {
     return a;
 }
 
-pub fn Sk2ScalarIsNaN(a: f32) -> bool
+pub fn is_nan(a: f32) -> bool
 {
     return a != a;
 }
@@ -39,8 +31,8 @@ pub fn valid_unit_divide(mut numer: f32, mut denom: f32, ratio: &mut f32) -> boo
         return false;
     }
 
-    let r = Sk2ScalarDiv(numer, denom);
-    if Sk2ScalarIsNaN(r) {
+    let r = numer / denom;
+    if is_nan(r) {
         return false;
     }
     debug_assert!(r >= 0. && r < 1.);
@@ -50,7 +42,6 @@ pub fn valid_unit_divide(mut numer: f32, mut denom: f32, ratio: &mut f32) -> boo
     *ratio = r;
     return true;
 }
-
 
 pub fn is_not_monotonic(a: f32, b: f32, c: f32) -> bool {
     let ab = a - b;
@@ -63,7 +54,7 @@ pub fn is_not_monotonic(a: f32, b: f32, c: f32) -> bool {
 
 fn Sk2ScalarInterp(A: f32, B: f32, t: f32) -> f32 {
     debug_assert!(t >= 0. && t <= 1.);
-    return A + Sk2ScalarMul(B - A, t);
+    return A + (B - A) * t;
 }
 
 

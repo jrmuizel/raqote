@@ -1,6 +1,4 @@
 use crate::path_builder::{Path, PathOp, PathBuilder};
-
-use lyon_geom::LineSegment;
 use euclid::{Point2D, Vector2D};
 
 type Point = Point2D<f32>;

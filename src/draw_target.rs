@@ -81,10 +81,10 @@ impl DrawTarget {
         let b = curve[1].y;
         let c = curve[2].y;
         if is_not_monotonic(a, b, c) {
-            let mut tValue = 0.;
-            if valid_unit_divide(a - b, a - b - b + c, &mut tValue) {
+            let mut t_value = 0.;
+            if valid_unit_divide(a - b, a - b - b + c, &mut t_value) {
                 let mut dst = [Point{ x: 0., y: 0.}; 5];
-                chop_quad_at(&curve, &mut dst, tValue);
+                chop_quad_at(&curve, &mut dst, t_value);
                 flatten_double_quad_extrema(&mut dst);
                 self.rasterizer.add_edge(dst[0], dst[2], true, dst[1]);
                 self.rasterizer.add_edge(dst[2], dst[4], true, dst[3]);
