@@ -6,6 +6,7 @@ use sw_composite::*;
 use crate::types::Point;
 use crate::geom::*;
 use crate::path_builder::*;
+use crate::dash::*;
 
 use lyon_geom::cubic_to_quadratic::cubic_to_quadratics;
 use lyon_geom::CubicBezierSegment;
@@ -158,8 +159,11 @@ impl DrawTarget {
     }
 
     pub fn stroke(&mut self, path: &Path, style: &StrokeStyle, src: &Source) {
-        let flattened = path.flatten(0.1);
-        let stroked = stroke_to_path(&flattened, style);
+        let mut path = path.flatten(0.1);
+        if !style.dash_array.is_empty() {
+            path = dash_path(&path, &style.dash_array, style.dash_offset);
+        }
+        let stroked = stroke_to_path(&path, style);
         self.fill(&stroked, src);
     }
 

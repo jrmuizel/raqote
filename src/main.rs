@@ -89,7 +89,7 @@ fn main() {
     let gradient = Source::Gradient(Gradient { stops: vec![GradientStop{position: 0.2, color: 0xff00ff00},
                                                            GradientStop{position: 0.8, color: 0xffffffff},
                                                            GradientStop{position: 1., color: 0xffff00ff}]},
-                                    euclid::Transform2D::create_translation(-50., -50.));
+                                    euclid::Transform2D::create_translation(-150., -150.));
     dt.fill(&path, &gradient);
 
     let mut pb = PathBuilder::new();
@@ -98,8 +98,14 @@ fn main() {
     pb.line_to(200., 300.);
 
     let path = pb.finish();
-    dt.stroke(&path, &StrokeStyle { cap: LineCap::Butt, join: LineJoin::Bevel, width: 10., mitre_limit: 2. }, &gradient);
-    //dt.fill(&path, &gradient);
+    dt.stroke(&path, &StrokeStyle {
+        cap: LineCap::Butt,
+        join: LineJoin::Bevel,
+        width: 10.,
+        mitre_limit: 2.,
+        dash_array: vec![10., 5.],
+        dash_offset: 3. }
+              , &gradient);
 
     let file = File::create("out.png").unwrap();
     let ref mut w = BufWriter::new(file);

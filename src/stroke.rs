@@ -8,7 +8,9 @@ pub struct StrokeStyle {
     pub width: f32,
     pub cap: LineCap,
     pub join: LineJoin,
-    pub mitre_limit: f32
+    pub mitre_limit: f32,
+    pub dash_array: Vec<f32>,
+    pub dash_offset: f32,
 }
 
 pub enum LineCap {

@@ -577,7 +577,6 @@ impl Rasterizer {
                     next.next = Some(edge);
                     unsafe { (*prev) = Some(next_ptr) };
                     swapped = true;
-                    println!("swapped");
                 }
                 prev = (&mut unsafe { edge.as_mut() }.next) as *mut _;
                 edge = next_ptr;

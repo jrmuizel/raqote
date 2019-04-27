@@ -10,7 +10,7 @@ use lyon_geom::Arc;
 use euclid::{Point2D, Vector2D, };
 use lyon_geom::math::Angle;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum PathOp {
     MoveTo(f32, f32),
     LineTo(f32, f32),
@@ -19,6 +19,7 @@ pub enum PathOp {
     Close
 }
 
+#[derive(Debug)]
 pub struct Path {
     pub ops: Vec<PathOp>
 }
