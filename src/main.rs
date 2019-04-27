@@ -6,8 +6,6 @@ mod draw_target;
 mod stroke;
 mod dash;
 
-use typed_arena::Arena;
-use types::Point;
 use std::fs::*;
 use std::io::BufWriter;
 

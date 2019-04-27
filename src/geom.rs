@@ -27,7 +27,7 @@ pub fn valid_unit_divide(mut numer: f32, mut denom: f32, ratio: &mut f32) -> boo
         denom = -denom;
     }
 
-    if (denom == 0. || numer == 0. || numer >= denom) {
+    if denom == 0. || numer == 0. || numer >= denom {
         return false;
     }
 

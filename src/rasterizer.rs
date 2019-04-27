@@ -182,55 +182,17 @@ impl Rasterizer {
     }
 }
 
-/*
-
-void
-Rasterizer::reset() {
-cur_y = 0;
-active_edges = nullptr;
-shapes = nullptr;
-for (int i = 0; i < this->height; i++) {
-    edge_starts[i] = NULL;
-}
-}*/
-
-fn Sk2Abs32(mut value: i32) -> i32 {
+fn abs(mut value: i32) -> i32 {
     if value < 0 {
         value = -value;
     }
     return value;
 }
 
-fn Sk2CLZ(x: u32) -> u32 {
-    if x == 0 {
-        return 32;
-    }
-
-    let mut zeros = ((x >> 16) - 1) >> 31 << 4;
-    let mut x = x << zeros;
-
-    let mut nonzero = ((x >> 24) - 1) >> 31 << 3;
-    zeros += nonzero;
-    x = x << nonzero;
-
-    nonzero = ((x >> 28) - 1) >> 31 << 2;
-    zeros += nonzero;
-    x = x << nonzero;
-
-    nonzero = ((x >> 30) - 1) >> 31 << 1;
-    zeros += nonzero;
-    x = x << nonzero;
-
-    zeros += (!x) >> 31;
-
-    return zeros;
-}
-
 // See also: http://www.flipcode.com/archives/Fast_Approximate_Distance_Functions.shtml
-fn cheap_distance(mut dx: i32, mut dy: i32) -> i32
-{
-    dx = Sk2Abs32(dx);
-    dy = Sk2Abs32(dy);
+fn cheap_distance(mut dx: i32, mut dy: i32) -> i32 {
+    dx = abs(dx);
+    dy = abs(dy);
     // return max + min/2
     if dx > dy {
         dx += dy >> 1;
@@ -240,8 +202,7 @@ fn cheap_distance(mut dx: i32, mut dy: i32) -> i32
     return dx;
 }
 
-fn diff_to_shift(dx: i32, dy: i32) -> i32
-{
+fn diff_to_shift(dx: i32, dy: i32) -> i32 {
     //printf("diff_to_shift: %d %d\n", dx, dy);
     // cheap calc of distance from center of p0-p2 to the center of the curve
     let mut dist = cheap_distance(dx, dy);
@@ -259,8 +220,7 @@ fn diff_to_shift(dx: i32, dy: i32) -> i32
 }
 
 // this metric is taken from skia
-fn compute_curve_steps(e: &Edge) -> i32
-{
+fn compute_curve_steps(e: &Edge) -> i32 {
     let dx = (e.control_x << 1) - e.x1 - e.x2;
     let dy = (e.control_y << 1) - e.y1 - e.y2;
     let shift = diff_to_shift(dx << 4, dy << 4);
@@ -287,8 +247,7 @@ const MAX_COEFF_SHIFT: i32 = 6;
 // can go as high as edge count: 374640
 // with curve count: 67680
 impl Rasterizer {
-    pub fn add_edge(&mut self, mut start: Point, mut end: Point, curve: bool, control: Point)
-    {
+    pub fn add_edge(&mut self, mut start: Point, mut end: Point, curve: bool, control: Point) {
         if curve {
             println!("add_edge {}, {} - {}, {} - {}, {}", start.x, start.y, control.x, control.y, end.x, end.y);
         } else {
@@ -415,8 +374,7 @@ impl Rasterizer {
         self.edge_starts[cury as usize] = Some(unsafe { NonNull::new_unchecked(e as *mut _) });
     }
 
-    fn step_edges(&mut self)
-    {
+    fn step_edges(&mut self) {
         let mut prev_ptr = &mut self.active_edges as *mut _;
         let mut edge = self.active_edges;
         let cury = self.cur_y; // avoid any aliasing problems
@@ -455,8 +413,7 @@ impl Rasterizer {
     // Note: we could do just O(1) append the list of new active edges
     // to the existing active edge list, but then we'd have to sort
     // the entire resulting list
-    fn insert_starting_edges(&mut self)
-    {
+    fn insert_starting_edges(&mut self) {
         let mut new_edges: Option<NonNull<ActiveEdge>> = None;
         let mut edge = self.edge_starts[self.cur_y as usize];
         // insertion sort all of the new edges
@@ -505,8 +462,7 @@ impl Rasterizer {
 impl Rasterizer {
     // Skia does stepping and scanning of edges in a single
     // pass over the edge list.
-    fn scan_edges(&mut self, blitter: &mut Blitter, winding_mode: Winding)
-    {
+    fn scan_edges(&mut self, blitter: &mut Blitter, winding_mode: Winding) {
         let mut edge = self.active_edges;
         let mut winding = 0;
 
@@ -557,8 +513,7 @@ impl Rasterizer {
     // summary(edges*log2(edges))
     //   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's
     //   0.00   28.53  347.10  427.60  787.20 1286.00    2.00
-    fn sort_edges(&mut self)
-    {
+    fn sort_edges(&mut self) {
         if self.active_edges.is_none() {
             return;
         }
