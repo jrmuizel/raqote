@@ -60,7 +60,6 @@ fn cap_line(dest: &mut PathBuilder, style: &StrokeStyle, pt: Point, normal: Vect
 }
 
 fn bevel(dest: &mut PathBuilder, style: &StrokeStyle, pt: Point, s1_normal: Vector, s2_normal: Vector) {
-    println!("{} {}", s1_normal, s2_normal);
     let offset = style.width / 2.;
     dest.move_to(pt.x + s1_normal.x * offset, pt.y + s1_normal.y * offset);
     dest.line_to(pt.x + s2_normal.x * offset, pt.y + s2_normal.y * offset);

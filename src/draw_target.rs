@@ -99,7 +99,7 @@ impl DrawTarget {
             }
             // if we get here, we need to force dst to be monotonic, even though
             // we couldn't compute a unit_divide value (probably underflow).
-            let b = if Sk2ScalarAbs(a - b) < Sk2ScalarAbs(b - c) { a } else { c };
+            let b = if abs(a - b) < abs(b - c) { a } else { c };
             curve[1].y = b;
         }
         self.rasterizer.add_edge(curve[0], curve[2], true, curve[1]);

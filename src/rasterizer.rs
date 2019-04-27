@@ -249,9 +249,9 @@ const MAX_COEFF_SHIFT: i32 = 6;
 impl Rasterizer {
     pub fn add_edge(&mut self, mut start: Point, mut end: Point, curve: bool, control: Point) {
         if curve {
-            println!("add_edge {}, {} - {}, {} - {}, {}", start.x, start.y, control.x, control.y, end.x, end.y);
+            //println!("add_edge {}, {} - {}, {} - {}, {}", start.x, start.y, control.x, control.y, end.x, end.y);
         } else {
-            println!("add_edge {}, {} - {}, {}", start.x, start.y, end.x, end.y);
+            //println!("add_edge {}, {} - {}, {}", start.x, start.y, end.x, end.y);
         }
         //static int count;
         //printf("edge count: %d\n",++count);
@@ -418,7 +418,6 @@ impl Rasterizer {
         let mut edge = self.edge_starts[self.cur_y as usize];
         // insertion sort all of the new edges
         while let Some(mut e_ptr) = edge {
-            println!("new edge");
             let e = unsafe { e_ptr.as_mut() };
             let mut prev_ptr = &mut new_edges as *mut _;
             let mut new = new_edges;
