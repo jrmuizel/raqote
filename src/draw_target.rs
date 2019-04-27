@@ -165,7 +165,7 @@ impl DrawTarget {
     }
 
     pub fn mask(&mut self, src: &Source, mask: &Mask) {
-
+        self.composite(src, &mask.data, mask.width, mask.height);
     }
 
     pub fn stroke(&mut self, path: &Path, style: &StrokeStyle, src: &Source) {
@@ -189,15 +189,19 @@ impl DrawTarget {
         }
         let mut blitter = MaskSuperBlitter::new(self.width, self.height);
         self.rasterizer.rasterize(&mut blitter, Winding::NonZero);
+        self.composite(src, &blitter.buf, self.width, self.height);
+        self.rasterizer.reset();
+    }
 
-        let color = match src {
+    fn composite(&mut self, src: &Source, mask: &[u8], width: i32, height: i32) {
+        match src {
             Source::Solid(c) => {
                 let color = ((c.a as u32) << 24) |
                     ((c.r as u32) << 16) |
                     ((c.g as u32) << 8) |
                     ((c.b as u32) << 0);
-                for i in 0..((self.width*self.height) as usize) {
-                    self.buf[i] = over_in(color, self.buf[i], blitter.buf[i] as u32)
+                for i in 0..((width*height) as usize) {
+                    self.buf[i] = over_in(color, self.buf[i], mask[i] as u32)
                 }
             },
             Source::Image(ref image, transform) => {
@@ -210,14 +214,14 @@ impl DrawTarget {
                     x0: float_to_fixed(transform.m31),
                     y0: float_to_fixed(transform.m32)
                 };
-                for y in 0..self.height {
-                    for x in 0..self.width {
+                for y in 0..height {
+                    for x in 0..width {
                         let p = tfm.transform(x as u16, y as u16);
                         let color = fetch_bilinear(image, p.x, p.y);
                         self.buf[(y* self.width + x) as usize]
                             = over_in(color,
                                       self.buf[(y* self.width + x) as usize],
-                                      blitter.buf[(y* self.width + x) as usize] as u32);
+                                      mask[(y* self.width + x) as usize] as u32);
                     }
                 }
             }
@@ -232,18 +236,16 @@ impl DrawTarget {
                     y0: float_to_fixed(transform.m32)
                 };
                 let gs = gradient.make_source(&tfm);
-                for y in 0..self.height {
-                    for x in 0..self.width {
+                for y in 0..height {
+                    for x in 0..width {
                         let color = gs.radial_gradient_eval(x as u16, y as u16);
-                        self.buf[(y* self.width + x) as usize]
+                        self.buf[(y* width + x) as usize]
                             = over_in(color,
-                                      self.buf[(y* self.width + x) as usize],
-                                      blitter.buf[(y* self.width + x) as usize] as u32);
+                                      self.buf[(y * width + x) as usize],
+                                      mask[(y * width + x) as usize] as u32);
                     }
                 }
             }
         };
-
-        self.rasterizer.reset();
     }
 }
