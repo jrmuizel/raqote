@@ -3,6 +3,9 @@ use crate::path_builder::{Path, PathOp, PathBuilder};
 use lyon_geom::LineSegment;
 use euclid::{Point2D, Vector2D};
 
+type Point = Point2D<f32>;
+type Vector = Vector2D<f32>;
+
 pub struct StrokeStyle {
     pub width: f32,
     pub cap: LineCap,
@@ -21,10 +24,6 @@ pub enum LineJoin {
     Mitre,
     Bevel,
 }
-
-type Point = Point2D<f32>;
-type Vector = Vector2D<f32>;
-
 
 fn compute_normal(p0: Point, p1: Point) -> Vector {
     let ux = p1.x - p0.x;

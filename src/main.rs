@@ -4,6 +4,7 @@ mod geom;
 mod blitter;
 mod draw_target;
 mod stroke;
+mod dash;
 
 use typed_arena::Arena;
 use types::Point;
