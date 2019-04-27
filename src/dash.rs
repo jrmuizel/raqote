@@ -22,7 +22,7 @@ pub fn dash_path(path: &Path, dash_array: &[f32], dash_offset: f32) -> Path {
     while dash_offset > remaining_dash_length {
         remaining_dash_length = dash_array[current_dash % dash_array.len()];
         current_dash += 1;
-        dash_on != dash_on;
+        dash_on = !dash_on;
     }
     remaining_dash_length -= dash_offset;
 
