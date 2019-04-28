@@ -159,8 +159,14 @@ impl DrawTarget {
                 }
             }
         }
+
+        let current_bounds = self.clip_stack.last()
+            .map(|c| c.rect)
+            .unwrap_or(Box2D::new(Point2D::new(0, 0), Point2D::new(self.width, self.height)));
         //XXX: handle interleaving of clip rect/masks better
-        self.clip_stack.push(Clip {rect: self.clip_stack.last().unwrap().rect, mask: Some(blitter.buf) });
+        self.clip_stack.push(Clip {
+            rect: current_bounds,
+            mask: Some(blitter.buf) });
         self.rasterizer.reset();
     }
 
@@ -194,6 +200,64 @@ impl DrawTarget {
     }
 
     fn composite(&mut self, src: &Source, mask: &[u8], width: i32, height: i32) {
+        if let Some(Clip {rect: _, mask: Some(clip)}) = self.clip_stack.last() {
+            match src {
+                Source::Solid(c) => {
+                    let color = ((c.a as u32) << 24) |
+                        ((c.r as u32) << 16) |
+                        ((c.g as u32) << 8) |
+                        ((c.b as u32) << 0);
+                    for i in 0..((width * height) as usize) {
+                        self.buf[i] = over_in_in(color, self.buf[i], mask[i] as u32, clip[i] as u32)
+                    }
+                },
+                Source::Image(ref image, transform) => {
+                    let tfm = MatrixFixedPoint {
+                        // Is the order right?
+                        xx: float_to_fixed(transform.m11),
+                        xy: float_to_fixed(transform.m12),
+                        yx: float_to_fixed(transform.m21),
+                        yy: float_to_fixed(transform.m22),
+                        x0: float_to_fixed(transform.m31),
+                        y0: float_to_fixed(transform.m32)
+                    };
+                    for y in 0..height {
+                        for x in 0..width {
+                            let p = tfm.transform(x as u16, y as u16);
+                            let color = fetch_bilinear(image, p.x, p.y);
+                            self.buf[(y * self.width + x) as usize]
+                                = over_in_in(color,
+                                          self.buf[(y * self.width + x) as usize],
+                                          mask[(y * self.width + x) as usize] as u32,
+                                          clip[(y * self.width + x) as usize] as u32,);
+                        }
+                    }
+                }
+                Source::Gradient(ref gradient, transform) => {
+                    let tfm = MatrixFixedPoint {
+                        // Is the order right?
+                        xx: float_to_fixed(transform.m11),
+                        xy: float_to_fixed(transform.m12),
+                        yx: float_to_fixed(transform.m21),
+                        yy: float_to_fixed(transform.m22),
+                        x0: float_to_fixed(transform.m31),
+                        y0: float_to_fixed(transform.m32)
+                    };
+                    let gs = gradient.make_source(&tfm);
+                    for y in 0..height {
+                        for x in 0..width {
+                            let color = gs.radial_gradient_eval(x as u16, y as u16);
+                            self.buf[(y * width + x) as usize]
+                                = over_in_in(color,
+                                          self.buf[(y * width + x) as usize],
+                                          mask[(y * width + x) as usize] as u32,
+                                          clip[(y * width + x) as usize] as u32);
+                        }
+                    }
+                }
+            };
+            return;
+        }
         match src {
             Source::Solid(c) => {
                 let color = ((c.a as u32) << 24) |

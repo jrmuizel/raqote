@@ -19,6 +19,7 @@ use crate::stroke::*;
 
 use sw_composite::*;
 use crate::blitter::MaskSuperBlitter;
+use std::collections::hash_map::DefaultHasher;
 
 
 fn unpremultiply(data: &mut [u8]) {
@@ -45,6 +46,14 @@ fn unpremultiply(data: &mut [u8]) {
 fn main() {
 
     let mut dt = DrawTarget::new(400, 400);
+
+    let mut pb = PathBuilder::new();
+    pb.move_to(340., 190.);
+    pb.arc(160., 190., 180., 0., 2.*3.14159);
+    pb.close();
+    let path = pb.finish();
+    dt.push_clip(&path);
+
     let mut pb = PathBuilder::new();
     pb.move_to(50., 50.);
     pb.line_to(100., 70.);
@@ -105,6 +114,8 @@ fn main() {
         dash_offset: 3. }
               , &gradient);
 
+
+
     let file = File::create("out.png").unwrap();
     let ref mut w = BufWriter::new(file);
 
@@ -112,7 +123,19 @@ fn main() {
     encoder.set(png::ColorType::RGBA).set(png::BitDepth::Eight);
     let mut writer = encoder.write_header().unwrap();
     let buf = dt.buf[..].as_mut_ptr();
+
+
     let mut buf8 = unsafe { std::slice::from_raw_parts_mut(buf as *mut u8, dt.buf.len() * 4) };
     unpremultiply(&mut buf8);
     writer.write_image_data(buf8).unwrap();
+
+    {
+        use std::hash::Hash;
+        use std::hash::Hasher;
+        let mut h = DefaultHasher::new();
+        dt.buf.hash(&mut h);
+        let result = h.finish();
+        assert_eq!(result, 16095877464737480128);
+    }
+
 }
