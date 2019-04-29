@@ -1,3 +1,5 @@
+use sw_composite::*;
+
 pub trait Blitter {
     fn blit_span(&mut self, y: i32, x1: i32, x2: i32);
 }
@@ -50,6 +52,27 @@ impl Blitter for MaskSuperBlitter {
                 n -= 1;
             }
             unsafe { *b += coverage_to_alpha(fe) };
+        }
+    }
+}
+
+pub struct SolidBlitter<'a> {
+    color: u32,
+    mask: &'a [u8],
+    dest: &'a mut [u32],
+    dest_stride: i32,
+    mask_stride: i32,
+}
+
+impl<'a> Blitter for SolidBlitter<'a> {
+    fn blit_span(&mut self, y: i32, x1: i32, x2: i32) {
+        let dest_row = y * self.dest_stride;
+        let mask_row = y * self.mask_stride;
+        for i in x1..x2 {
+            self.dest[(dest_row + i) as usize] =
+                over_in(self.color,
+                        self.dest[(dest_row + i) as usize],
+                        self.mask[(mask_row + i) as usize] as u32);
         }
     }
 }
