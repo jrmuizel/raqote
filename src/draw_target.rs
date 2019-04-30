@@ -210,7 +210,7 @@ impl DrawTarget {
             let id = font.glyph_for_char(c).unwrap();
             ids.push(id);
             positions.push(start);
-            start += font.advance(id).unwrap();
+            start += font.advance(id).unwrap() / 96.;
         }
         self.draw_glyphs(font, point_size, &ids, &positions, src);
     }
@@ -221,13 +221,17 @@ impl DrawTarget {
             let bounds = font.raster_bounds(*id, point_size, position, HintingOptions::None,
                                    RasterizationOptions::GrayscaleAa);
             combined_bounds = match bounds {
-                Ok(bounds) => combined_bounds.union(&bounds),
+                Ok(bounds) => { dbg!(position); dbg!(bounds); combined_bounds.union(&bounds) },
                 _ => panic!()
             }
         }
 
-        let mut canvas = Canvas::new(&euclid::Size2D::new(combined_bounds.size.width as u32,
-                                     combined_bounds.size.height as u32), Format::A8);
+        dbg!(combined_bounds);
+
+        /*let mut canvas = Canvas::new(&euclid::Size2D::new(combined_bounds.size.width as u32,
+                                     combined_bounds.size.height as u32), Format::A8);*/
+        let mut canvas = Canvas::new(&euclid::Size2D::new(self.width as u32,
+                                                          self.height as u32), Format::A8);
         for (id, position) in ids.iter().zip(positions.iter()) {
             font.rasterize_glyph(&mut canvas, *id, point_size, position, HintingOptions::None,
                                             RasterizationOptions::GrayscaleAa);

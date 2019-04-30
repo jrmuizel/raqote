@@ -21,6 +21,12 @@ use sw_composite::*;
 use crate::blitter::MaskSuperBlitter;
 use std::collections::hash_map::DefaultHasher;
 
+use euclid::Point2D;
+
+use font_kit::family_name::FamilyName;
+use font_kit::properties::Properties;
+use font_kit::source::SystemSource;
+
 
 fn unpremultiply(data: &mut [u8]) {
     for pixel in data.chunks_mut(4) {
@@ -53,6 +59,15 @@ fn main() {
     pb.close();
     let path = pb.finish();
     dt.push_clip(&path);
+
+    let mut pb = PathBuilder::new();
+    pb.move_to(0., 0.);
+    pb.line_to(200., 0.);
+    pb.line_to(200., 300.);
+    pb.line_to(0., 300.);
+    pb.close();
+    let path = pb.finish();
+    dt.fill(&path, &Source::Solid(SolidSource{r: 0x80, g: 0x80, b: 0, a: 0x80}));
 
     let mut pb = PathBuilder::new();
     pb.move_to(50., 50.);
@@ -116,6 +131,14 @@ fn main() {
 
 
 
+    let font = SystemSource::new().select_best_match(&[FamilyName::SansSerif],
+                                                     &Properties::new())
+        .unwrap()
+        .load()
+        .unwrap();
+
+    dt.draw_text(&font, 24., "Hello", Point2D::new(0., 100.), &Source::Solid(SolidSource { r: 0, g: 0, b: 0xff, a: 0xff}));
+
     let file = File::create("out.png").unwrap();
     let ref mut w = BufWriter::new(file);
 
@@ -135,7 +158,7 @@ fn main() {
         let mut h = DefaultHasher::new();
         dt.buf.hash(&mut h);
         let result = h.finish();
-        assert_eq!(result, 16095877464737480128);
+        assert_eq!(result, 5571232462226426135);
     }
 
 }
