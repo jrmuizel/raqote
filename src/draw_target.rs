@@ -15,6 +15,10 @@ use euclid::Transform2D;
 use euclid::Box2D;
 use crate::rasterizer::Winding;
 
+use font_kit::font::Font;
+use font_kit::hinting::HintingOptions;
+use font_kit::canvas::{Canvas, Format, RasterizationOptions};
+
 use crate::stroke::*;
 
 type Rect = Box2D<i32>;
@@ -197,6 +201,39 @@ impl DrawTarget {
         self.rasterizer.rasterize(&mut blitter, Winding::NonZero);
         self.composite(src, &blitter.buf, self.width, self.height);
         self.rasterizer.reset();
+    }
+
+    pub fn draw_text(&mut self, font: &Font, point_size: f32, text: &str, mut start: Point2D<f32>, src: &Source) {
+        let mut ids = Vec::new();
+        let mut positions = Vec::new();
+        for c in text.chars() {
+            let id = font.glyph_for_char(c).unwrap();
+            ids.push(id);
+            positions.push(start);
+            start += font.advance(id).unwrap();
+        }
+        self.draw_glyphs(font, point_size, &ids, &positions, src);
+    }
+
+    pub fn draw_glyphs(&mut self, font: &Font, point_size: f32, ids: &[u32], positions: &[Point2D<f32>], src: &Source) {
+        let mut combined_bounds = euclid::Rect::zero();
+        for (id, position) in ids.iter().zip(positions.iter()) {
+            let bounds = font.raster_bounds(*id, point_size, position, HintingOptions::None,
+                                   RasterizationOptions::GrayscaleAa);
+            combined_bounds = match bounds {
+                Ok(bounds) => combined_bounds.union(&bounds),
+                _ => panic!()
+            }
+        }
+
+        let mut canvas = Canvas::new(&euclid::Size2D::new(combined_bounds.size.width as u32,
+                                     combined_bounds.size.height as u32), Format::A8);
+        for (id, position) in ids.iter().zip(positions.iter()) {
+            font.rasterize_glyph(&mut canvas, *id, point_size, position, HintingOptions::None,
+                                            RasterizationOptions::GrayscaleAa);
+        }
+
+        self.composite(src, &canvas.pixels, canvas.size.width as i32, canvas.size.height as i32);
     }
 
     fn composite(&mut self, src: &Source, mask: &[u8], width: i32, height: i32) {

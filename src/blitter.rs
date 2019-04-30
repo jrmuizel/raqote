@@ -11,8 +11,8 @@ pub struct MaskSuperBlitter {
 }
 
 const SHIFT: i32 = 2;
-const MASK: i32 = (SCALE - 1);
 const SCALE: i32 = (1 << SHIFT);
+const MASK: i32 = (SCALE - 1);
 const SUPER_Mask: i32 = ((1 << SHIFT) - 1);
 
 fn coverage_to_alpha(mut aa: i32) -> u8
@@ -21,7 +21,6 @@ fn coverage_to_alpha(mut aa: i32) -> u8
     aa -= aa >> (8 - SHIFT - 1);
     return aa as u8;
 }
-
 
 impl MaskSuperBlitter {
     pub fn new(width: i32, height: i32) -> MaskSuperBlitter {
