@@ -80,6 +80,11 @@ fn unperp(a: Vector) -> Vector
     swap(a)
 }
 
+fn perp(v: Vector) -> Vector
+{
+    Vector::new(-v.y, v.x)
+}
+
 fn dot(a: Vector, b: Vector) -> f32
 {
     a.x * b.x + a.y * b.y
@@ -104,11 +109,6 @@ fn line_intersection(A: Point, a_perp: Vector, B: Point, b_perp: Vector) -> Poin
                                   A.y + t * (a.y));
 
     intersection
-}
-
-fn perp(v: Vector) -> Vector
-{
-    Vector::new(-v.y, v.x)
 }
 
 fn is_interior_angle(a: Vector, b: Vector) -> bool {

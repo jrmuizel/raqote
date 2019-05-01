@@ -50,9 +50,9 @@ pub fn is_not_monotonic(a: f32, b: f32, c: f32) -> bool {
     return ab == 0. || bc < 0.;
 }
 
-fn interp(A: f32, B: f32, t: f32) -> f32 {
+fn interp(a: f32, b: f32, t: f32) -> f32 {
     debug_assert!(t >= 0. && t <= 1.);
-    return A + (B - A) * t;
+    return a + (b - a) * t;
 }
 
 

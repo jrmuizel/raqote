@@ -18,7 +18,6 @@ use crate::draw_target::{DrawTarget, Source, SolidSource};
 use crate::stroke::*;
 
 use sw_composite::*;
-use crate::blitter::MaskSuperBlitter;
 use std::collections::hash_map::DefaultHasher;
 
 use euclid::Point2D;
