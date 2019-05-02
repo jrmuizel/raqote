@@ -234,7 +234,6 @@ const SAMPLE_SHIFT: i32 = 2;
 const SHIFT: i32 = 2;
 const SCALE: i32 = (1 << SHIFT);
 const MASK: i32 = (SCALE - 1);
-const SUPER_Mask: i32 = ((1 << SHIFT) - 1);
 
 /*  We store 1<<shift in a (signed) byte, so its maximum value is 1<<6 == 64.
     Note that this limits the number of lines we use to approximate a curve.

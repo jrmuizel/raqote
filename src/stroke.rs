@@ -80,6 +80,7 @@ fn unperp(a: Vector) -> Vector
     swap(a)
 }
 
+/* rotate a vector 90 degrees to the left */
 fn perp(v: Vector) -> Vector
 {
     Vector::new(-v.y, v.x)
@@ -91,7 +92,7 @@ fn dot(a: Vector, b: Vector) -> f32
 }
 
 /* Finds the intersection of two lines each defined by a point and a normal.
-   From "Example 2: Find the interesection of two lines" of
+   From "Example 2: Find the intersection of two lines" of
    "The Pleasures of "Perp Dot" Products"
    F. S. Hill, Jr. */
 fn line_intersection(A: Point, a_perp: Vector, B: Point, b_perp: Vector) -> Point
@@ -151,12 +152,8 @@ fn join_line(dest: &mut PathBuilder, style: &StrokeStyle, pt: Point, mut s1_norm
 
 
 pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
-    let i = 0;
-    let len = path.ops.len();
     let mut cur_x = 0.;
     let mut cur_y = 0.;
-    let mut sub_path_start = Point::zero();
-    let mut sub_path_end = 0;
     let mut stroked_path = PathBuilder::new();
     let mut last_normal = Vector::zero();
     let half_width = style.width / 2.;

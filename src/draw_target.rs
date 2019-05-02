@@ -82,7 +82,7 @@ impl DrawTarget {
     }
 
     fn quad_to(&mut self, cx: f32, cy: f32, x: f32, y: f32) {
-        let mut curve = [self.current_point, Point {x: cx, y: cy}, Point { x, y}];
+        let curve = [self.current_point, Point {x: cx, y: cy}, Point { x, y}];
         self.current_point = curve[2];
         self.add_quad(curve);
     }

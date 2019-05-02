@@ -1,6 +1,3 @@
-use crate::geom::*;
-
-use lyon_geom::cubic_to_quadratic::cubic_to_quadratics;
 use lyon_geom::QuadraticBezierSegment;
 use lyon_geom::CubicBezierSegment;
 use lyon_geom::Arc;
