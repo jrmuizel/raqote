@@ -23,6 +23,10 @@ use crate::stroke::*;
 
 type Rect = Box2D<i32>;
 
+pub fn rect<T: Copy>(x: T, y: T, w: T, h: T) -> Box2D<T> {
+    Box2D::new(Point2D::new(x, y), Point2D::new(w, h))
+}
+
 pub struct Mask {
     pub width: i32,
     pub height: i32,
@@ -174,8 +178,8 @@ impl DrawTarget {
         self.rasterizer.reset();
     }
 
-    pub fn mask(&mut self, src: &Source, mask: &Mask) {
-        self.composite(src, &mask.data, mask.width, mask.height);
+    pub fn mask(&mut self, src: &Source, x:i32, y: i32, mask: &Mask) {
+        self.composite(src, &mask.data, rect(0, 0, mask.width, mask.height));
     }
 
     pub fn stroke(&mut self, path: &Path, style: &StrokeStyle, src: &Source) {
@@ -199,7 +203,7 @@ impl DrawTarget {
         }
         let mut blitter = MaskSuperBlitter::new(self.width, self.height);
         self.rasterizer.rasterize(&mut blitter, Winding::NonZero);
-        self.composite(src, &blitter.buf, self.width, self.height);
+        self.composite(src, &blitter.buf, rect(0, 0, self.width, self.height));
         self.rasterizer.reset();
     }
 
@@ -237,11 +241,10 @@ impl DrawTarget {
                                             RasterizationOptions::GrayscaleAa);
         }
 
-        self.composite(src, &canvas.pixels, canvas.size.width as i32, canvas.size.height as i32);
+        self.composite(src, &canvas.pixels, rect(0, 0, canvas.size.width as i32, canvas.size.height as i32));
     }
 
-    fn composite(&mut self, src: &Source, mask: &[u8], width: i32, height: i32) {
-
+    fn composite(&mut self, src: &Source, mask: &[u8], rect: Rect) {
         let mut shader: &Shader;
         let cs;
         let is;
@@ -290,8 +293,9 @@ impl DrawTarget {
             };
             blitter = &mut sb;
         }
-        for y in 0..self.height {
-            blitter.blit_span(y, 0, self.width);
+
+        for y in rect.min.y..rect.max.y {
+            blitter.blit_span(y, rect.min.x, rect.max.x);
         }
     }
 }
