@@ -241,106 +241,57 @@ impl DrawTarget {
     }
 
     fn composite(&mut self, src: &Source, mask: &[u8], width: i32, height: i32) {
-        if let Some(Clip {rect: _, mask: Some(clip)}) = self.clip_stack.last() {
-            match src {
-                Source::Solid(c) => {
-                    let color = ((c.a as u32) << 24) |
-                        ((c.r as u32) << 16) |
-                        ((c.g as u32) << 8) |
-                        ((c.b as u32) << 0);
-                    let shader = SolidShader { color };
-                    let mut blitter = ShaderClipBlitter {
-                        shader: &shader,
-                        tmp: vec![0; self.width as usize],
-                        dest: &mut self.buf,
-                        dest_stride: self.width,
-                        mask,
-                        mask_stride: self.width,
-                        clip,
-                        clip_stride: self.width};
-                    for y in 0..self.height {
-                        blitter.blit_span(y, 0, self.width);
-                    }
-                },
-                Source::Image(ref image, transform) => {
-                    let shader = ImageShader::new(image, transform);
-                    let mut blitter = ShaderClipBlitter {
-                        shader: &shader,
-                        tmp: vec![0; self.width as usize],
-                        dest: &mut self.buf,
-                        dest_stride: self.width,
-                        mask,
-                        mask_stride: self.width,
-                        clip,
-                        clip_stride: self.width};
-                    for y in 0..self.height {
-                        blitter.blit_span(y, 0, self.width);
-                    }
 
-                }
-                Source::Gradient(ref gradient, transform) => {
-                    let shader = GradientShader::new(gradient, transform);
-                    let mut blitter = ShaderClipBlitter {
-                        shader: &shader,
-                        tmp: vec![0; self.width as usize],
-                        dest: &mut self.buf,
-                        dest_stride: self.width,
-                        mask,
-                        mask_stride: self.width,
-                        clip,
-                        clip_stride: self.width};
-                    for y in 0..self.height {
-                        blitter.blit_span(y, 0, self.width);
-                    }
-                }
-            };
-            return;
-        }
-        match src {
+        let mut shader: &Shader;
+        let cs;
+        let is;
+        let gs;
+        let image = match src {
             Source::Solid(c) => {
                 let color = ((c.a as u32) << 24) |
                     ((c.r as u32) << 16) |
                     ((c.g as u32) << 8) |
                     ((c.b as u32) << 0);
-                let shader = SolidShader { color };
-                let mut blitter = ShaderBlitter {
-                    shader: &shader,
-                    tmp: vec![0; self.width as usize],
-                    dest: &mut self.buf,
-                    dest_stride: self.width,
-                    mask,
-                    mask_stride: self.width,};
-                for y in 0..self.height {
-                    blitter.blit_span(y, 0, self.width);
-                }
-            },
+                cs = SolidShader { color };
+                shader = &cs;
+            }
             Source::Image(ref image, transform) => {
-                let shader = ImageShader::new(image, transform);
-                let mut blitter = ShaderBlitter {
-                    shader: &shader,
-                    tmp: vec![0; self.width as usize],
-                    dest: &mut self.buf,
-                    dest_stride: self.width,
-                    mask,
-                    mask_stride: self.width};
-                for y in 0..self.height {
-                    blitter.blit_span(y, 0, self.width);
-                }
-
+                is = ImageShader::new(image, transform);
+                shader = &is;
             }
             Source::Gradient(ref gradient, transform) => {
-                let shader = GradientShader::new(gradient, transform);
-                let mut blitter = ShaderBlitter {
-                    shader: &shader,
-                    tmp: vec![0; self.width as usize],
-                    dest: &mut self.buf,
-                    dest_stride: self.width,
-                    mask,
-                    mask_stride: self.width};
-                for y in 0..self.height {
-                    blitter.blit_span(y, 0, self.width);
-                }
+                gs = GradientShader::new(gradient, transform);
+                shader = &gs;
             }
         };
+
+        let mut blitter: &mut Blitter;
+        let mut scb;
+        let mut sb;
+        if let Some(Clip {rect: _, mask: Some(clip)}) = self.clip_stack.last() {
+            scb = ShaderClipBlitter {
+                        shader: shader,
+                        tmp: vec![0; self.width as usize],
+                        dest: &mut self.buf,
+                        dest_stride: self.width,
+                        mask,
+                        mask_stride: self.width,
+                        clip,
+                        clip_stride: self.width};
+            blitter = &mut scb;
+        } else {
+            sb = ShaderBlitter {
+                shader: &*shader,
+                tmp: vec![0; self.width as usize],
+                dest: &mut self.buf,
+                dest_stride: self.width,
+                mask,
+                mask_stride: self.width
+            };
+            blitter = &mut sb;
+        }
+        for y in 0..self.height {
+            blitter.blit_span(y, 0, self.width);
+        }
     }
 }
