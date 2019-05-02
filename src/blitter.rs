@@ -58,12 +58,12 @@ impl Blitter for MaskSuperBlitter {
     }
 }
 
-trait Shader {
+pub trait Shader {
     fn shade_span(&self, x: i32, y: i32, dest: &mut [u32], count: usize);
 }
 
-struct SolidShader {
-    color: u32,
+pub struct SolidShader {
+    pub color: u32,
 }
 
 impl Shader for SolidShader {
@@ -86,13 +86,13 @@ fn transform_to_fixed(transform: &Transform2D<f32>) -> MatrixFixedPoint {
     }
 }
 
-struct ImageShader<'a> {
+pub struct ImageShader<'a> {
     image: &'a Image,
     xfm: MatrixFixedPoint,
 }
 
 impl<'a> ImageShader<'a> {
-    fn new(image: &'a Image, transform: &Transform2D<f32>) -> ImageShader<'a> {
+    pub fn new(image: &'a Image, transform: &Transform2D<f32>) -> ImageShader<'a> {
         ImageShader {
             image,
             xfm: transform_to_fixed(transform)
@@ -110,12 +110,12 @@ impl<'a> Shader for ImageShader<'a> {
     }
 }
 
-struct GradientShader {
+pub struct GradientShader {
     gradient: Box<GradientSource>,
 }
 
 impl GradientShader {
-    fn new(gradient: &Gradient, transform: &Transform2D<f32>) -> GradientShader {
+    pub fn new(gradient: &Gradient, transform: &Transform2D<f32>) -> GradientShader {
         GradientShader {
             gradient: gradient.make_source(&transform_to_fixed(transform))
         }
@@ -132,12 +132,12 @@ impl Shader for GradientShader {
 }
 
 pub struct ShaderBlitter<'a> {
-    shader: &'a Shader,
-    mask: &'a [u8],
-    dest: &'a mut [u32],
-    tmp: Box<[u32]>,
-    dest_stride: i32,
-    mask_stride: i32,
+    pub shader: &'a Shader,
+    pub tmp: Vec<u32>,
+    pub dest: &'a mut [u32],
+    pub dest_stride: i32,
+    pub mask: &'a [u8],
+    pub mask_stride: i32,
 }
 
 impl<'a> Blitter for ShaderBlitter<'a> {
@@ -151,6 +151,34 @@ impl<'a> Blitter for ShaderBlitter<'a> {
                 over_in(self.tmp[i],
                         self.dest[(dest_row + x1) as usize + i],
                         self.mask[(mask_row + x1) as usize + i] as u32);
+        }
+    }
+}
+
+pub struct ShaderClipBlitter<'a> {
+    pub shader: &'a Shader,
+    pub tmp: Vec<u32>,
+    pub dest: &'a mut [u32],
+    pub dest_stride: i32,
+    pub mask: &'a [u8],
+    pub mask_stride: i32,
+    pub clip: &'a [u8],
+    pub clip_stride: i32,
+}
+
+impl<'a> Blitter for ShaderClipBlitter<'a> {
+    fn blit_span(&mut self, y: i32, x1: i32, x2: i32) {
+        let dest_row = y * self.dest_stride;
+        let mask_row = y * self.mask_stride;
+        let clip_row = y * self.clip_stride;
+        let count = (x2 - x1) as usize;
+        self.shader.shade_span(x1, y, &mut self.tmp[..], count);
+        for i in 0..count {
+            self.dest[(dest_row + x1) as usize + i] =
+                over_in_in(self.tmp[i],
+                        self.dest[(dest_row + x1) as usize + i],
+                        self.mask[(mask_row + x1) as usize + i] as u32,
+                        self.clip[(clip_row + x1) as usize + i] as u32);
         }
     }
 }

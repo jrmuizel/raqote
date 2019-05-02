@@ -1,6 +1,6 @@
 use crate::rasterizer::Rasterizer;
 
-use crate::blitter::MaskSuperBlitter;
+use crate::blitter::*;
 use sw_composite::*;
 
 use crate::types::Point;
@@ -248,52 +248,49 @@ impl DrawTarget {
                         ((c.r as u32) << 16) |
                         ((c.g as u32) << 8) |
                         ((c.b as u32) << 0);
-                    for i in 0..((width * height) as usize) {
-                        self.buf[i] = over_in_in(color, self.buf[i], mask[i] as u32, clip[i] as u32)
+                    let shader = SolidShader { color };
+                    let mut blitter = ShaderClipBlitter {
+                        shader: &shader,
+                        tmp: vec![0; self.width as usize],
+                        dest: &mut self.buf,
+                        dest_stride: self.width,
+                        mask,
+                        mask_stride: self.width,
+                        clip,
+                        clip_stride: self.width};
+                    for y in 0..self.height {
+                        blitter.blit_span(y, 0, self.width);
                     }
                 },
                 Source::Image(ref image, transform) => {
-                    let tfm = MatrixFixedPoint {
-                        // Is the order right?
-                        xx: float_to_fixed(transform.m11),
-                        xy: float_to_fixed(transform.m12),
-                        yx: float_to_fixed(transform.m21),
-                        yy: float_to_fixed(transform.m22),
-                        x0: float_to_fixed(transform.m31),
-                        y0: float_to_fixed(transform.m32)
-                    };
-                    for y in 0..height {
-                        for x in 0..width {
-                            let p = tfm.transform(x as u16, y as u16);
-                            let color = fetch_bilinear(image, p.x, p.y);
-                            self.buf[(y * self.width + x) as usize]
-                                = over_in_in(color,
-                                          self.buf[(y * self.width + x) as usize],
-                                          mask[(y * self.width + x) as usize] as u32,
-                                          clip[(y * self.width + x) as usize] as u32,);
-                        }
+                    let shader = ImageShader::new(image, transform);
+                    let mut blitter = ShaderClipBlitter {
+                        shader: &shader,
+                        tmp: vec![0; self.width as usize],
+                        dest: &mut self.buf,
+                        dest_stride: self.width,
+                        mask,
+                        mask_stride: self.width,
+                        clip,
+                        clip_stride: self.width};
+                    for y in 0..self.height {
+                        blitter.blit_span(y, 0, self.width);
                     }
+
                 }
                 Source::Gradient(ref gradient, transform) => {
-                    let tfm = MatrixFixedPoint {
-                        // Is the order right?
-                        xx: float_to_fixed(transform.m11),
-                        xy: float_to_fixed(transform.m12),
-                        yx: float_to_fixed(transform.m21),
-                        yy: float_to_fixed(transform.m22),
-                        x0: float_to_fixed(transform.m31),
-                        y0: float_to_fixed(transform.m32)
-                    };
-                    let gs = gradient.make_source(&tfm);
-                    for y in 0..height {
-                        for x in 0..width {
-                            let color = gs.radial_gradient_eval(x as u16, y as u16);
-                            self.buf[(y * width + x) as usize]
-                                = over_in_in(color,
-                                          self.buf[(y * width + x) as usize],
-                                          mask[(y * width + x) as usize] as u32,
-                                          clip[(y * width + x) as usize] as u32);
-                        }
+                    let shader = GradientShader::new(gradient, transform);
+                    let mut blitter = ShaderClipBlitter {
+                        shader: &shader,
+                        tmp: vec![0; self.width as usize],
+                        dest: &mut self.buf,
+                        dest_stride: self.width,
+                        mask,
+                        mask_stride: self.width,
+                        clip,
+                        clip_stride: self.width};
+                    for y in 0..self.height {
+                        blitter.blit_span(y, 0, self.width);
                     }
                 }
             };
@@ -305,50 +302,43 @@ impl DrawTarget {
                     ((c.r as u32) << 16) |
                     ((c.g as u32) << 8) |
                     ((c.b as u32) << 0);
-                for i in 0..((width*height) as usize) {
-                    self.buf[i] = over_in(color, self.buf[i], mask[i] as u32)
+                let shader = SolidShader { color };
+                let mut blitter = ShaderBlitter {
+                    shader: &shader,
+                    tmp: vec![0; self.width as usize],
+                    dest: &mut self.buf,
+                    dest_stride: self.width,
+                    mask,
+                    mask_stride: self.width,};
+                for y in 0..self.height {
+                    blitter.blit_span(y, 0, self.width);
                 }
             },
             Source::Image(ref image, transform) => {
-                let tfm = MatrixFixedPoint {
-                    // Is the order right?
-                    xx: float_to_fixed(transform.m11),
-                    xy: float_to_fixed(transform.m12),
-                    yx: float_to_fixed(transform.m21),
-                    yy: float_to_fixed(transform.m22),
-                    x0: float_to_fixed(transform.m31),
-                    y0: float_to_fixed(transform.m32)
-                };
-                for y in 0..height {
-                    for x in 0..width {
-                        let p = tfm.transform(x as u16, y as u16);
-                        let color = fetch_bilinear(image, p.x, p.y);
-                        self.buf[(y* self.width + x) as usize]
-                            = over_in(color,
-                                      self.buf[(y* self.width + x) as usize],
-                                      mask[(y* self.width + x) as usize] as u32);
-                    }
+                let shader = ImageShader::new(image, transform);
+                let mut blitter = ShaderBlitter {
+                    shader: &shader,
+                    tmp: vec![0; self.width as usize],
+                    dest: &mut self.buf,
+                    dest_stride: self.width,
+                    mask,
+                    mask_stride: self.width};
+                for y in 0..self.height {
+                    blitter.blit_span(y, 0, self.width);
                 }
+
             }
             Source::Gradient(ref gradient, transform) => {
-                let tfm = MatrixFixedPoint {
-                    // Is the order right?
-                    xx: float_to_fixed(transform.m11),
-                    xy: float_to_fixed(transform.m12),
-                    yx: float_to_fixed(transform.m21),
-                    yy: float_to_fixed(transform.m22),
-                    x0: float_to_fixed(transform.m31),
-                    y0: float_to_fixed(transform.m32)
-                };
-                let gs = gradient.make_source(&tfm);
-                for y in 0..height {
-                    for x in 0..width {
-                        let color = gs.radial_gradient_eval(x as u16, y as u16);
-                        self.buf[(y* width + x) as usize]
-                            = over_in(color,
-                                      self.buf[(y * width + x) as usize],
-                                      mask[(y * width + x) as usize] as u32);
-                    }
+                let shader = GradientShader::new(gradient, transform);
+                let mut blitter = ShaderBlitter {
+                    shader: &shader,
+                    tmp: vec![0; self.width as usize],
+                    dest: &mut self.buf,
+                    dest_stride: self.width,
+                    mask,
+                    mask_stride: self.width};
+                for y in 0..self.height {
+                    blitter.blit_span(y, 0, self.width);
                 }
             }
         };
