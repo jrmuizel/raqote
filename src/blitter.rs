@@ -18,10 +18,9 @@ const SCALE: i32 = (1 << SHIFT);
 const MASK: i32 = (SCALE - 1);
 const SUPER_MASK: i32 = ((1 << SHIFT) - 1);
 
-fn coverage_to_alpha(mut aa: i32) -> u8
+fn coverage_to_partial_alpha(mut aa: i32) -> u8
 {
     aa <<= 8 - 2 * SHIFT;
-    aa -= aa >> (8 - SHIFT - 1);
     return aa as u8;
 }
 
@@ -31,8 +30,20 @@ impl MaskSuperBlitter {
     }
 }
 
+// Perform this tricky subtract, to avoid overflowing to 256. Our caller should
+// only ever call us with at most enough to hit 256 (never larger), so it is
+// enough to just subtract the high-bit. Actually clamping with a branch would
+// be slower (e.g. if (tmp > 255) tmp = 255;)
+fn saturated_add(a: u8, b: u8) -> u8 {
+    let tmp = a as u32 + b as u32;
+    let result = (tmp - (tmp >> 8));
+    result as u8
+}
+
+
 impl Blitter for MaskSuperBlitter {
     fn blit_span(&mut self, y: i32, x1: i32, x2: i32) {
+        println!("blit_span {} {} {}", y, x1, x2);
         let max: u8 = ((1 << (8 - SHIFT)) - (((y & MASK) + 1) >> SHIFT)) as u8;
         let mut b: *mut u8 = &mut self.buf[(y / 4 * self.width + (x1 >> SHIFT)) as usize];
 
@@ -42,10 +53,10 @@ impl Blitter for MaskSuperBlitter {
 
         // invert the alpha on the left side
         if n < 0 {
-            unsafe { *b += coverage_to_alpha(fe - fb) };
+            unsafe { *b = saturated_add(*b, coverage_to_partial_alpha(fe - fb)) };
         } else {
             fb = (1 << SHIFT) - fb;
-            unsafe { *b += coverage_to_alpha(fb) };
+            unsafe { *b = saturated_add(*b, coverage_to_partial_alpha(fb)) };
             unsafe { b = b.offset(1); };
             while n != 0 {
                 unsafe { *b += max };
@@ -53,7 +64,7 @@ impl Blitter for MaskSuperBlitter {
 
                 n -= 1;
             }
-            unsafe { *b += coverage_to_alpha(fe) };
+            unsafe { *b = saturated_add(*b, coverage_to_partial_alpha(fe)) };
         }
     }
 }
