@@ -5,6 +5,7 @@ mod blitter;
 mod draw_target;
 mod stroke;
 mod dash;
+mod tests;
 
 use std::fs::*;
 use std::io::BufWriter;

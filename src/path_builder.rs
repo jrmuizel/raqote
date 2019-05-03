@@ -84,6 +84,14 @@ impl PathBuilder {
         self.path.ops.push(PathOp::QuadTo(cx, cy, x, y))
     }
 
+    pub fn rect(&mut self, x: f32, y: f32, width: f32, height: f32) {
+        self.move_to(x, y);
+        self.line_to(x + width, y);
+        self.line_to(x + width, y + height);
+        self.line_to(x, y + height);
+        self.close();
+    }
+
     pub fn cubic_to(&mut self, cx1: f32, cy1: f32, cx2: f32, cy2: f32, x: f32, y: f32) {
         self.path.ops.push(PathOp::CubicTo(cx1, cy1, cx2, cy2, x, y))
     }
