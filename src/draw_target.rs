@@ -244,7 +244,7 @@ impl DrawTarget {
         self.composite(src, &canvas.pixels, rect(0, 0, canvas.size.width as i32, canvas.size.height as i32));
     }
 
-    fn composite(&mut self, src: &Source, mask: &[u8], rect: Rect) {
+    fn composite(&mut self, src: &Source, mask: &[u8], mut rect: Rect) {
         let mut shader: &Shader;
         let cs;
         let is;
@@ -271,27 +271,46 @@ impl DrawTarget {
         let mut blitter: &mut Blitter;
         let mut scb;
         let mut sb;
-        if let Some(Clip {rect: _, mask: Some(clip)}) = self.clip_stack.last() {
-            scb = ShaderClipBlitter {
-                        shader: shader,
-                        tmp: vec![0; self.width as usize],
-                        dest: &mut self.buf,
-                        dest_stride: self.width,
-                        mask,
-                        mask_stride: self.width,
-                        clip,
-                        clip_stride: self.width};
-            blitter = &mut scb;
-        } else {
-            sb = ShaderBlitter {
-                shader: &*shader,
-                tmp: vec![0; self.width as usize],
-                dest: &mut self.buf,
-                dest_stride: self.width,
-                mask,
-                mask_stride: self.width
-            };
-            blitter = &mut sb;
+        match self.clip_stack.last() {
+            Some(Clip { rect: _, mask: Some(clip)}) => {
+                scb = ShaderClipBlitter {
+                    shader: shader,
+                    tmp: vec![0; self.width as usize],
+                    dest: &mut self.buf,
+                    dest_stride: self.width,
+                    mask,
+                    mask_stride: self.width,
+                    clip,
+                    clip_stride: self.width};
+
+                blitter = &mut scb;
+            }
+            Some(Clip { rect: clip_rect, mask: _ }) => {
+                rect = rect.intersection(clip_rect);
+                if rect.is_negative() {
+                    return;
+                }
+                sb = ShaderBlitter {
+                    shader: &*shader,
+                    tmp: vec![0; self.width as usize],
+                    dest: &mut self.buf,
+                    dest_stride: self.width,
+                    mask,
+                    mask_stride: self.width
+                };
+                blitter = &mut sb;
+            }
+            _ => {
+                sb = ShaderBlitter {
+                    shader: &*shader,
+                    tmp: vec![0; self.width as usize],
+                    dest: &mut self.buf,
+                    dest_stride: self.width,
+                    mask,
+                    mask_stride: self.width
+                };
+                blitter = &mut sb;
+            }
         }
 
         for y in rect.min.y..rect.max.y {
