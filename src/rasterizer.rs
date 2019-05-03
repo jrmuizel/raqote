@@ -476,10 +476,6 @@ impl Rasterizer {
         while let Some(mut e_ptr) = edge {
             let e = unsafe { e_ptr.as_mut() };
 
-            if (e.fullx >> 16) >= self.width {
-                break;
-            }
-
             let inside = match winding_mode {
                 Winding::EvenOdd => winding & 1 != 0,
                 Winding::NonZero => winding != 0
@@ -487,6 +483,10 @@ impl Rasterizer {
 
             if inside {
                 blitter.blit_span(self.cur_y, (prevx + (1 << 15)) >> 16, (e.fullx + (1 << 15)) >> 16);
+            }
+
+            if (e.fullx >> 16) >= self.width {
+                break;
             }
             winding += e.winding as i32;
             prevx = e.fullx;
