@@ -43,7 +43,6 @@ fn saturated_add(a: u8, b: u8) -> u8 {
 
 impl Blitter for MaskSuperBlitter {
     fn blit_span(&mut self, y: i32, x1: i32, x2: i32) {
-        println!("blit_span {} {} {}", y, x1, x2);
         let max: u8 = ((1 << (8 - SHIFT)) - (((y & MASK) + 1) >> SHIFT)) as u8;
         let mut b: *mut u8 = &mut self.buf[(y / 4 * self.width + (x1 >> SHIFT)) as usize];
 

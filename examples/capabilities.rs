@@ -1,52 +1,19 @@
-mod rasterizer;
-mod types;
-mod geom;
-mod blitter;
-mod draw_target;
-mod stroke;
-mod dash;
-mod tests;
+extern crate raqote;
 
 use std::fs::*;
 use std::io::BufWriter;
-
-mod path_builder;
-use path_builder::PathBuilder;
-
-use png::HasParameters;
-
-use crate::draw_target::{DrawTarget, Source, SolidSource};
-use crate::stroke::*;
-
-use sw_composite::*;
-use std::collections::hash_map::DefaultHasher;
+use raqote::*;
+use sw_composite::{Image, Gradient, GradientStop};
 
 use euclid::Point2D;
+
+
+use png::HasParameters;
 
 use font_kit::family_name::FamilyName;
 use font_kit::properties::Properties;
 use font_kit::source::SystemSource;
-
-
-fn unpremultiply(data: &mut [u8]) {
-    for pixel in data.chunks_mut(4) {
-        let a = pixel[3] as u32;
-        let mut b = pixel[2] as u32;
-        let mut g = pixel[1] as u32;
-        let mut r = pixel[0] as u32;
-
-        if a > 0 {
-            r = r * 255 / a;
-            g = g * 255 / a;
-            b = b * 255 / a;
-        }
-
-        pixel[3] = a as u8;
-        pixel[2] = r as u8;
-        pixel[1] = g as u8;
-        pixel[0] = b as u8;
-    }
-}
+use std::collections::hash_map::DefaultHasher;
 
 
 fn main() {
