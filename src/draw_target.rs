@@ -136,8 +136,12 @@ impl DrawTarget {
     }
 
     pub fn push_clip_rect(&mut self, rect: Rect) {
-        // XXX: intersect with current clip
-        self.clip_stack.push(Clip {rect, mask: None });
+        // intersect with current clip
+        let clip = match self.clip_stack.last() {
+            Some(Clip { rect: current_clip, mask: _}) => Clip { rect: current_clip.intersection(&rect), mask: None},
+            _ => Clip { rect: rect, mask: None}
+        };
+        self.clip_stack.push(clip);
     }
 
     pub fn pop_clip(&mut self) {
