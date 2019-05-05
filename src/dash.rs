@@ -3,7 +3,6 @@ use crate::path_builder::*;
 use euclid::{Point2D, Vector2D};
 
 type Point = Point2D<f32>;
-type Vector = Vector2D<f32>;
 
 use lyon_geom::LineSegment;
 

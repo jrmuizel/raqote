@@ -7,7 +7,6 @@ use sw_composite::{Image, Gradient, GradientStop};
 
 use euclid::Point2D;
 
-
 use png::HasParameters;
 
 use font_kit::family_name::FamilyName;
@@ -34,7 +33,9 @@ fn main() {
     pb.line_to(0., 300.);
     pb.close();
     let path = pb.finish();
-    dt.fill(&path, &Source::Solid(SolidSource{r: 0x80, g: 0x80, b: 0, a: 0x80}));
+    dt.fill(&path,
+            &Source::Solid(SolidSource{r: 0x80, g: 0x80, b: 0, a: 0x80}),
+            Winding::NonZero);
 
     let mut pb = PathBuilder::new();
     pb.move_to(50., 50.);
@@ -79,7 +80,7 @@ fn main() {
                                                            GradientStop{position: 0.8, color: 0xffffffff},
                                                            GradientStop{position: 1., color: 0xffff00ff}]},
                                     euclid::Transform2D::create_translation(-150., -150.));
-    dt.fill(&path, &gradient);
+    dt.fill(&path, &gradient, Winding::NonZero);
 
     let mut pb = PathBuilder::new();
     pb.move_to(200., 200.);

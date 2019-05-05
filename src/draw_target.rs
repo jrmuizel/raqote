@@ -13,7 +13,7 @@ use lyon_geom::CubicBezierSegment;
 use euclid::Point2D;
 use euclid::Transform2D;
 use euclid::Box2D;
-use crate::rasterizer::Winding;
+pub use crate::rasterizer::Winding;
 
 use font_kit::font::Font;
 use font_kit::hinting::HintingOptions;
@@ -192,10 +192,10 @@ impl DrawTarget {
             path = dash_path(&path, &style.dash_array, style.dash_offset);
         }
         let stroked = stroke_to_path(&path, style);
-        self.fill(&stroked, src);
+        self.fill(&stroked, src, Winding::NonZero);
     }
 
-    pub fn fill(&mut self, path: &Path, src: &Source) {
+    pub fn fill(&mut self, path: &Path, src: &Source, winding_mode: Winding) {
         for op in &path.ops {
             match *op {
                 PathOp::MoveTo(x, y) => self.move_to(x, y),
@@ -206,7 +206,7 @@ impl DrawTarget {
             }
         }
         let mut blitter = MaskSuperBlitter::new(self.width, self.height);
-        self.rasterizer.rasterize(&mut blitter, Winding::NonZero);
+        self.rasterizer.rasterize(&mut blitter, winding_mode);
         self.composite(src, &blitter.buf, rect(0, 0, self.width, self.height));
         self.rasterizer.reset();
     }
