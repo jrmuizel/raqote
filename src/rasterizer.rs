@@ -571,21 +571,3 @@ impl Rasterizer {
         self.edge_arena = Arena::new();
     }
 }
-
-#[test]
-fn simple_test() {
-    let mut r = Rasterizer::new(200, 200);
-    struct MockBlitter {};
-    impl Blitter for MockBlitter {
-        fn blit_span(&mut self, _: i32, _: i32, _: i32) {}
-    }
-    let mut blitter = MockBlitter {};
-/*
-    let mut p = crate::path_builder::PathBuilder::new(&mut r);
-    p.move_to(50., 50.);
-    p.line_to(100., 70.);
-    p.line_to(110., 150.);
-    p.line_to(40., 180.);
-    p.close();
-    r.rasterize(&mut blitter);*/
-}
