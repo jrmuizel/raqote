@@ -51,6 +51,11 @@ struct Clip {
     mask: Option<Vec<u8>>
 }
 
+struct Layer {
+    buf: Vec<u32>,
+    rect: Rect,
+}
+
 pub struct DrawTarget {
     width: i32,
     height: i32,
@@ -58,7 +63,8 @@ pub struct DrawTarget {
     current_point: Point,
     first_point: Point,
     pub buf: Vec<u32>,
-    clip_stack: Vec<Clip>
+    clip_stack: Vec<Clip>,
+    layer_stack: Vec<Layer>
 }
 
 impl DrawTarget {
@@ -71,6 +77,7 @@ impl DrawTarget {
             rasterizer: Rasterizer::new(width, height),
             buf: vec![0; (width*height) as usize],
             clip_stack: Vec::new(),
+            layer_stack: Vec::new(),
         }
     }
 
@@ -180,6 +187,14 @@ impl DrawTarget {
             rect: current_bounds,
             mask: Some(blitter.buf) });
         self.rasterizer.reset();
+    }
+
+    pub fn push_layer(&mut self, opacity: f32) {
+        unimplemented!()
+    }
+
+    pub fn pop_layer(&mut self) {
+        unimplemented!()
     }
 
     pub fn mask(&mut self, src: &Source, x:i32, y: i32, mask: &Mask) {
