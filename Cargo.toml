@@ -2,7 +2,9 @@
 authors = ["Jeff Muizelaar <jrmuizel@gmail.com>"]
 edition = "2018"
 name = "raqote"
-version = "0.1.0"
+version = "0.1.1"
+description = "2D graphics library"
+license = "BSD-3-Clause"
 
 [dependencies]
 euclid = "0.19.8"
@@ -10,4 +12,4 @@ font-kit = "0.1.0"
 lyon_geom = "0.12.4"
 png = "0.14.0"
 typed-arena = "1.4.1"
-sw-composite = {git = "https://github.com/jrmuizel/sw-composite" }
+sw-composite = "0.1.0"
