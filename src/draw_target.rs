@@ -19,6 +19,11 @@ use font_kit::font::Font;
 use font_kit::hinting::HintingOptions;
 use font_kit::canvas::{Canvas, Format, RasterizationOptions};
 
+use std::fs::*;
+use std::io::BufWriter;
+
+use png::HasParameters;
+
 use crate::stroke::*;
 
 type Rect = Box2D<i32>;
@@ -62,7 +67,7 @@ pub struct DrawTarget {
     rasterizer: Rasterizer,
     current_point: Point,
     first_point: Point,
-    pub buf: Vec<u32>,
+    buf: Vec<u32>,
     clip_stack: Vec<Clip>,
     layer_stack: Vec<Layer>
 }
@@ -335,5 +340,40 @@ impl DrawTarget {
         for y in rect.min.y..rect.max.y {
             blitter.blit_span(y, rect.min.x, rect.max.x);
         }
+    }
+
+    pub fn get_data(&self) -> &[u32] {
+        &self.buf
+    }
+
+    pub fn write_png<P: std::convert::AsRef<std::path::Path>>(&self, path: P) {
+        let file = File::create(path).unwrap();
+
+        let ref mut w = BufWriter::new(file);
+
+        let mut encoder = png::Encoder::new(w, self.width as u32, self.height as u32);
+        encoder.set(png::ColorType::RGBA).set(png::BitDepth::Eight);
+        let mut writer = encoder.write_header().unwrap();
+        let mut output = Vec::with_capacity(self.buf.len()*4);
+
+        for pixel in &self.buf {
+            let a = (pixel >> 24) & 0xffu32;
+            let mut r = (pixel >> 16) & 0xffu32;
+            let mut g = (pixel >> 8) & 0xffu32;
+            let mut b = (pixel >> 0) & 0xffu32;
+
+            if a > 0u32 {
+                r = r * 255u32 / a;
+                g = g * 255u32 / a;
+                b = b * 255u32 / a;
+            }
+
+            output.push(r as u8);
+            output.push(g as u8);
+            output.push(b as u8);
+            output.push(a as u8);
+        }
+
+        writer.write_image_data(&output).unwrap();
     }
 }

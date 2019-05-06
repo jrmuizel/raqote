@@ -8,7 +8,7 @@ fn basic_rasterizer() {
     pb.rect(1., 1., 1., 1.);
     dt.fill(&pb.finish(), &Source::Solid(SolidSource{r: 0xff, g: 0xff, b: 0xff, a: 0xff}), Winding::NonZero);
     let white = 0xffffffff;
-    assert_eq!(dt.buf, vec![0, 0, 0, white])
+    assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
 }
 
 #[test]
@@ -21,7 +21,7 @@ fn clip_rect() {
             &Source::Solid(SolidSource{r: 0xff, g: 0xff, b: 0xff, a: 0xff}),
             Winding::NonZero);
     let white = 0xffffffff;
-    assert_eq!(dt.buf, vec![0, 0, 0, white])
+    assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
 }
 
 #[test]
@@ -35,7 +35,7 @@ fn nested_clip_rect() {
             &Source::Solid(SolidSource{r: 0xff, g: 0xff, b: 0xff, a: 0xff}),
             Winding::NonZero);
     let white = 0xffffffff;
-    assert_eq!(dt.buf, vec![0, 0, 0, white])
+    assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
 }
 
 #[test]
@@ -49,5 +49,5 @@ fn even_odd_rect() {
             &Source::Solid(SolidSource{r: 0xff, g: 0xff, b: 0xff, a: 0xff}),
             Winding::EvenOdd);
     let white = 0xffffffff;
-    assert_eq!(dt.buf, vec![0, 0, 0, white])
+    assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
 }
