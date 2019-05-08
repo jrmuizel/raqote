@@ -179,7 +179,7 @@ impl DrawTarget {
             // combine with previous mask
             if let Some(last_mask) = &last.mask {
                 for i in 0..((self.width * self.height) as usize) {
-                    blitter.buf[i] = muldiv255(blitter.buf[i], last_mask[i])
+                    blitter.buf[i] = muldiv255(blitter.buf[i] as u32, last_mask[i] as u32) as u8
                 }
             }
         }
