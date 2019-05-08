@@ -26,7 +26,13 @@ fn coverage_to_partial_alpha(mut aa: i32) -> u8
 
 impl MaskSuperBlitter {
     pub fn new(width: i32, height: i32) -> MaskSuperBlitter {
-        MaskSuperBlitter { width, height, buf: vec![0; (width * height) as usize] }
+        MaskSuperBlitter {
+            width,
+            height,
+            // we can end up writing one byte past the end of the buffer so allocate that
+            // padding to avoid needing to do an extra check
+            buf: vec![0; (width * height) as usize + 1]
+        }
     }
 }
 
