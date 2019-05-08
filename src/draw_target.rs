@@ -184,14 +184,19 @@ impl DrawTarget {
             }
         }
 
-        let current_bounds = self.clip_stack.last()
-            .map(|c| c.rect)
-            .unwrap_or(Box2D::new(Point2D::new(0, 0), Point2D::new(self.width, self.height)));
+        let current_bounds = self.clip_bounds();
         //XXX: handle interleaving of clip rect/masks better
         self.clip_stack.push(Clip {
             rect: current_bounds,
             mask: Some(blitter.buf) });
         self.rasterizer.reset();
+    }
+
+
+    fn clip_bounds(&self) -> Rect {
+        self.clip_stack.last()
+            .map(|c| c.rect)
+            .unwrap_or(Box2D::new(Point2D::new(0, 0), Point2D::new(self.width, self.height)))
     }
 
     pub fn push_layer(&mut self, opacity: f32) {
@@ -295,6 +300,12 @@ impl DrawTarget {
         let mut blitter: &mut Blitter;
         let mut scb;
         let mut sb;
+
+        rect = rect.intersection(&self.clip_bounds());
+        if rect.is_negative() {
+            return;
+        }
+
         match self.clip_stack.last() {
             Some(Clip { rect: _, mask: Some(clip)}) => {
                 scb = ShaderClipBlitter {
@@ -308,21 +319,6 @@ impl DrawTarget {
                     clip_stride: self.width};
 
                 blitter = &mut scb;
-            }
-            Some(Clip { rect: clip_rect, mask: _ }) => {
-                rect = rect.intersection(clip_rect);
-                if rect.is_negative() {
-                    return;
-                }
-                sb = ShaderBlitter {
-                    shader: &*shader,
-                    tmp: vec![0; self.width as usize],
-                    dest: &mut self.buf,
-                    dest_stride: self.width,
-                    mask,
-                    mask_stride: self.width
-                };
-                blitter = &mut sb;
             }
             _ => {
                 sb = ShaderBlitter {

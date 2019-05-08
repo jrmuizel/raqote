@@ -9,8 +9,6 @@ use euclid::Point2D;
 use font_kit::family_name::FamilyName;
 use font_kit::properties::Properties;
 use font_kit::source::SystemSource;
-use std::collections::hash_map::DefaultHasher;
-
 
 fn main() {
 
