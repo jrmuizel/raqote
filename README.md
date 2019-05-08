@@ -13,3 +13,4 @@ Current functionality
 Planned functionality
  - layers
  - blend modes
+ - perspective image drawing
