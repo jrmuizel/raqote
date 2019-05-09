@@ -71,10 +71,10 @@ fn arc_segment(path: &mut PathBuilder,
                a: Vector,
                b: Vector)
 {
-    let r_sin_A = radius * a.y;
-    let r_cos_A = radius * a.x;
-    let r_sin_B = radius * b.y;
-    let r_cos_B = radius * b.x;
+    let r_sin_a = radius * a.y;
+    let r_cos_a = radius * a.x;
+    let r_sin_b = radius * b.y;
+    let r_cos_b = radius * b.x;
 
     /* bisect the angle between 'a' and 'b' with 'mid' */
     let mut mid = a + b;
@@ -87,12 +87,12 @@ fn arc_segment(path: &mut PathBuilder,
     let h = (4. / 3.) * dot(perp(a), mid2) / dot(a, mid2);
 
     path.cubic_to(
-        xc + r_cos_A - h * r_sin_A,
-        yc + r_sin_A + h * r_cos_A,
-        xc + r_cos_B + h * r_sin_B,
-        yc + r_sin_B - h * r_cos_B,
-        xc + r_cos_B,
-        yc + r_sin_B);
+        xc + r_cos_a - h * r_sin_a,
+        yc + r_sin_a + h * r_cos_a,
+        xc + r_cos_b + h * r_sin_b,
+        yc + r_sin_b - h * r_cos_b,
+        xc + r_cos_b,
+        yc + r_sin_b);
 }
 
 /* The angle between the vectors must be <= pi */
