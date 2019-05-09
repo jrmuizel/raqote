@@ -1,4 +1,10 @@
 language: rust
-script:
-  - cargo build --verbose --all
-  - cargo test --verbose --all
+matrix:
+  include:
+    - name: "miri"
+      script:
+        - rustup component add miri
+        - cargo miri test --verbose --all
+    - name: "debug"
+      script:
+        - cargo test --verbose --all
