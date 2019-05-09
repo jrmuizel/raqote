@@ -1,5 +1,4 @@
 mod rasterizer;
-mod types;
 mod geom;
 mod blitter;
 mod draw_target;

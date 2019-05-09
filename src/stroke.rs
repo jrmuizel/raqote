@@ -260,52 +260,49 @@ fn join_line(dest: &mut PathBuilder, style: &StrokeStyle, pt: Point, mut s1_norm
 
 
 pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
-    let mut cur_x = 0.;
-    let mut cur_y = 0.;
+    let mut cur_pt = Point::zero();
     let mut stroked_path = PathBuilder::new();
     let mut last_normal = Vector::zero();
     let half_width = style.width / 2.;
     let mut start_point = None;
     for op in &path.ops {
         match *op {
-            PathOp::MoveTo(x, y) => {
+            PathOp::MoveTo(pt) => {
                 if let Some((point, normal)) = start_point {
                     // cap end
-                    cap_line(&mut stroked_path, style, Point::new(cur_x, cur_y), last_normal);
+                    cap_line(&mut stroked_path, style, cur_pt, last_normal);
                     // cap beginning
                     cap_line(&mut stroked_path, style, point, flip(normal));
                 }
                 start_point = None;
-                cur_x = x;
-                cur_y = y;
+                cur_pt = pt;
             }
-            PathOp::LineTo(x, y) => {
-                let normal = compute_normal(Point2D::new(cur_x, cur_y), Point2D::new(x, y));
+            PathOp::LineTo(pt) => {
+                let normal = compute_normal(cur_pt, pt);
                 if start_point.is_none() {
-                    start_point = Some((Point::new(cur_x, cur_y), normal));
+                    start_point = Some((cur_pt, normal));
                 } else {
-                    join_line(&mut stroked_path, style, Point::new(cur_x, cur_y), last_normal, normal);
+                    join_line(&mut stroked_path, style, cur_pt, last_normal, normal);
                 }
 
-                stroked_path.move_to(cur_x + normal.x * half_width, cur_y + normal.y * half_width);
-                stroked_path.line_to(x + normal.x * half_width, y + normal.y * half_width);
-                stroked_path.line_to(x + -normal.x * half_width, y + -normal.y * half_width);
-                stroked_path.line_to(cur_x - normal.x * half_width, cur_y - normal.y * half_width);
+                stroked_path.move_to(cur_pt.x + normal.x * half_width, cur_pt.y + normal.y * half_width);
+                stroked_path.line_to(pt.x + normal.x * half_width, pt.y + normal.y * half_width);
+                stroked_path.line_to(pt.x + -normal.x * half_width, pt.y + -normal.y * half_width);
+                stroked_path.line_to(cur_pt.x - normal.x * half_width, cur_pt.y - normal.y * half_width);
                 stroked_path.close();
                 last_normal = normal;
 
-                cur_x = x;
-                cur_y = y;
+                cur_pt = pt;
 
             }
             PathOp::Close => {
                 if let Some((point, normal)) = start_point {
-                    let last_normal = compute_normal(Point2D::new(cur_x, cur_y), Point2D::new(point.x, point.y));
+                    let last_normal = compute_normal(cur_pt, point);
 
-                    stroked_path.move_to(cur_x + normal.x * half_width, cur_y + normal.y * half_width);
+                    stroked_path.move_to(cur_pt.x + normal.x * half_width, cur_pt.y + normal.y * half_width);
                     stroked_path.line_to(point.x + normal.x * half_width, point.y + normal.y * half_width);
                     stroked_path.line_to(point.x + -normal.x * half_width, point.y + -normal.y * half_width);
-                    stroked_path.line_to(cur_x - normal.x * half_width, cur_y - normal.y * half_width);
+                    stroked_path.line_to(cur_pt.x - normal.x * half_width, cur_pt.y - normal.y * half_width);
                     stroked_path.close();
 
                     join_line(&mut stroked_path, style, point, last_normal, normal);
@@ -321,7 +318,7 @@ pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
     }
     if let Some((point, normal)) = start_point {
         // cap end
-        cap_line(&mut stroked_path, style, Point::new(cur_x, cur_y), last_normal);
+        cap_line(&mut stroked_path, style, cur_pt, last_normal);
         // cap beginning
         cap_line(&mut stroked_path, style, point, flip(normal));
     }

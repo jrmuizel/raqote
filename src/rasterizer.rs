@@ -24,7 +24,8 @@
 
 use typed_arena::Arena;
 
-use crate::types::Point;
+use euclid::Point2D;
+type Point = Point2D<f32>;
 use crate::blitter::Blitter;
 
 use std::ptr::NonNull;

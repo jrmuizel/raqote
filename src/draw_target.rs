@@ -3,7 +3,6 @@ use crate::rasterizer::Rasterizer;
 use crate::blitter::*;
 use sw_composite::*;
 
-use crate::types::Point;
 use crate::geom::*;
 use crate::path_builder::*;
 use crate::dash::*;
@@ -26,6 +25,7 @@ use png::HasParameters;
 
 use crate::stroke::*;
 
+type Point = Point2D<f32>;
 type Rect = Box2D<i32>;
 
 pub fn rect<T: Copy>(x: T, y: T, w: T, h: T) -> Box2D<T> {
@@ -69,7 +69,8 @@ pub struct DrawTarget {
     first_point: Point,
     buf: Vec<u32>,
     clip_stack: Vec<Clip>,
-    layer_stack: Vec<Layer>
+    layer_stack: Vec<Layer>,
+    transform: Transform2D<f32>
 }
 
 impl DrawTarget {
@@ -77,28 +78,36 @@ impl DrawTarget {
         DrawTarget {
             width,
             height,
-            current_point: Point { x: 0., y: 0.},
-            first_point: Point { x: 0., y: 0. },
+            current_point: Point::new(0., 0.),
+            first_point: Point::new(0., 0.),
             rasterizer: Rasterizer::new(width, height),
             buf: vec![0; (width*height) as usize],
             clip_stack: Vec::new(),
             layer_stack: Vec::new(),
+            transform: Transform2D::identity(),
         }
     }
 
-    fn move_to(&mut self, x: f32, y: f32) {
-        self.current_point = Point { x, y };
-        self.first_point = Point { x, y };
+    pub fn set_transform(&mut self, transform: &Transform2D<f32>) {
+        self.transform = *transform;
     }
 
-    fn line_to(&mut self, x: f32, y: f32) {
-        let p = Point {x, y};
-        self.rasterizer.add_edge(self.current_point, p, false, Point {x: 0., y: 0.});
-        self.current_point = p;
+    pub fn get_transform(&self) -> &Transform2D<f32> {
+        &self.transform
     }
 
-    fn quad_to(&mut self, cx: f32, cy: f32, x: f32, y: f32) {
-        let curve = [self.current_point, Point {x: cx, y: cy}, Point { x, y}];
+    fn move_to(&mut self, pt: Point) {
+        self.current_point = pt;
+        self.first_point = pt;
+    }
+
+    fn line_to(&mut self, pt: Point) {
+        self.rasterizer.add_edge(self.current_point, pt, false, Point::new(0., 0.));
+        self.current_point = pt;
+    }
+
+    fn quad_to(&mut self, cpt: Point, pt: Point) {
+        let curve = [self.current_point, cpt, pt];
         self.current_point = curve[2];
         self.add_quad(curve);
     }
@@ -110,7 +119,7 @@ impl DrawTarget {
         if is_not_monotonic(a, b, c) {
             let mut t_value = 0.;
             if valid_unit_divide(a - b, a - b - b + c, &mut t_value) {
-                let mut dst = [Point{ x: 0., y: 0.}; 5];
+                let mut dst = [Point::new(0., 0.); 5];
                 chop_quad_at(&curve, &mut dst, t_value);
                 flatten_double_quad_extrema(&mut dst);
                 self.rasterizer.add_edge(dst[0], dst[2], true, dst[1]);
@@ -126,25 +135,38 @@ impl DrawTarget {
 
     }
 
-    fn cubic_to(&mut self, c1x: f32, c1y: f32, c2x: f32, c2y: f32, x: f32, y: f32) {
+    fn cubic_to(&mut self, cpt1: Point, cpt2: Point, pt: Point) {
         let c = CubicBezierSegment {
-            from: Point2D::new(self.current_point.x, self.current_point.y),
-            ctrl1: Point2D::new(c1x, c1y),
-            ctrl2: Point2D::new(c2x, c2y),
-            to: Point2D::new(x, y)
+            from: self.current_point,
+            ctrl1: cpt1,
+            ctrl2: cpt2,
+            to: pt
         };
         cubic_to_quadratics(&c, 0.01, &mut|q| {
-            fn e2r(p: Point2D<f32>) -> Point {
-                Point{ x: p.x, y: p.y }
-            }
-            let curve = [e2r(q.from), e2r(q.ctrl), e2r(q.to)];
+            let curve = [q.from, q.ctrl, q.to];
             self.add_quad(curve);
         });
-        self.current_point = Point { x, y };
+        self.current_point = pt;
     }
 
     fn close(&mut self) {
-        self.rasterizer.add_edge(self.current_point, self.first_point, false, Point {x: 0., y: 0.});
+        self.rasterizer.add_edge(self.current_point, self.first_point, false, Point::new(0., 0.));
+    }
+
+    fn apply_path(&mut self, path: &Path) {
+        for op in &path.ops {
+            match *op {
+                PathOp::MoveTo(pt) => self.move_to(self.transform.transform_point(&pt)),
+                PathOp::LineTo(pt) => self.line_to(self.transform.transform_point(&pt)),
+                PathOp::QuadTo(cpt, pt) => self.quad_to(self.transform.transform_point(&cpt),
+                                                        self.transform.transform_point(&pt)),
+                PathOp::CubicTo(cpt1, cpt2, pt) => self.cubic_to(
+                    self.transform.transform_point(&cpt1),
+                    self.transform.transform_point(&cpt2),
+                    self.transform.transform_point(&pt)),
+                PathOp::Close => self.close(),
+            }
+        }
     }
 
     pub fn push_clip_rect(&mut self, rect: Rect) {
@@ -161,15 +183,7 @@ impl DrawTarget {
     }
 
     pub fn push_clip(&mut self, path: &Path) {
-        for op in &path.ops {
-            match *op {
-                PathOp::MoveTo(x, y) => self.move_to(x, y),
-                PathOp::LineTo(x, y) => self.line_to(x, y),
-                PathOp::QuadTo(cx, cy, x, y) => self.quad_to(cx, cy, x, y),
-                PathOp::CubicTo(cx1, cy1, cx2, cy2, x, y) => self.cubic_to(cx1, cy1, cx2, cy2, x, y),
-                PathOp::Close => self.close(),
-            }
-        }
+        self.apply_path(path);
 
         // XXX: restrict to clipped area
         let mut blitter = MaskSuperBlitter::new(self.width, self.height);
@@ -221,15 +235,7 @@ impl DrawTarget {
     }
 
     pub fn fill(&mut self, path: &Path, src: &Source, winding_mode: Winding) {
-        for op in &path.ops {
-            match *op {
-                PathOp::MoveTo(x, y) => self.move_to(x, y),
-                PathOp::LineTo(x, y) => self.line_to(x, y),
-                PathOp::QuadTo(cx, cy, x, y) => self.quad_to(cx, cy, x, y),
-                PathOp::CubicTo(cx1, cy1, cx2, cy2, x, y) => self.cubic_to(cx1, cy1, cx2, cy2, x, y),
-                PathOp::Close => self.close(),
-            }
-        }
+        self.apply_path(path);
         let mut blitter = MaskSuperBlitter::new(self.width, self.height);
         self.rasterizer.rasterize(&mut blitter, winding_mode);
         self.composite(src, &blitter.buf, rect(0, 0, self.width, self.height));
@@ -275,9 +281,19 @@ impl DrawTarget {
 
     fn composite(&mut self, src: &Source, mask: &[u8], mut rect: Rect) {
         let mut shader: &Shader;
+
+        let ti = self.transform.inverse();
+        let ti = if let Some(ti) = ti {
+            ti
+        } else {
+            // the transform is not invertable so we have nothing to draw
+            return
+        };
+
         let cs;
         let is;
         let gs;
+
         let image = match src {
             Source::Solid(c) => {
                 let color = ((c.a as u32) << 24) |
@@ -288,11 +304,11 @@ impl DrawTarget {
                 shader = &cs;
             }
             Source::Image(ref image, transform) => {
-                is = ImageShader::new(image, transform);
+                is = ImageShader::new(image, &ti.post_mul(&transform));
                 shader = &is;
             }
             Source::Gradient(ref gradient, transform) => {
-                gs = GradientShader::new(gradient, transform);
+                gs = GradientShader::new(gradient, &ti.post_mul(&transform));
                 shader = &gs;
             }
         };

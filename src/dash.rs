@@ -10,8 +10,7 @@ use lyon_geom::LineSegment;
 pub fn dash_path(path: &Path, dash_array: &[f32], dash_offset: f32) -> Path {
     let mut dashed = PathBuilder::new();
 
-    let mut cur_x = 0.;
-    let mut cur_y = 0.;
+    let mut cur_pt = Point::zero();
     let mut current_dash = 0;
     let mut start_point = Point::zero();
     let mut remaining_dash_length = dash_array[current_dash % dash_array.len()];
@@ -27,15 +26,14 @@ pub fn dash_path(path: &Path, dash_array: &[f32], dash_offset: f32) -> Path {
 
     for op in &path.ops {
         match *op {
-            PathOp::MoveTo(x, y) => {
-                cur_x = x;
-                cur_y = y;
-                start_point = Point::new(x, y);
-                dashed.move_to(x, y);
+            PathOp::MoveTo(pt) => {
+                cur_pt = pt;
+                start_point = pt;
+                dashed.move_to(pt.x, pt.y);
             }
-            PathOp::LineTo(x, y) => {
-                let mut start = Point::new(cur_x, cur_y);
-                let line = LineSegment { from: start, to: Point::new(x, y)};
+            PathOp::LineTo(pt) => {
+                let mut start = cur_pt;
+                let line = LineSegment { from: start, to: pt};
                 let mut len = line.length();
                 let lv = line.to_vector().normalize();
                 while len > remaining_dash_length {
@@ -52,18 +50,17 @@ pub fn dash_path(path: &Path, dash_array: &[f32], dash_offset: f32) -> Path {
                     start = seg;
                 }
                 if dash_on {
-                    dashed.line_to(x, y);
+                    dashed.line_to(pt.x, pt.y);
                 } else {
-                    dashed.move_to(x, y);
+                    dashed.move_to(pt.x, pt.y);
                 }
                 remaining_dash_length -= len;
 
-                cur_x = x;
-                cur_y = y;
+                cur_pt = pt;
 
             }
             PathOp::Close => {
-                let line = LineSegment { from: Point::new(cur_x, cur_y), to: start_point};
+                let line = LineSegment { from: cur_pt, to: start_point};
                 let mut len = line.length();
                 let lv = line.to_vector().normalize();
                 while len > remaining_dash_length {
