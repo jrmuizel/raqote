@@ -167,6 +167,7 @@ impl DrawTarget {
                 PathOp::Close => self.close(),
             }
         }
+        // XXX: we'd like for this function to return the bounds of the path
     }
 
     pub fn push_clip_rect(&mut self, rect: Rect) {

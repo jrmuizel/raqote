@@ -253,10 +253,7 @@ impl Rasterizer {
         } else {
             //println!("add_edge {}, {} - {}, {}", start.x, start.y, end.x, end.y);
         }
-        //static int count;
-        //printf("edge count: %d\n",++count);
         // order the points from top to bottom
-
 
         // how do we deal with edges to the right and left of the canvas?
         let e = self.edge_arena.alloc(ActiveEdge::new());
@@ -276,16 +273,7 @@ impl Rasterizer {
         };
         e.x2 = edge.x2;
         e.y2 = edge.y2;
-        /*
-        if (curve)
-        printf("%d %d, %d %d, %d %d\n",
-        e.edge.x1,
-        e.edge.y1,
-        e.edge.control_x,
-        e.edge.control_y,
-        e.edge.x2,
-        e.edge.y2);
-        */
+
         e.next = None;
         //e.curx = e.edge.x1;
         let mut cury = edge.y1;
