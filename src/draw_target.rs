@@ -286,7 +286,7 @@ impl DrawTarget {
         let ti = if let Some(ti) = ti {
             ti
         } else {
-            // the transform is not invertable so we have nothing to draw
+            // the transform is not invertible so we have nothing to draw
             return
         };
 
