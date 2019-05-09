@@ -41,11 +41,112 @@ fn flip(v: Vector) -> Vector {
     Vector::new(-v.x, -v.y)
 }
 
+/* Compute a spline approximation of the arc
+   centered at xc, yc from the angle a to the angle b
+
+   The angle between a and b should not be more than a
+   quarter circle (pi/2)
+
+   The approximation is similar to an approximation given in:
+   "Approximation of a cubic bezier curve by circular arcs and vice versa"
+   by Alekas Riškus. However that approximation becomes unstable when the
+   angle of the arc approaches 0.
+
+   This approximation is inspired by a discusion with Boris Zbarsky
+   and essentially just computes:
+
+     h = 4.0/3.0 * tan ((angle_B - angle_A) / 4.0);
+
+   without converting to polar coordinates.
+
+   A different way to do this is covered in "Approximation of a cubic bezier
+   curve by circular arcs and vice versa" by Alekas Riškus. However, the method
+   presented there doesn't handle arcs with angles close to 0 because it
+   divides by the perp dot product of the two angle vectors.
+   */
+fn arc_segment(path: &mut PathBuilder,
+               xc: f32,
+               yc: f32,
+               radius: f32,
+               a: Vector,
+               b: Vector)
+{
+    let r_sin_A = radius * a.y;
+    let r_cos_A = radius * a.x;
+    let r_sin_B = radius * b.y;
+    let r_cos_B = radius * b.x;
+
+    /* bisect the angle between 'a' and 'b' with 'mid' */
+    let mut mid = a + b;
+    mid /= mid.length();
+
+    /* bisect the angle between 'a' and 'mid' with 'mid2' this is parallel to a
+     * line with angle (B - A)/4 */
+    let mid2 = a + mid;
+
+    let h = (4. / 3.) * dot(perp(a), mid2) / dot(a, mid2);
+
+    path.cubic_to(
+        xc + r_cos_A - h * r_sin_A,
+        yc + r_sin_A + h * r_cos_A,
+        xc + r_cos_B + h * r_sin_B,
+        yc + r_sin_B - h * r_cos_B,
+        xc + r_cos_B,
+        yc + r_sin_B);
+}
+
+/* The angle between the vectors must be <= pi */
+fn bisect(a: Vector, b: Vector) -> Vector
+{
+    let mut mid;
+    if dot(a, b) >= 0. {
+        /* if the angle between a and b is accute, then we can
+         * just add the vectors and normalize */
+        mid = a + b;
+    } else {
+        /* otherwise, we can flip a, add it
+         * and then use the perpendicular of the result */
+        mid = flip(a) + b;
+        mid = perp(mid);
+    }
+
+    /* normalize */
+    /* because we assume that 'a' and 'b' are normalized, we can use
+     * sqrt instead of hypot because the range of mid is limited */
+    let mid_len = mid.x * mid.x + mid.y * mid.y;
+    let len = mid_len.sqrt();
+    return mid / len;
+}
+
+fn arc(path: &mut PathBuilder, xc: f32, yc: f32, radius: f32, a: Vector, b: Vector)
+{
+    /* find a vector that bisects the angle between a and b */
+    let mid_v = bisect(a, b);
+
+    /* construct the arc using two curve segments */
+    arc_segment(path, xc, yc, radius, a, mid_v);
+    arc_segment(path, xc, yc, radius, mid_v, b);
+}
+
+fn join_round(path: &mut PathBuilder, center: Point, a: Vector, b: Vector, radius: f32)
+{
+    /*
+    int ccw = dot (perp (b), a) >= 0; // XXX: is this always true?
+    yes, otherwise we have an interior angle.
+    assert (ccw);
+    */
+    arc(path, center.x, center.y, radius, a, b);
+}
+
 fn cap_line(dest: &mut PathBuilder, style: &StrokeStyle, pt: Point, normal: Vector) {
     let offset = style.width / 2.;
     match style.cap {
         LineCap::Butt => { /* nothing to do */ },
-        LineCap::Round => { unimplemented!() },
+        LineCap::Round => {
+            dest.move_to(pt.x + normal.x * offset, pt.y + normal.y * offset);
+            arc (dest, pt.x, pt.y, offset, normal, flip(normal));
+            dest.close();
+        },
         LineCap::Square => {
             // parallel vector
             let v = Vector::new(normal.y, -normal.x);
@@ -126,9 +227,16 @@ fn join_line(dest: &mut PathBuilder, style: &StrokeStyle, pt: Point, mut s1_norm
         std::mem::swap(&mut s1_normal, &mut s2_normal);
     }
 
+    // XXX: joining uses `pt` which can cause seams because it lies halfway on a line and the
+    // rasterizer may not find exactly the same spot
     let offset = style.width / 2.;
     match style.join {
-        LineJoin::Round => { unimplemented!() },
+        LineJoin::Round => {
+            dest.move_to(pt.x + s1_normal.x * offset, pt.y + s1_normal.y * offset);
+            arc (dest, pt.x, pt.y, offset, s1_normal, s2_normal);
+            dest.line_to(pt.x, pt.y);
+            dest.close();
+        },
         LineJoin::Mitre => {
             let in_dot_out = -s1_normal.x * s2_normal.x + -s1_normal.y * s2_normal.y;
             if 2. <= style.mitre_limit*style.mitre_limit * (1. - in_dot_out) {
@@ -210,6 +318,12 @@ pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
                 panic!("Only flat paths handled")
             }
         }
+    }
+    if let Some((point, normal)) = start_point {
+        // cap end
+        cap_line(&mut stroked_path, style, Point::new(cur_x, cur_y), last_normal);
+        // cap beginning
+        cap_line(&mut stroked_path, style, point, flip(normal));
     }
     stroked_path.finish()
 }
