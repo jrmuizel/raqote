@@ -2,9 +2,11 @@ language: rust
 matrix:
   include:
     - name: "miri"
+      rust: nightly
       script:
         - rustup component add miri
         - cargo miri test --verbose --all
     - name: "debug"
+      rust: stable
       script:
         - cargo test --verbose --all
