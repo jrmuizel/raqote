@@ -8,7 +8,7 @@ matrix:
         - rustup default nightly-2019-05-04  
         - rustup component add miri
         - cargo miri setup
-        - cargo miri test --verbose --all
+        - cargo miri test
     - name: "debug"
       rust: stable
       script:
