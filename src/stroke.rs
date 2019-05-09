@@ -233,7 +233,7 @@ fn join_line(dest: &mut PathBuilder, style: &StrokeStyle, pt: Point, mut s1_norm
     match style.join {
         LineJoin::Round => {
             dest.move_to(pt.x + s1_normal.x * offset, pt.y + s1_normal.y * offset);
-            arc (dest, pt.x, pt.y, offset, s1_normal, s2_normal);
+            join_round(dest, pt, s1_normal, s2_normal, offset);
             dest.line_to(pt.x, pt.y);
             dest.close();
         },

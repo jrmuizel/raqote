@@ -221,8 +221,8 @@ impl DrawTarget {
         unimplemented!()
     }
 
-    pub fn mask(&mut self, src: &Source, x:i32, y: i32, mask: &Mask) {
-        self.composite(src, &mask.data, rect(0, 0, mask.width, mask.height));
+    pub fn mask(&mut self, src: &Source, x: i32, y: i32, mask: &Mask) {
+        self.composite(src, &mask.data, rect(x, y, mask.width, mask.height));
     }
 
     pub fn stroke(&mut self, path: &Path, style: &StrokeStyle, src: &Source) {
@@ -280,7 +280,7 @@ impl DrawTarget {
     }
 
     fn composite(&mut self, src: &Source, mask: &[u8], mut rect: Rect) {
-        let mut shader: &Shader;
+        let shader: &Shader;
 
         let ti = self.transform.inverse();
         let ti = if let Some(ti) = ti {
@@ -294,7 +294,7 @@ impl DrawTarget {
         let is;
         let gs;
 
-        let image = match src {
+        match src {
             Source::Solid(c) => {
                 let color = ((c.a as u32) << 24) |
                     ((c.r as u32) << 16) |
