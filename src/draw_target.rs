@@ -45,6 +45,12 @@ pub struct SolidSource {
     pub a: u8,
 }
 
+/// LinearGradients have an implicit start point at 0,0 and an end point at 256,0. The transform
+/// parameter can be used to adjust them to the desired location.
+/// RadialGradients have an implict center at 0,0 and a radius of 128.
+///
+/// These locations are an artifact of the blitter implementation and will probably change in the
+/// future to become more ergonomic.
 pub enum Source {
     Solid(SolidSource),
     Image(Image, Transform2D<f32>),
