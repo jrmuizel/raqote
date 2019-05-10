@@ -78,6 +78,7 @@ Example:
  
      dt.write_png("example.png");
 ```
+Produces:
 ![example.png](https://github.com/jrmuizel/raqote/raw/master/example.png)
 
 
