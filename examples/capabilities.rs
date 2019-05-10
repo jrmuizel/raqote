@@ -1,8 +1,8 @@
 extern crate raqote;
 
-use std::fs::*;
 use raqote::*;
-use sw_composite::{Image, Gradient, GradientStop};
+use std::fs::*;
+use sw_composite::{Gradient, GradientStop, Image};
 
 use euclid::Point2D;
 
@@ -11,12 +11,11 @@ use font_kit::properties::Properties;
 use font_kit::source::SystemSource;
 
 fn main() {
-
     let mut dt = DrawTarget::new(400, 400);
 
     let mut pb = PathBuilder::new();
     pb.move_to(340., 190.);
-    pb.arc(160., 190., 180., 0., 2.*3.14159);
+    pb.arc(160., 190., 180., 0., 2. * 3.14159);
     pb.close();
     let path = pb.finish();
     dt.push_clip(&path);
@@ -28,9 +27,16 @@ fn main() {
     pb.line_to(0., 300.);
     pb.close();
     let path = pb.finish();
-    dt.fill(&path,
-            &Source::Solid(SolidSource{r: 0x80, g: 0x80, b: 0, a: 0x80}),
-            Winding::NonZero);
+    dt.fill(
+        &path,
+        &Source::Solid(SolidSource {
+            r: 0x80,
+            g: 0x80,
+            b: 0,
+            a: 0x80,
+        }),
+        Winding::NonZero,
+    );
 
     let mut pb = PathBuilder::new();
     pb.move_to(50., 50.);
@@ -62,21 +68,38 @@ fn main() {
 
     println!("{:?}", info.color_type);
 
-    let mut image : Vec<u32> = Vec::new();
+    let mut image: Vec<u32> = Vec::new();
     for i in buf.chunks(3) {
-        image.push(0xff << 24 | ((i[0]as u32) << 16) | ((i[1] as u32) << 8) | (i[2] as u32))
+        image.push(0xff << 24 | ((i[0] as u32) << 16) | ((i[1] as u32) << 8) | (i[2] as u32))
     }
-    let _bitmap = Image { width: info.width as i32, height: info.height as i32, data: image};
+    let _bitmap = Image {
+        width: info.width as i32,
+        height: info.height as i32,
+        data: image,
+    };
 
     //dt.fill(Source::Solid(SolidSource{r: 0xff, g: 0xff, b: 0, a: 0xff}));
     //dt.fill(Source::Bitmap(bitmap, euclid::Transform2D::create_scale(2., 2.)));
 
-    let gradient = Source::RadialGradient(Gradient {
-        stops: vec![GradientStop { position: 0.2, color: 0xff00ff00 },
-                    GradientStop { position: 0.8, color: 0xffffffff },
-                    GradientStop { position: 1., color: 0xffff00ff }]
-    },
-                                          euclid::Transform2D::create_translation(-150., -150.));
+    let gradient = Source::RadialGradient(
+        Gradient {
+            stops: vec![
+                GradientStop {
+                    position: 0.2,
+                    color: 0xff00ff00,
+                },
+                GradientStop {
+                    position: 0.8,
+                    color: 0xffffffff,
+                },
+                GradientStop {
+                    position: 1.,
+                    color: 0xffff00ff,
+                },
+            ],
+        },
+        euclid::Transform2D::create_translation(-150., -150.),
+    );
     dt.fill(&path, &gradient, Winding::NonZero);
 
     let mut pb = PathBuilder::new();
@@ -85,23 +108,37 @@ fn main() {
     pb.line_to(200., 300.);
 
     let path = pb.finish();
-    dt.stroke(&path, &StrokeStyle {
-        cap: LineCap::Butt,
-        join: LineJoin::Bevel,
-        width: 10.,
-        mitre_limit: 2.,
-        dash_array: vec![10., 5.],
-        dash_offset: 3. }
-              , &gradient);
+    dt.stroke(
+        &path,
+        &StrokeStyle {
+            cap: LineCap::Butt,
+            join: LineJoin::Bevel,
+            width: 10.,
+            mitre_limit: 2.,
+            dash_array: vec![10., 5.],
+            dash_offset: 3.,
+        },
+        &gradient,
+    );
 
-    let font = SystemSource::new().select_best_match(&[FamilyName::SansSerif],
-                                                     &Properties::new())
+    let font = SystemSource::new()
+        .select_best_match(&[FamilyName::SansSerif], &Properties::new())
         .unwrap()
         .load()
         .unwrap();
 
-    dt.draw_text(&font, 24., "Hello", Point2D::new(0., 100.), &Source::Solid(SolidSource { r: 0, g: 0, b: 0xff, a: 0xff}));
+    dt.draw_text(
+        &font,
+        24.,
+        "Hello",
+        Point2D::new(0., 100.),
+        &Source::Solid(SolidSource {
+            r: 0,
+            g: 0,
+            b: 0xff,
+            a: 0xff,
+        }),
+    );
 
     dt.write_png("out.png");
-
 }

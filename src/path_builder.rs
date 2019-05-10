@@ -1,8 +1,8 @@
-use lyon_geom::QuadraticBezierSegment;
-use lyon_geom::CubicBezierSegment;
-use lyon_geom::Arc;
-use euclid::{Point2D, Vector2D, };
+use euclid::{Point2D, Vector2D};
 use lyon_geom::math::Angle;
+use lyon_geom::Arc;
+use lyon_geom::CubicBezierSegment;
+use lyon_geom::QuadraticBezierSegment;
 
 type Point = Point2D<f32>;
 
@@ -12,12 +12,12 @@ pub enum PathOp {
     LineTo(Point),
     QuadTo(Point, Point),
     CubicTo(Point, Point, Point),
-    Close
+    Close,
 }
 
 #[derive(Debug)]
 pub struct Path {
-    pub ops: Vec<PathOp>
+    pub ops: Vec<PathOp>,
 }
 
 impl Path {
@@ -26,8 +26,7 @@ impl Path {
         let mut flattened = Path { ops: Vec::new() };
         for op in &self.ops {
             match *op {
-                PathOp::MoveTo(pt) |
-                PathOp::LineTo(pt) => {
+                PathOp::MoveTo(pt) | PathOp::LineTo(pt) => {
                     cur_pt = pt;
                     flattened.ops.push(op.clone())
                 }
@@ -36,7 +35,7 @@ impl Path {
                     let c = QuadraticBezierSegment {
                         from: cur_pt,
                         ctrl: cpt,
-                        to: pt
+                        to: pt,
                     };
                     for l in c.flattened(tolerance) {
                         flattened.ops.push(PathOp::LineTo(l));
@@ -48,7 +47,7 @@ impl Path {
                         from: cur_pt,
                         ctrl1: cpt1,
                         ctrl2: cpt2,
-                        to: pt
+                        to: pt,
                     };
                     for l in c.flattened(tolerance) {
                         flattened.ops.push(PathOp::LineTo(l));
@@ -62,16 +61,18 @@ impl Path {
 }
 
 pub struct PathBuilder {
-    path: Path
+    path: Path,
 }
 
 impl PathBuilder {
     pub fn new() -> PathBuilder {
-        PathBuilder {path: Path {ops:Vec::new()}}
+        PathBuilder {
+            path: Path { ops: Vec::new() },
+        }
     }
 
     pub fn move_to(&mut self, x: f32, y: f32) {
-        self.path.ops.push(PathOp::MoveTo(Point::new(x,y)))
+        self.path.ops.push(PathOp::MoveTo(Point::new(x, y)))
     }
 
     pub fn line_to(&mut self, x: f32, y: f32) {
@@ -79,7 +80,9 @@ impl PathBuilder {
     }
 
     pub fn quad_to(&mut self, cx: f32, cy: f32, x: f32, y: f32) {
-        self.path.ops.push(PathOp::QuadTo(Point::new(cx, cy), Point::new(x, y)))
+        self.path
+            .ops
+            .push(PathOp::QuadTo(Point::new(cx, cy), Point::new(x, y)))
     }
 
     pub fn rect(&mut self, x: f32, y: f32, width: f32, height: f32) {
@@ -91,7 +94,11 @@ impl PathBuilder {
     }
 
     pub fn cubic_to(&mut self, cx1: f32, cy1: f32, cx2: f32, cy2: f32, x: f32, y: f32) {
-        self.path.ops.push(PathOp::CubicTo(Point::new(cx1, cy1), Point::new(cx2, cy2), Point::new(x, y)))
+        self.path.ops.push(PathOp::CubicTo(
+            Point::new(cx1, cy1),
+            Point::new(cx2, cy2),
+            Point::new(x, y),
+        ))
     }
 
     pub fn close(&mut self) {
@@ -108,12 +115,11 @@ impl PathBuilder {
             x_rotation: Angle::zero(),
         };
         a.for_each_quadratic_bezier(&mut |q| {
-                self.quad_to(q.ctrl.x, q.ctrl.y, q.to.x, q.to.y);
-            });
+            self.quad_to(q.ctrl.x, q.ctrl.y, q.to.x, q.to.y);
+        });
     }
 
     pub fn finish(self) -> Path {
         self.path
     }
-
 }

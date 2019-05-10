@@ -6,7 +6,6 @@ type Point = Point2D<f32>;
 
 use lyon_geom::LineSegment;
 
-
 pub fn dash_path(path: &Path, dash_array: &[f32], dash_offset: f32) -> Path {
     let mut dashed = PathBuilder::new();
 
@@ -33,7 +32,10 @@ pub fn dash_path(path: &Path, dash_array: &[f32], dash_offset: f32) -> Path {
             }
             PathOp::LineTo(pt) => {
                 let mut start = cur_pt;
-                let line = LineSegment { from: start, to: pt};
+                let line = LineSegment {
+                    from: start,
+                    to: pt,
+                };
                 let mut len = line.length();
                 let lv = line.to_vector().normalize();
                 while len > remaining_dash_length {
@@ -57,10 +59,12 @@ pub fn dash_path(path: &Path, dash_array: &[f32], dash_offset: f32) -> Path {
                 remaining_dash_length -= len;
 
                 cur_pt = pt;
-
             }
             PathOp::Close => {
-                let line = LineSegment { from: cur_pt, to: start_point};
+                let line = LineSegment {
+                    from: cur_pt,
+                    to: start_point,
+                };
                 let mut len = line.length();
                 let lv = line.to_vector().normalize();
                 while len > remaining_dash_length {
@@ -79,13 +83,9 @@ pub fn dash_path(path: &Path, dash_array: &[f32], dash_offset: f32) -> Path {
                     dashed.close();
                 }
                 remaining_dash_length -= len;
-            },
-            PathOp::QuadTo(..) => {
-                panic!("Only flat paths handled")
             }
-            PathOp::CubicTo(..) => {
-                panic!("Only flat paths handled")
-            }
+            PathOp::QuadTo(..) => panic!("Only flat paths handled"),
+            PathOp::CubicTo(..) => panic!("Only flat paths handled"),
         }
     }
     dashed.finish()

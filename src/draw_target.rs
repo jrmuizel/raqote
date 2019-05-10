@@ -3,20 +3,20 @@ use crate::rasterizer::Rasterizer;
 use crate::blitter::*;
 use sw_composite::*;
 
+use crate::dash::*;
 use crate::geom::*;
 use crate::path_builder::*;
-use crate::dash::*;
 
-use lyon_geom::cubic_to_quadratic::cubic_to_quadratics;
-use lyon_geom::CubicBezierSegment;
+pub use crate::rasterizer::Winding;
+use euclid::Box2D;
 use euclid::Point2D;
 use euclid::Transform2D;
-use euclid::Box2D;
-pub use crate::rasterizer::Winding;
+use lyon_geom::cubic_to_quadratic::cubic_to_quadratics;
+use lyon_geom::CubicBezierSegment;
 
+use font_kit::canvas::{Canvas, Format, RasterizationOptions};
 use font_kit::font::Font;
 use font_kit::hinting::HintingOptions;
-use font_kit::canvas::{Canvas, Format, RasterizationOptions};
 
 use std::fs::*;
 use std::io::BufWriter;
@@ -49,12 +49,12 @@ pub enum Source {
     Solid(SolidSource),
     Image(Image, Transform2D<f32>),
     RadialGradient(Gradient, Transform2D<f32>),
-    LinearGradient(Gradient, Transform2D<f32>)
+    LinearGradient(Gradient, Transform2D<f32>),
 }
 
 struct Clip {
     rect: Box2D<i32>,
-    mask: Option<Vec<u8>>
+    mask: Option<Vec<u8>>,
 }
 
 struct Layer {
@@ -71,7 +71,7 @@ pub struct DrawTarget {
     buf: Vec<u32>,
     clip_stack: Vec<Clip>,
     layer_stack: Vec<Layer>,
-    transform: Transform2D<f32>
+    transform: Transform2D<f32>,
 }
 
 impl DrawTarget {
@@ -82,7 +82,7 @@ impl DrawTarget {
             current_point: Point::new(0., 0.),
             first_point: Point::new(0., 0.),
             rasterizer: Rasterizer::new(width, height),
-            buf: vec![0; (width*height) as usize],
+            buf: vec![0; (width * height) as usize],
             clip_stack: Vec::new(),
             layer_stack: Vec::new(),
             transform: Transform2D::identity(),
@@ -103,7 +103,8 @@ impl DrawTarget {
     }
 
     fn line_to(&mut self, pt: Point) {
-        self.rasterizer.add_edge(self.current_point, pt, false, Point::new(0., 0.));
+        self.rasterizer
+            .add_edge(self.current_point, pt, false, Point::new(0., 0.));
         self.current_point = pt;
     }
 
@@ -125,7 +126,7 @@ impl DrawTarget {
                 flatten_double_quad_extrema(&mut dst);
                 self.rasterizer.add_edge(dst[0], dst[2], true, dst[1]);
                 self.rasterizer.add_edge(dst[2], dst[4], true, dst[3]);
-                return
+                return;
             }
             // if we get here, we need to force dst to be monotonic, even though
             // we couldn't compute a unit_divide value (probably underflow).
@@ -133,7 +134,6 @@ impl DrawTarget {
             curve[1].y = b;
         }
         self.rasterizer.add_edge(curve[0], curve[2], true, curve[1]);
-
     }
 
     fn cubic_to(&mut self, cpt1: Point, cpt2: Point, pt: Point) {
@@ -141,9 +141,9 @@ impl DrawTarget {
             from: self.current_point,
             ctrl1: cpt1,
             ctrl2: cpt2,
-            to: pt
+            to: pt,
         };
-        cubic_to_quadratics(&c, 0.01, &mut|q| {
+        cubic_to_quadratics(&c, 0.01, &mut |q| {
             let curve = [q.from, q.ctrl, q.to];
             self.add_quad(curve);
         });
@@ -151,7 +151,12 @@ impl DrawTarget {
     }
 
     fn close(&mut self) {
-        self.rasterizer.add_edge(self.current_point, self.first_point, false, Point::new(0., 0.));
+        self.rasterizer.add_edge(
+            self.current_point,
+            self.first_point,
+            false,
+            Point::new(0., 0.),
+        );
     }
 
     fn apply_path(&mut self, path: &Path) {
@@ -159,12 +164,15 @@ impl DrawTarget {
             match *op {
                 PathOp::MoveTo(pt) => self.move_to(self.transform.transform_point(&pt)),
                 PathOp::LineTo(pt) => self.line_to(self.transform.transform_point(&pt)),
-                PathOp::QuadTo(cpt, pt) => self.quad_to(self.transform.transform_point(&cpt),
-                                                        self.transform.transform_point(&pt)),
+                PathOp::QuadTo(cpt, pt) => self.quad_to(
+                    self.transform.transform_point(&cpt),
+                    self.transform.transform_point(&pt),
+                ),
                 PathOp::CubicTo(cpt1, cpt2, pt) => self.cubic_to(
                     self.transform.transform_point(&cpt1),
                     self.transform.transform_point(&cpt2),
-                    self.transform.transform_point(&pt)),
+                    self.transform.transform_point(&pt),
+                ),
                 PathOp::Close => self.close(),
             }
         }
@@ -174,8 +182,17 @@ impl DrawTarget {
     pub fn push_clip_rect(&mut self, rect: Rect) {
         // intersect with current clip
         let clip = match self.clip_stack.last() {
-            Some(Clip { rect: current_clip, mask: _}) => Clip { rect: current_clip.intersection(&rect), mask: None},
-            _ => Clip { rect: rect, mask: None}
+            Some(Clip {
+                rect: current_clip,
+                mask: _,
+            }) => Clip {
+                rect: current_clip.intersection(&rect),
+                mask: None,
+            },
+            _ => Clip {
+                rect: rect,
+                mask: None,
+            },
         };
         self.clip_stack.push(clip);
     }
@@ -204,15 +221,16 @@ impl DrawTarget {
         //XXX: handle interleaving of clip rect/masks better
         self.clip_stack.push(Clip {
             rect: current_bounds,
-            mask: Some(blitter.buf) });
+            mask: Some(blitter.buf),
+        });
         self.rasterizer.reset();
     }
 
-
     fn clip_bounds(&self) -> Rect {
-        self.clip_stack.last()
-            .map(|c| c.rect)
-            .unwrap_or(Box2D::new(Point2D::new(0, 0), Point2D::new(self.width, self.height)))
+        self.clip_stack.last().map(|c| c.rect).unwrap_or(Box2D::new(
+            Point2D::new(0, 0),
+            Point2D::new(self.width, self.height),
+        ))
     }
 
     pub fn push_layer(&mut self, opacity: f32) {
@@ -244,7 +262,14 @@ impl DrawTarget {
         self.rasterizer.reset();
     }
 
-    pub fn draw_text(&mut self, font: &Font, point_size: f32, text: &str, mut start: Point2D<f32>, src: &Source) {
+    pub fn draw_text(
+        &mut self,
+        font: &Font,
+        point_size: f32,
+        text: &str,
+        mut start: Point2D<f32>,
+        src: &Source,
+    ) {
         let mut ids = Vec::new();
         let mut positions = Vec::new();
         for c in text.chars() {
@@ -256,29 +281,57 @@ impl DrawTarget {
         self.draw_glyphs(font, point_size, &ids, &positions, src);
     }
 
-    pub fn draw_glyphs(&mut self, font: &Font, point_size: f32, ids: &[u32], positions: &[Point2D<f32>], src: &Source) {
+    pub fn draw_glyphs(
+        &mut self,
+        font: &Font,
+        point_size: f32,
+        ids: &[u32],
+        positions: &[Point2D<f32>],
+        src: &Source,
+    ) {
         let mut combined_bounds = euclid::Rect::zero();
         for (id, position) in ids.iter().zip(positions.iter()) {
-            let bounds = font.raster_bounds(*id, point_size, position, HintingOptions::None,
-                                   RasterizationOptions::GrayscaleAa);
+            let bounds = font.raster_bounds(
+                *id,
+                point_size,
+                position,
+                HintingOptions::None,
+                RasterizationOptions::GrayscaleAa,
+            );
             combined_bounds = match bounds {
-                Ok(bounds) => { dbg!(position); dbg!(bounds); combined_bounds.union(&bounds) },
-                _ => panic!()
+                Ok(bounds) => {
+                    dbg!(position);
+                    dbg!(bounds);
+                    combined_bounds.union(&bounds)
+                }
+                _ => panic!(),
             }
         }
 
         dbg!(combined_bounds);
 
         /*let mut canvas = Canvas::new(&euclid::Size2D::new(combined_bounds.size.width as u32,
-                                     combined_bounds.size.height as u32), Format::A8);*/
-        let mut canvas = Canvas::new(&euclid::Size2D::new(self.width as u32,
-                                                          self.height as u32), Format::A8);
+        combined_bounds.size.height as u32), Format::A8);*/
+        let mut canvas = Canvas::new(
+            &euclid::Size2D::new(self.width as u32, self.height as u32),
+            Format::A8,
+        );
         for (id, position) in ids.iter().zip(positions.iter()) {
-            font.rasterize_glyph(&mut canvas, *id, point_size, position, HintingOptions::None,
-                                            RasterizationOptions::GrayscaleAa);
+            font.rasterize_glyph(
+                &mut canvas,
+                *id,
+                point_size,
+                position,
+                HintingOptions::None,
+                RasterizationOptions::GrayscaleAa,
+            );
         }
 
-        self.composite(src, &canvas.pixels, rect(0, 0, canvas.size.width as i32, canvas.size.height as i32));
+        self.composite(
+            src,
+            &canvas.pixels,
+            rect(0, 0, canvas.size.width as i32, canvas.size.height as i32),
+        );
     }
 
     fn composite(&mut self, src: &Source, mask: &[u8], mut rect: Rect) {
@@ -289,7 +342,7 @@ impl DrawTarget {
             ti
         } else {
             // the transform is not invertible so we have nothing to draw
-            return
+            return;
         };
 
         let cs;
@@ -298,10 +351,10 @@ impl DrawTarget {
 
         match src {
             Source::Solid(c) => {
-                let color = ((c.a as u32) << 24) |
-                    ((c.r as u32) << 16) |
-                    ((c.g as u32) << 8) |
-                    ((c.b as u32) << 0);
+                let color = ((c.a as u32) << 24)
+                    | ((c.r as u32) << 16)
+                    | ((c.g as u32) << 8)
+                    | ((c.b as u32) << 0);
                 cs = SolidShader { color };
                 shader = &cs;
             }
@@ -329,7 +382,10 @@ impl DrawTarget {
         }
 
         match self.clip_stack.last() {
-            Some(Clip { rect: _, mask: Some(clip)}) => {
+            Some(Clip {
+                rect: _,
+                mask: Some(clip),
+            }) => {
                 scb = ShaderClipBlitter {
                     shader: shader,
                     tmp: vec![0; self.width as usize],
@@ -338,7 +394,8 @@ impl DrawTarget {
                     mask,
                     mask_stride: self.width,
                     clip,
-                    clip_stride: self.width};
+                    clip_stride: self.width,
+                };
 
                 blitter = &mut scb;
             }
@@ -349,7 +406,7 @@ impl DrawTarget {
                     dest: &mut self.buf,
                     dest_stride: self.width,
                     mask,
-                    mask_stride: self.width
+                    mask_stride: self.width,
                 };
                 blitter = &mut sb;
             }
@@ -372,7 +429,7 @@ impl DrawTarget {
         let mut encoder = png::Encoder::new(w, self.width as u32, self.height as u32);
         encoder.set(png::ColorType::RGBA).set(png::BitDepth::Eight);
         let mut writer = encoder.write_header().unwrap();
-        let mut output = Vec::with_capacity(self.buf.len()*4);
+        let mut output = Vec::with_capacity(self.buf.len() * 4);
 
         for pixel in &self.buf {
             let a = (pixel >> 24) & 0xffu32;

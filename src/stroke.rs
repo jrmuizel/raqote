@@ -1,4 +1,4 @@
-use crate::path_builder::{Path, PathOp, PathBuilder};
+use crate::path_builder::{Path, PathBuilder, PathOp};
 use euclid::{Point2D, Vector2D};
 
 type Point = Point2D<f32>;
@@ -16,7 +16,7 @@ pub struct StrokeStyle {
 pub enum LineCap {
     Round,
     Square,
-    Butt
+    Butt,
 }
 
 pub enum LineJoin {
@@ -34,7 +34,7 @@ fn compute_normal(p0: Point, p1: Point) -> Vector {
     let ulen = ux.hypot(uy);
     assert!(ulen != 0.);
     // the normal is perpendicular to the *unit* vector
-    Vector::new(-uy/ulen, ux/ulen)
+    Vector::new(-uy / ulen, ux / ulen)
 }
 
 fn flip(v: Vector) -> Vector {
@@ -42,35 +42,29 @@ fn flip(v: Vector) -> Vector {
 }
 
 /* Compute a spline approximation of the arc
-   centered at xc, yc from the angle a to the angle b
+centered at xc, yc from the angle a to the angle b
 
-   The angle between a and b should not be more than a
-   quarter circle (pi/2)
+The angle between a and b should not be more than a
+quarter circle (pi/2)
 
-   The approximation is similar to an approximation given in:
-   "Approximation of a cubic bezier curve by circular arcs and vice versa"
-   by Alekas Riškus. However that approximation becomes unstable when the
-   angle of the arc approaches 0.
+The approximation is similar to an approximation given in:
+"Approximation of a cubic bezier curve by circular arcs and vice versa"
+by Alekas Riškus. However that approximation becomes unstable when the
+angle of the arc approaches 0.
 
-   This approximation is inspired by a discusion with Boris Zbarsky
-   and essentially just computes:
+This approximation is inspired by a discusion with Boris Zbarsky
+and essentially just computes:
 
-     h = 4.0/3.0 * tan ((angle_B - angle_A) / 4.0);
+  h = 4.0/3.0 * tan ((angle_B - angle_A) / 4.0);
 
-   without converting to polar coordinates.
+without converting to polar coordinates.
 
-   A different way to do this is covered in "Approximation of a cubic bezier
-   curve by circular arcs and vice versa" by Alekas Riškus. However, the method
-   presented there doesn't handle arcs with angles close to 0 because it
-   divides by the perp dot product of the two angle vectors.
-   */
-fn arc_segment(path: &mut PathBuilder,
-               xc: f32,
-               yc: f32,
-               radius: f32,
-               a: Vector,
-               b: Vector)
-{
+A different way to do this is covered in "Approximation of a cubic bezier
+curve by circular arcs and vice versa" by Alekas Riškus. However, the method
+presented there doesn't handle arcs with angles close to 0 because it
+divides by the perp dot product of the two angle vectors.
+*/
+fn arc_segment(path: &mut PathBuilder, xc: f32, yc: f32, radius: f32, a: Vector, b: Vector) {
     let r_sin_a = radius * a.y;
     let r_cos_a = radius * a.x;
     let r_sin_b = radius * b.y;
@@ -92,12 +86,12 @@ fn arc_segment(path: &mut PathBuilder,
         xc + r_cos_b + h * r_sin_b,
         yc + r_sin_b - h * r_cos_b,
         xc + r_cos_b,
-        yc + r_sin_b);
+        yc + r_sin_b,
+    );
 }
 
 /* The angle between the vectors must be <= pi */
-fn bisect(a: Vector, b: Vector) -> Vector
-{
+fn bisect(a: Vector, b: Vector) -> Vector {
     let mut mid;
     if dot(a, b) >= 0. {
         /* if the angle between a and b is accute, then we can
@@ -118,8 +112,7 @@ fn bisect(a: Vector, b: Vector) -> Vector
     return mid / len;
 }
 
-fn arc(path: &mut PathBuilder, xc: f32, yc: f32, radius: f32, a: Vector, b: Vector)
-{
+fn arc(path: &mut PathBuilder, xc: f32, yc: f32, radius: f32, a: Vector, b: Vector) {
     /* find a vector that bisects the angle between a and b */
     let mid_v = bisect(a, b);
 
@@ -128,8 +121,7 @@ fn arc(path: &mut PathBuilder, xc: f32, yc: f32, radius: f32, a: Vector, b: Vect
     arc_segment(path, xc, yc, radius, mid_v, b);
 }
 
-fn join_round(path: &mut PathBuilder, center: Point, a: Vector, b: Vector, radius: f32)
-{
+fn join_round(path: &mut PathBuilder, center: Point, a: Vector, b: Vector, radius: f32) {
     /*
     int ccw = dot (perp (b), a) >= 0; // XXX: is this always true?
     yes, otherwise we have an interior angle.
@@ -141,12 +133,12 @@ fn join_round(path: &mut PathBuilder, center: Point, a: Vector, b: Vector, radiu
 fn cap_line(dest: &mut PathBuilder, style: &StrokeStyle, pt: Point, normal: Vector) {
     let offset = style.width / 2.;
     match style.cap {
-        LineCap::Butt => { /* nothing to do */ },
+        LineCap::Butt => { /* nothing to do */ }
         LineCap::Round => {
             dest.move_to(pt.x + normal.x * offset, pt.y + normal.y * offset);
-            arc (dest, pt.x, pt.y, offset, normal, flip(normal));
+            arc(dest, pt.x, pt.y, offset, normal, flip(normal));
             dest.close();
-        },
+        }
         LineCap::Square => {
             // parallel vector
             let v = Vector::new(normal.y, -normal.x);
@@ -156,11 +148,17 @@ fn cap_line(dest: &mut PathBuilder, style: &StrokeStyle, pt: Point, normal: Vect
             dest.line_to(end.x + -normal.x * offset, end.y + -normal.y * offset);
             dest.line_to(pt.x - normal.x * offset, pt.y - normal.y * offset);
             dest.close();
-        },
+        }
     }
 }
 
-fn bevel(dest: &mut PathBuilder, style: &StrokeStyle, pt: Point, s1_normal: Vector, s2_normal: Vector) {
+fn bevel(
+    dest: &mut PathBuilder,
+    style: &StrokeStyle,
+    pt: Point,
+    s1_normal: Vector,
+    s2_normal: Vector,
+) {
     let offset = style.width / 2.;
     dest.move_to(pt.x + s1_normal.x * offset, pt.y + s1_normal.y * offset);
     dest.line_to(pt.x + s2_normal.x * offset, pt.y + s2_normal.y * offset);
@@ -170,34 +168,29 @@ fn bevel(dest: &mut PathBuilder, style: &StrokeStyle, pt: Point, s1_normal: Vect
 
 /* given a normal rotate the vector 90 degrees to the right clockwise
  * This function has a period of 4. e.g. swap(swap(swap(swap(x) == x */
-fn swap(a: Vector) -> Vector
-{
+fn swap(a: Vector) -> Vector {
     /* one of these needs to be negative. We choose a.x so that we rotate to the right instead of negating */
     return Vector::new(a.y, -a.x);
 }
 
-fn unperp(a: Vector) -> Vector
-{
+fn unperp(a: Vector) -> Vector {
     swap(a)
 }
 
 /* rotate a vector 90 degrees to the left */
-fn perp(v: Vector) -> Vector
-{
+fn perp(v: Vector) -> Vector {
     Vector::new(-v.y, v.x)
 }
 
-fn dot(a: Vector, b: Vector) -> f32
-{
+fn dot(a: Vector, b: Vector) -> f32 {
     a.x * b.x + a.y * b.y
 }
 
 /* Finds the intersection of two lines each defined by a point and a normal.
-   From "Example 2: Find the intersection of two lines" of
-   "The Pleasures of "Perp Dot" Products"
-   F. S. Hill, Jr. */
-fn line_intersection(A: Point, a_perp: Vector, B: Point, b_perp: Vector) -> Point
-{
+From "Example 2: Find the intersection of two lines" of
+"The Pleasures of "Perp Dot" Products"
+F. S. Hill, Jr. */
+fn line_intersection(A: Point, a_perp: Vector, B: Point, b_perp: Vector) -> Point {
     let a = unperp(a_perp);
     let c = B - A;
     let denom = dot(b_perp, a);
@@ -207,8 +200,7 @@ fn line_intersection(A: Point, a_perp: Vector, B: Point, b_perp: Vector) -> Poin
 
     let t = dot(b_perp, c) / denom;
 
-    let intersection = Point::new(A.x + t * (a.x),
-                                  A.y + t * (a.y));
+    let intersection = Point::new(A.x + t * (a.x), A.y + t * (a.y));
 
     intersection
 }
@@ -219,8 +211,13 @@ fn is_interior_angle(a: Vector, b: Vector) -> bool {
     dot(perp(a), b) > 0. || a == b /* 0 degrees is interior */
 }
 
-fn join_line(dest: &mut PathBuilder, style: &StrokeStyle, pt: Point, mut s1_normal: Vector, mut s2_normal: Vector) {
-
+fn join_line(
+    dest: &mut PathBuilder,
+    style: &StrokeStyle,
+    pt: Point,
+    mut s1_normal: Vector,
+    mut s2_normal: Vector,
+) {
     if is_interior_angle(s1_normal, s2_normal) {
         s2_normal = flip(s2_normal);
         s1_normal = flip(s1_normal);
@@ -236,10 +233,10 @@ fn join_line(dest: &mut PathBuilder, style: &StrokeStyle, pt: Point, mut s1_norm
             join_round(dest, pt, s1_normal, s2_normal, offset);
             dest.line_to(pt.x, pt.y);
             dest.close();
-        },
+        }
         LineJoin::Mitre => {
             let in_dot_out = -s1_normal.x * s2_normal.x + -s1_normal.y * s2_normal.y;
-            if 2. <= style.mitre_limit*style.mitre_limit * (1. - in_dot_out) {
+            if 2. <= style.mitre_limit * style.mitre_limit * (1. - in_dot_out) {
                 let start = pt + s1_normal * offset;
                 let end = pt + s2_normal * offset;
                 let intersection = line_intersection(start, s1_normal, end, s2_normal);
@@ -251,13 +248,12 @@ fn join_line(dest: &mut PathBuilder, style: &StrokeStyle, pt: Point, mut s1_norm
             } else {
                 bevel(dest, style, pt, s1_normal, s2_normal);
             }
-        },
+        }
         LineJoin::Bevel => {
             bevel(dest, style, pt, s1_normal, s2_normal);
-        },
+        }
     }
 }
-
 
 pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
     let mut cur_pt = Point::zero();
@@ -285,35 +281,48 @@ pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
                     join_line(&mut stroked_path, style, cur_pt, last_normal, normal);
                 }
 
-                stroked_path.move_to(cur_pt.x + normal.x * half_width, cur_pt.y + normal.y * half_width);
+                stroked_path.move_to(
+                    cur_pt.x + normal.x * half_width,
+                    cur_pt.y + normal.y * half_width,
+                );
                 stroked_path.line_to(pt.x + normal.x * half_width, pt.y + normal.y * half_width);
                 stroked_path.line_to(pt.x + -normal.x * half_width, pt.y + -normal.y * half_width);
-                stroked_path.line_to(cur_pt.x - normal.x * half_width, cur_pt.y - normal.y * half_width);
+                stroked_path.line_to(
+                    cur_pt.x - normal.x * half_width,
+                    cur_pt.y - normal.y * half_width,
+                );
                 stroked_path.close();
                 last_normal = normal;
 
                 cur_pt = pt;
-
             }
             PathOp::Close => {
                 if let Some((point, normal)) = start_point {
                     let last_normal = compute_normal(cur_pt, point);
 
-                    stroked_path.move_to(cur_pt.x + normal.x * half_width, cur_pt.y + normal.y * half_width);
-                    stroked_path.line_to(point.x + normal.x * half_width, point.y + normal.y * half_width);
-                    stroked_path.line_to(point.x + -normal.x * half_width, point.y + -normal.y * half_width);
-                    stroked_path.line_to(cur_pt.x - normal.x * half_width, cur_pt.y - normal.y * half_width);
+                    stroked_path.move_to(
+                        cur_pt.x + normal.x * half_width,
+                        cur_pt.y + normal.y * half_width,
+                    );
+                    stroked_path.line_to(
+                        point.x + normal.x * half_width,
+                        point.y + normal.y * half_width,
+                    );
+                    stroked_path.line_to(
+                        point.x + -normal.x * half_width,
+                        point.y + -normal.y * half_width,
+                    );
+                    stroked_path.line_to(
+                        cur_pt.x - normal.x * half_width,
+                        cur_pt.y - normal.y * half_width,
+                    );
                     stroked_path.close();
 
                     join_line(&mut stroked_path, style, point, last_normal, normal);
                 }
-            },
-            PathOp::QuadTo(..) => {
-                panic!("Only flat paths handled")
             }
-            PathOp::CubicTo(..) => {
-                panic!("Only flat paths handled")
-            }
+            PathOp::QuadTo(..) => panic!("Only flat paths handled"),
+            PathOp::CubicTo(..) => panic!("Only flat paths handled"),
         }
     }
     if let Some((point, normal)) = start_point {

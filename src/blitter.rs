@@ -2,7 +2,6 @@ use sw_composite::*;
 
 use euclid::Transform2D;
 
-
 pub trait Blitter {
     fn blit_span(&mut self, y: i32, x1: i32, x2: i32);
 }
@@ -18,8 +17,7 @@ const SCALE: i32 = (1 << SHIFT);
 const MASK: i32 = (SCALE - 1);
 const SUPER_MASK: i32 = ((1 << SHIFT) - 1);
 
-fn coverage_to_partial_alpha(mut aa: i32) -> u8
-{
+fn coverage_to_partial_alpha(mut aa: i32) -> u8 {
     aa <<= 8 - 2 * SHIFT;
     return aa as u8;
 }
@@ -31,7 +29,7 @@ impl MaskSuperBlitter {
             height,
             // we can end up writing one byte past the end of the buffer so allocate that
             // padding to avoid needing to do an extra check
-            buf: vec![0; (width * height) as usize + 1]
+            buf: vec![0; (width * height) as usize + 1],
         }
     }
 }
@@ -45,7 +43,6 @@ fn saturated_add(a: u8, b: u8) -> u8 {
     let result = (tmp - (tmp >> 8));
     result as u8
 }
-
 
 impl Blitter for MaskSuperBlitter {
     fn blit_span(&mut self, y: i32, x1: i32, x2: i32) {
@@ -62,7 +59,9 @@ impl Blitter for MaskSuperBlitter {
         } else {
             fb = (1 << SHIFT) - fb;
             unsafe { *b = saturated_add(*b, coverage_to_partial_alpha(fb)) };
-            unsafe { b = b.offset(1); };
+            unsafe {
+                b = b.offset(1);
+            };
             while n != 0 {
                 unsafe { *b += max };
                 unsafe { b = b.offset(1) };
@@ -98,7 +97,7 @@ fn transform_to_fixed(transform: &Transform2D<f32>) -> MatrixFixedPoint {
         yx: float_to_fixed(transform.m21),
         yy: float_to_fixed(transform.m22),
         x0: float_to_fixed(transform.m31),
-        y0: float_to_fixed(transform.m32)
+        y0: float_to_fixed(transform.m32),
     }
 }
 
@@ -111,7 +110,7 @@ impl<'a> ImageShader<'a> {
     pub fn new(image: &'a Image, transform: &Transform2D<f32>) -> ImageShader<'a> {
         ImageShader {
             image,
-            xfm: transform_to_fixed(transform)
+            xfm: transform_to_fixed(transform),
         }
     }
 }
@@ -133,7 +132,7 @@ pub struct RadialGradientShader {
 impl RadialGradientShader {
     pub fn new(gradient: &Gradient, transform: &Transform2D<f32>) -> RadialGradientShader {
         RadialGradientShader {
-            gradient: gradient.make_source(&transform_to_fixed(transform))
+            gradient: gradient.make_source(&transform_to_fixed(transform)),
         }
     }
 }
@@ -154,7 +153,7 @@ pub struct LinearGradientShader {
 impl LinearGradientShader {
     pub fn new(gradient: &Gradient, transform: &Transform2D<f32>) -> RadialGradientShader {
         RadialGradientShader {
-            gradient: gradient.make_source(&transform_to_fixed(transform))
+            gradient: gradient.make_source(&transform_to_fixed(transform)),
         }
     }
 }
@@ -184,10 +183,11 @@ impl<'a> Blitter for ShaderBlitter<'a> {
         let count = (x2 - x1) as usize;
         self.shader.shade_span(x1, y, &mut self.tmp[..], count);
         for i in 0..count {
-            self.dest[(dest_row + x1) as usize + i] =
-                over_in(self.tmp[i],
-                        self.dest[(dest_row + x1) as usize + i],
-                        self.mask[(mask_row + x1) as usize + i] as u32);
+            self.dest[(dest_row + x1) as usize + i] = over_in(
+                self.tmp[i],
+                self.dest[(dest_row + x1) as usize + i],
+                self.mask[(mask_row + x1) as usize + i] as u32,
+            );
         }
     }
 }
@@ -211,11 +211,12 @@ impl<'a> Blitter for ShaderClipBlitter<'a> {
         let count = (x2 - x1) as usize;
         self.shader.shade_span(x1, y, &mut self.tmp[..], count);
         for i in 0..count {
-            self.dest[(dest_row + x1) as usize + i] =
-                over_in_in(self.tmp[i],
-                        self.dest[(dest_row + x1) as usize + i],
-                        self.mask[(mask_row + x1) as usize + i] as u32,
-                        self.clip[(clip_row + x1) as usize + i] as u32);
+            self.dest[(dest_row + x1) as usize + i] = over_in_in(
+                self.tmp[i],
+                self.dest[(dest_row + x1) as usize + i],
+                self.mask[(mask_row + x1) as usize + i] as u32,
+                self.clip[(clip_row + x1) as usize + i] as u32,
+            );
         }
     }
 }
@@ -239,11 +240,12 @@ impl<'a> Blitter for ShaderClipBlendBlitter<'a> {
         let count = (x2 - x1) as usize;
         self.shader.shade_span(x1, y, &mut self.tmp[..], count);
         for i in 0..count {
-            self.dest[(dest_row + x1) as usize + i] =
-                over_in_in(self.tmp[i],
-                           self.dest[(dest_row + x1) as usize + i],
-                           self.mask[(mask_row + x1) as usize + i] as u32,
-                           self.clip[(clip_row + x1) as usize + i] as u32);
+            self.dest[(dest_row + x1) as usize + i] = over_in_in(
+                self.tmp[i],
+                self.dest[(dest_row + x1) as usize + i],
+                self.mask[(mask_row + x1) as usize + i] as u32,
+                self.clip[(clip_row + x1) as usize + i] as u32,
+            );
         }
     }
 }
@@ -261,10 +263,11 @@ impl<'a> Blitter for SolidBlitter<'a> {
         let dest_row = y * self.dest_stride;
         let mask_row = y * self.mask_stride;
         for i in x1..x2 {
-            self.dest[(dest_row + i) as usize] =
-                over_in(self.color,
-                        self.dest[(dest_row + i) as usize],
-                        self.mask[(mask_row + i) as usize] as u32);
+            self.dest[(dest_row + i) as usize] = over_in(
+                self.color,
+                self.dest[(dest_row + i) as usize],
+                self.mask[(mask_row + i) as usize] as u32,
+            );
         }
     }
 }

@@ -14,12 +14,11 @@ pub fn abs(a: f32) -> f32 {
     return a;
 }
 
-pub fn is_nan(a: f32) -> bool
-{
+pub fn is_nan(a: f32) -> bool {
     return a != a;
 }
 
-// we can do this 
+// we can do this
 pub fn valid_unit_divide(mut numer: f32, mut denom: f32, ratio: &mut f32) -> bool {
     if numer < 0. {
         numer = -numer;
@@ -35,7 +34,8 @@ pub fn valid_unit_divide(mut numer: f32, mut denom: f32, ratio: &mut f32) -> boo
         return false;
     }
     debug_assert!(r >= 0. && r < 1.);
-    if r == 0. { // catch underflow if numer <<<< denom
+    if r == 0. {
+        // catch underflow if numer <<<< denom
         return false;
     }
     *ratio = r;
@@ -55,7 +55,6 @@ fn interp(a: f32, b: f32, t: f32) -> f32 {
     debug_assert!(t >= 0. && t <= 1.);
     return a + (b - a) * t;
 }
-
 
 // Skia does a weird thing where it treats arrays of points as castable to array of floats.
 // For now we just duplicate quad_x and quad_y

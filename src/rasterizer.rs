@@ -40,7 +40,6 @@ struct Edge {
     control_y: i32,
 }
 
-
 // it is possible to fit this into 64 bytes on x86-64
 // with the following layout:
 //
@@ -130,7 +129,8 @@ impl ActiveEdge {
                     // the maximum our x value can be is 4095 (which is 12 bits).
                     // 12 + 3 + 16 = 31 which gives us an extra bit of room
                     // to handle overflow.
-                    self.slope_x = ((self.next_x - self.old_x) << 3) / ((self.next_y - self.old_y) >> 13);
+                    self.slope_x =
+                        ((self.next_x - self.old_x) << 3) / ((self.next_y - self.old_y) >> 13);
                 }
             }
             self.fullx += self.slope_x;
@@ -149,13 +149,11 @@ pub enum Winding {
     NonZero,
 }
 
-pub struct Rasterizer
-{
+pub struct Rasterizer {
     /*
-    Rasterizer(int width, int height);
-    ~Rasterizer() { delete[] edge_starts; };
-*/
-
+        Rasterizer(int width, int height);
+        ~Rasterizer() { delete[] edge_starts; };
+    */
     edge_starts: Vec<Option<NonNull<ActiveEdge>>>,
     width: i32,
     height: i32,
@@ -164,7 +162,6 @@ pub struct Rasterizer
 
     edge_arena: Arena<ActiveEdge>,
 }
-
 
 impl Rasterizer {
     pub fn new(width: i32, height: i32) -> Rasterizer {
@@ -217,7 +214,7 @@ fn diff_to_shift(dx: i32, dy: i32) -> i32 {
     dist = (dist + (1 << 4)) >> 5;
 
     // each subdivision (shift value) cuts this dist (error) by 1/4
-    return ((32 - ((dist as u32).leading_zeros() )as i32)) >> 1;
+    return (32 - ((dist as u32).leading_zeros()) as i32) >> 1;
 }
 
 // this metric is taken from skia
@@ -382,16 +379,16 @@ impl Rasterizer {
         }
     }
     /*
-    int comparisons;
-    static inline void dump_edges(ActiveEdge *e)
-    {
-    while (e) {
-    printf("%d ", e.fullx);
-    e = e.next;
-    }
-    printf("\n");
-    }
-*/
+        int comparisons;
+        static inline void dump_edges(ActiveEdge *e)
+        {
+        while (e) {
+        printf("%d ", e.fullx);
+        e = e.next;
+        }
+        printf("\n");
+        }
+    */
     // Insertion sort the new edges into the active list
     // The new edges could be showing up at any x coordinate
     // but existing active edges will be sorted.
@@ -411,7 +408,9 @@ impl Rasterizer {
             let mut new = new_edges;
             while let Some(mut new_ptr) = new {
                 let a = unsafe { new_ptr.as_mut() };
-                if e.fullx <= a.fullx { break; }
+                if e.fullx <= a.fullx {
+                    break;
+                }
                 // comparisons++;
                 prev_ptr = &mut a.next;
                 new = a.next;
@@ -421,7 +420,6 @@ impl Rasterizer {
             unsafe { *prev_ptr = Some(e_ptr) };
         }
 
-
         // merge the sorted new_edges into active_edges
         let mut prev_ptr = &mut self.active_edges as *mut _;
         let mut active = self.active_edges;
@@ -430,7 +428,9 @@ impl Rasterizer {
             let e = unsafe { e_ptr.as_mut() };
             while let Some(mut a_ptr) = active {
                 let a = unsafe { a_ptr.as_mut() };
-                if e.fullx <= a.fullx { break; }
+                if e.fullx <= a.fullx {
+                    break;
+                }
 
                 // comparisons++;
                 prev_ptr = &mut a.next;
@@ -445,7 +445,6 @@ impl Rasterizer {
     }
 }
 
-
 impl Rasterizer {
     // Skia does stepping and scanning of edges in a single
     // pass over the edge list.
@@ -456,7 +455,9 @@ impl Rasterizer {
         // handle edges that begin to the left of the bitmap
         while let Some(mut e_ptr) = edge {
             let e = unsafe { e_ptr.as_mut() };
-            if e.fullx >= 0 { break; }
+            if e.fullx >= 0 {
+                break;
+            }
             winding += e.winding as i32;
             edge = e.next;
         }
@@ -467,11 +468,15 @@ impl Rasterizer {
 
             let inside = match winding_mode {
                 Winding::EvenOdd => winding & 1 != 0,
-                Winding::NonZero => winding != 0
+                Winding::NonZero => winding != 0,
             };
 
             if inside {
-                blitter.blit_span(self.cur_y, (prevx + (1 << 15)) >> 16, (e.fullx + (1 << 15)) >> 16);
+                blitter.blit_span(
+                    self.cur_y,
+                    (prevx + (1 << 15)) >> 16,
+                    (e.fullx + (1 << 15)) >> 16,
+                );
             }
 
             if (e.fullx >> 16) >= self.width {
