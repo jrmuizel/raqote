@@ -48,7 +48,8 @@ pub struct SolidSource {
 pub enum Source {
     Solid(SolidSource),
     Image(Image, Transform2D<f32>),
-    Gradient(Gradient, Transform2D<f32>)
+    RadialGradient(Gradient, Transform2D<f32>),
+    LinearGradient(Gradient, Transform2D<f32>)
 }
 
 struct Clip {
@@ -308,8 +309,12 @@ impl DrawTarget {
                 is = ImageShader::new(image, &ti.post_mul(&transform));
                 shader = &is;
             }
-            Source::Gradient(ref gradient, transform) => {
-                gs = GradientShader::new(gradient, &ti.post_mul(&transform));
+            Source::RadialGradient(ref gradient, transform) => {
+                gs = RadialGradientShader::new(gradient, &ti.post_mul(&transform));
+                shader = &gs;
+            }
+            Source::LinearGradient(ref gradient, transform) => {
+                gs = RadialGradientShader::new(gradient, &ti.post_mul(&transform));
                 shader = &gs;
             }
         };

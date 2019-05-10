@@ -71,10 +71,12 @@ fn main() {
     //dt.fill(Source::Solid(SolidSource{r: 0xff, g: 0xff, b: 0, a: 0xff}));
     //dt.fill(Source::Bitmap(bitmap, euclid::Transform2D::create_scale(2., 2.)));
 
-    let gradient = Source::Gradient(Gradient { stops: vec![GradientStop{position: 0.2, color: 0xff00ff00},
-                                                           GradientStop{position: 0.8, color: 0xffffffff},
-                                                           GradientStop{position: 1., color: 0xffff00ff}]},
-                                    euclid::Transform2D::create_translation(-150., -150.));
+    let gradient = Source::RadialGradient(Gradient {
+        stops: vec![GradientStop { position: 0.2, color: 0xff00ff00 },
+                    GradientStop { position: 0.8, color: 0xffffffff },
+                    GradientStop { position: 1., color: 0xffff00ff }]
+    },
+                                          euclid::Transform2D::create_translation(-150., -150.));
     dt.fill(&path, &gradient, Winding::NonZero);
 
     let mut pb = PathBuilder::new();
@@ -91,8 +93,6 @@ fn main() {
         dash_array: vec![10., 5.],
         dash_offset: 3. }
               , &gradient);
-
-
 
     let font = SystemSource::new().select_best_match(&[FamilyName::SansSerif],
                                                      &Properties::new())

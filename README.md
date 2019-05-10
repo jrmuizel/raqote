@@ -17,3 +17,41 @@ Planned functionality
  - blend modes
  - perspective image drawing
  - shadows?
+
+Example:
+ ```rust
+
+     let mut dt = DrawTarget::new(400, 400);
+
+     let mut pb = PathBuilder::new();
+     pb.move_to(100., 10.);
+     pb.cubic_to(150., 40., 175., 0., 200., 10.);
+     pb.quad_to(120., 100., 80., 200.);
+     pb.quad_to(150., 180., 200., 200.);
+     pb.close();
+     let path = pb.finish();
+
+     let gradient = Source::RadialGradient(Gradient { stops: vec![GradientStop{position: 0.2, color: 0xff00ff00},
+                                                            GradientStop{position: 0.8, color: 0xffffffff},
+                                                            GradientStop{position: 1., color: 0xffff00ff}]},
+                                     euclid::Transform2D::create_translation(-150., -150.));
+     dt.fill(&path, &gradient, Winding::NonZero);
+
+     let mut pb = PathBuilder::new();
+     pb.move_to(200., 200.);
+     pb.line_to(300., 300.);
+     pb.line_to(200., 300.);
+     let path = pb.finish();
+
+     dt.stroke(&path, &StrokeStyle {
+         cap: LineCap::Butt,
+         join: LineJoin::Bevel,
+         width: 10.,
+         mitre_limit: 2.,
+         dash_array: vec![10., 5.],
+         dash_offset: 3. }
+               , &Source::Solid(SolidSource{r: 0x80, g: 0x80, b: 0, a: 0x80}));
+
+     dt.write_png("out.png");
+```
+

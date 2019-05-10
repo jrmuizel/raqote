@@ -126,22 +126,43 @@ impl<'a> Shader for ImageShader<'a> {
     }
 }
 
-pub struct GradientShader {
+pub struct RadialGradientShader {
     gradient: Box<GradientSource>,
 }
 
-impl GradientShader {
-    pub fn new(gradient: &Gradient, transform: &Transform2D<f32>) -> GradientShader {
-        GradientShader {
+impl RadialGradientShader {
+    pub fn new(gradient: &Gradient, transform: &Transform2D<f32>) -> RadialGradientShader {
+        RadialGradientShader {
             gradient: gradient.make_source(&transform_to_fixed(transform))
         }
     }
 }
 
-impl Shader for GradientShader {
+impl Shader for RadialGradientShader {
     fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
         for i in 0..count {
             dest[i] = self.gradient.radial_gradient_eval(x as u16, y as u16);
+            x += 1;
+        }
+    }
+}
+
+pub struct LinearGradientShader {
+    gradient: Box<GradientSource>,
+}
+
+impl LinearGradientShader {
+    pub fn new(gradient: &Gradient, transform: &Transform2D<f32>) -> RadialGradientShader {
+        RadialGradientShader {
+            gradient: gradient.make_source(&transform_to_fixed(transform))
+        }
+    }
+}
+
+impl Shader for LinearGradientShader {
+    fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
+        for i in 0..count {
+            dest[i] = self.gradient.linear_gradient_eval(x as u16, y as u16);
             x += 1;
         }
     }
