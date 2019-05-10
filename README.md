@@ -78,6 +78,6 @@ Example:
  
      dt.write_png("example.png");
 ```
-![example.png](https://github.com/jrmuizel/raqote/raw/example.png)
+![example.png](https://github.com/jrmuizel/raqote/raw/master/example.png)
 
 
