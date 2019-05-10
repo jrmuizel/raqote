@@ -6,6 +6,7 @@ version = "0.2.3-alpha.0"
 description = "2D graphics library"
 license = "BSD-3-Clause"
 repository = "https://github.com/jrmuizel/raqote"
+documentation = "https://docs.rs/raqote"
 
 [dependencies]
 euclid = "0.19.8"
