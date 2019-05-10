@@ -347,7 +347,8 @@ impl DrawTarget {
 
         let cs;
         let is;
-        let gs;
+        let rgs;
+        let lgs;
 
         match src {
             Source::Solid(c) => {
@@ -363,12 +364,12 @@ impl DrawTarget {
                 shader = &is;
             }
             Source::RadialGradient(ref gradient, transform) => {
-                gs = RadialGradientShader::new(gradient, &ti.post_mul(&transform));
-                shader = &gs;
+                rgs = RadialGradientShader::new(gradient, &ti.post_mul(&transform));
+                shader = &rgs;
             }
             Source::LinearGradient(ref gradient, transform) => {
-                gs = RadialGradientShader::new(gradient, &ti.post_mul(&transform));
-                shader = &gs;
+                lgs = LinearGradientShader::new(gradient, &ti.post_mul(&transform));
+                shader = &lgs;
             }
         };
 

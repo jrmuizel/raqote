@@ -151,8 +151,8 @@ pub struct LinearGradientShader {
 }
 
 impl LinearGradientShader {
-    pub fn new(gradient: &Gradient, transform: &Transform2D<f32>) -> RadialGradientShader {
-        RadialGradientShader {
+    pub fn new(gradient: &Gradient, transform: &Transform2D<f32>) -> LinearGradientShader {
+        LinearGradientShader {
             gradient: gradient.make_source(&transform_to_fixed(transform)),
         }
     }
