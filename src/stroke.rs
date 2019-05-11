@@ -187,17 +187,17 @@ fn dot(a: Vector, b: Vector) -> f32 {
 From "Example 2: Find the intersection of two lines" of
 "The Pleasures of "Perp Dot" Products"
 F. S. Hill, Jr. */
-fn line_intersection(A: Point, a_perp: Vector, B: Point, b_perp: Vector) -> Point {
-    let a = unperp(a_perp);
-    let c = B - A;
-    let denom = dot(b_perp, a);
+fn line_intersection(a: Point, a_perp: Vector, b: Point, b_perp: Vector) -> Point {
+    let a_parallel = unperp(a_perp);
+    let c = b - a;
+    let denom = dot(b_perp, a_parallel);
     if denom == 0.0 {
         panic!("trouble")
     }
 
     let t = dot(b_perp, c) / denom;
 
-    let intersection = Point::new(A.x + t * (a.x), A.y + t * (a.y));
+    let intersection = Point::new(a.x + t * (a_parallel.x), a.y + t * (a_parallel.y));
 
     intersection
 }
