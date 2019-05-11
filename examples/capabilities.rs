@@ -140,5 +140,5 @@ fn main() {
         }),
     );
 
-    dt.write_png("out.png");
+    dt.write_png("out.png").unwrap();
 }
