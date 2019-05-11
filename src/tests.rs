@@ -14,7 +14,6 @@ fn basic_rasterizer() {
             b: 0xff,
             a: 0xff,
         }),
-        Winding::NonZero,
     );
     let white = 0xffffffff;
     assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
@@ -34,7 +33,6 @@ fn clip_rect() {
             b: 0xff,
             a: 0xff,
         }),
-        Winding::NonZero,
     );
     let white = 0xffffffff;
     assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
@@ -55,7 +53,6 @@ fn nested_clip_rect() {
             b: 0xff,
             a: 0xff,
         }),
-        Winding::NonZero,
     );
     let white = 0xffffffff;
     assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
@@ -68,15 +65,16 @@ fn even_odd_rect() {
     pb.rect(0., 0., 2., 2.);
     pb.rect(0., 0., 2., 2.);
     pb.rect(1., 1., 2., 2.);
+    let mut path = pb.finish();
+    path.winding = Winding::EvenOdd;
     dt.fill(
-        &pb.finish(),
+        &path,
         &Source::Solid(SolidSource {
             r: 0xff,
             g: 0xff,
             b: 0xff,
             a: 0xff,
         }),
-        Winding::EvenOdd,
     );
     let white = 0xffffffff;
     assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])

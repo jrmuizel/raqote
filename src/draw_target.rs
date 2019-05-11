@@ -7,7 +7,7 @@ use crate::dash::*;
 use crate::geom::*;
 use crate::path_builder::*;
 
-pub use crate::rasterizer::Winding;
+pub use crate::path_builder::Winding;
 use lyon_geom::cubic_to_quadratic::cubic_to_quadratics;
 use lyon_geom::CubicBezierSegment;
 
@@ -243,7 +243,7 @@ impl DrawTarget {
 
         // XXX: restrict to clipped area
         let mut blitter = MaskSuperBlitter::new(self.width, self.height);
-        self.rasterizer.rasterize(&mut blitter, Winding::NonZero);
+        self.rasterizer.rasterize(&mut blitter, path.winding);
 
         if let Some(last) = self.clip_stack.last() {
             // combine with previous mask
@@ -293,13 +293,13 @@ impl DrawTarget {
             path = dash_path(&path, &style.dash_array, style.dash_offset);
         }
         let stroked = stroke_to_path(&path, style);
-        self.fill(&stroked, src, Winding::NonZero);
+        self.fill(&stroked, src);
     }
 
-    pub fn fill(&mut self, path: &Path, src: &Source, winding_mode: Winding) {
+    pub fn fill(&mut self, path: &Path, src: &Source) {
         self.apply_path(path);
         let mut blitter = MaskSuperBlitter::new(self.width, self.height);
-        self.rasterizer.rasterize(&mut blitter, winding_mode);
+        self.rasterizer.rasterize(&mut blitter, path.winding);
         self.composite(src, &blitter.buf, rect(0, 0, self.width, self.height), BlendMode::SrcOver);
         self.rasterizer.reset();
     }

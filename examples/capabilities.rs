@@ -33,7 +33,6 @@ fn main() {
             b: 0,
             a: 0x80,
         }),
-        Winding::NonZero,
     );
 
     let mut pb = PathBuilder::new();
@@ -98,7 +97,7 @@ fn main() {
         },
         Transform::create_translation(-150., -150.),
     );
-    dt.fill(&path, &gradient, Winding::NonZero);
+    dt.fill(&path, &gradient);
 
     let mut pb = PathBuilder::new();
     pb.move_to(200., 200.);

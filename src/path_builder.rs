@@ -5,6 +5,12 @@ use lyon_geom::QuadraticBezierSegment;
 
 use crate::{Point, Vector};
 
+#[derive(Clone, Copy, Debug)]
+pub enum Winding {
+    EvenOdd,
+    NonZero,
+}
+
 #[derive(Clone, Debug)]
 pub enum PathOp {
     MoveTo(Point),
@@ -17,12 +23,13 @@ pub enum PathOp {
 #[derive(Debug)]
 pub struct Path {
     pub ops: Vec<PathOp>,
+    pub winding: Winding,
 }
 
 impl Path {
     pub fn flatten(&self, tolerance: f32) -> Path {
         let mut cur_pt = Point::zero();
-        let mut flattened = Path { ops: Vec::new() };
+        let mut flattened = Path { ops: Vec::new(), winding: Winding::NonZero };
         for op in &self.ops {
             match *op {
                 PathOp::MoveTo(pt) | PathOp::LineTo(pt) => {
@@ -66,7 +73,7 @@ pub struct PathBuilder {
 impl PathBuilder {
     pub fn new() -> PathBuilder {
         PathBuilder {
-            path: Path { ops: Vec::new() },
+            path: Path { ops: Vec::new(), winding: Winding::NonZero },
         }
     }
 

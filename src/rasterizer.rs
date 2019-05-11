@@ -26,6 +26,7 @@ use typed_arena::Arena;
 
 use crate::Point;
 use crate::blitter::Blitter;
+use crate::path_builder::Winding;
 
 use std::ptr::NonNull;
 
@@ -142,11 +143,7 @@ impl ActiveEdge {
     }
 }
 
-#[derive(Clone, Copy)]
-pub enum Winding {
-    EvenOdd,
-    NonZero,
-}
+
 
 pub struct Rasterizer {
     /*
