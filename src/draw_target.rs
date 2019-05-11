@@ -366,7 +366,7 @@ impl DrawTarget {
                 position,
                 HintingOptions::None,
                 RasterizationOptions::GrayscaleAa,
-            );
+            ).unwrap();
         }
 
         self.composite(
@@ -421,7 +421,7 @@ impl DrawTarget {
             return;
         }
 
-        let mut blitter: &mut Blitter;
+        let blitter: &mut Blitter;
         let mut scb;
         let mut sb;
         let mut scb_blend;
