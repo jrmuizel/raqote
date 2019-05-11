@@ -257,7 +257,7 @@ impl DrawTarget {
         self.composite(src, &mask.data, rect(x, y, mask.width, mask.height));
     }
 
-    pub fn stroke(&mut self, path: &Path, style: &StrokeStyle, src: &Source) {
+    pub fn stroke(&mut self, path: &Path, src: &Source, style: &StrokeStyle) {
         let mut path = path.flatten(0.1);
         if !style.dash_array.is_empty() {
             path = dash_path(&path, &style.dash_array, style.dash_offset);

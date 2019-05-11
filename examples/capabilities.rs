@@ -110,6 +110,7 @@ fn main() {
     let path = pb.finish();
     dt.stroke(
         &path,
+        &gradient,
         &StrokeStyle {
             cap: LineCap::Butt,
             join: LineJoin::Bevel,
@@ -118,7 +119,6 @@ fn main() {
             dash_array: vec![10., 5.],
             dash_offset: 3.,
         },
-        &gradient,
     );
 
     let font = SystemSource::new()
