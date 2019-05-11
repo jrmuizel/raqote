@@ -40,6 +40,41 @@ pub struct SolidSource {
     pub a: u8,
 }
 
+#[derive(PartialEq)]
+pub enum BlendMode {
+    Dst,
+    Src,
+    Clear,
+    SrcOver,
+    DstOver,
+    SrcIn,
+    DstIn,
+    SrcOut,
+    DstOut,
+    SrcAtop,
+    DstAtop,
+    Xor,
+    Add,
+}
+
+fn blend_proc(mode: BlendMode) -> fn(u32, u32) -> u32 {
+    match mode {
+        BlendMode::Dst => dst,
+        BlendMode::Src => src,
+        BlendMode::Clear => clear,
+        BlendMode::SrcOver => src_over,
+        BlendMode::DstOver => dst_over,
+        BlendMode::SrcIn => src_in,
+        BlendMode::DstIn => dst_in,
+        BlendMode::SrcOut => src_out,
+        BlendMode::DstOut => dst_out,
+        BlendMode::SrcAtop => src_atop,
+        BlendMode::DstAtop => dst_atop,
+        BlendMode::Xor => xor,
+        BlendMode::Add => add,
+    }
+}
+
 /// LinearGradients have an implicit start point at 0,0 and an end point at 256,0. The transform
 /// parameter can be used to adjust them to the desired location.
 /// RadialGradients have an implict center at 0,0 and a radius of 128.
@@ -249,7 +284,7 @@ impl DrawTarget {
     }
 
     pub fn mask(&mut self, src: &Source, x: i32, y: i32, mask: &Mask) {
-        self.composite(src, &mask.data, rect(x, y, mask.width, mask.height));
+        self.composite(src, &mask.data, rect(x, y, mask.width, mask.height), BlendMode::SrcOver);
     }
 
     pub fn stroke(&mut self, path: &Path, src: &Source, style: &StrokeStyle) {
@@ -265,7 +300,7 @@ impl DrawTarget {
         self.apply_path(path);
         let mut blitter = MaskSuperBlitter::new(self.width, self.height);
         self.rasterizer.rasterize(&mut blitter, winding_mode);
-        self.composite(src, &blitter.buf, rect(0, 0, self.width, self.height));
+        self.composite(src, &blitter.buf, rect(0, 0, self.width, self.height), BlendMode::SrcOver);
         self.rasterizer.reset();
     }
 
@@ -338,10 +373,11 @@ impl DrawTarget {
             src,
             &canvas.pixels,
             rect(0, 0, canvas.size.width as i32, canvas.size.height as i32),
+            BlendMode::SrcOver
         );
     }
 
-    fn composite(&mut self, src: &Source, mask: &[u8], mut rect: IntRect) {
+    fn composite(&mut self, src: &Source, mask: &[u8], mut rect: IntRect, blend: BlendMode) {
         let shader: &Shader;
 
         let ti = self.transform.inverse();
@@ -380,43 +416,80 @@ impl DrawTarget {
             }
         };
 
-        let mut blitter: &mut Blitter;
-        let mut scb;
-        let mut sb;
-
         rect = rect.intersection(&self.clip_bounds());
         if rect.is_negative() {
             return;
         }
 
-        match self.clip_stack.last() {
-            Some(Clip {
-                rect: _,
-                mask: Some(clip),
-            }) => {
-                scb = ShaderClipBlitter {
-                    shader: shader,
-                    tmp: vec![0; self.width as usize],
-                    dest: &mut self.buf,
-                    dest_stride: self.width,
-                    mask,
-                    mask_stride: self.width,
-                    clip,
-                    clip_stride: self.width,
-                };
+        let mut blitter: &mut Blitter;
+        let mut scb;
+        let mut sb;
+        let mut scb_blend;
+        let mut sb_blend;
+        if blend == BlendMode::SrcOver {
+            match self.clip_stack.last() {
+                Some(Clip {
+                         rect: _,
+                         mask: Some(clip),
+                     }) => {
+                    scb = ShaderClipBlitter {
+                        shader: shader,
+                        tmp: vec![0; self.width as usize],
+                        dest: &mut self.buf,
+                        dest_stride: self.width,
+                        mask,
+                        mask_stride: self.width,
+                        clip,
+                        clip_stride: self.width,
+                    };
 
-                blitter = &mut scb;
+                    blitter = &mut scb;
+                }
+                _ => {
+                    sb = ShaderBlitter {
+                        shader: &*shader,
+                        tmp: vec![0; self.width as usize],
+                        dest: &mut self.buf,
+                        dest_stride: self.width,
+                        mask,
+                        mask_stride: self.width,
+                    };
+                    blitter = &mut sb;
+                }
             }
-            _ => {
-                sb = ShaderBlitter {
-                    shader: &*shader,
-                    tmp: vec![0; self.width as usize],
-                    dest: &mut self.buf,
-                    dest_stride: self.width,
-                    mask,
-                    mask_stride: self.width,
-                };
-                blitter = &mut sb;
+        } else {
+            let blend_fn = blend_proc(blend);
+            match self.clip_stack.last() {
+                Some(Clip {
+                         rect: _,
+                         mask: Some(clip),
+                     }) => {
+                    scb_blend = ShaderClipBlendBlitter {
+                        shader: shader,
+                        tmp: vec![0; self.width as usize],
+                        dest: &mut self.buf,
+                        dest_stride: self.width,
+                        mask,
+                        mask_stride: self.width,
+                        clip,
+                        clip_stride: self.width,
+                        blend_fn
+                    };
+
+                    blitter = &mut scb_blend;
+                }
+                _ => {
+                    sb_blend = ShaderBlendBlitter {
+                        shader: &*shader,
+                        tmp: vec![0; self.width as usize],
+                        dest: &mut self.buf,
+                        dest_stride: self.width,
+                        mask,
+                        mask_stride: self.width,
+                        blend_fn
+                    };
+                    blitter = &mut sb_blend;
+                }
             }
         }
 

@@ -9,7 +9,7 @@ mod tests;
 mod path_builder;
 pub use path_builder::*;
 
-pub use crate::draw_target::{DrawTarget, SolidSource, Source, Winding};
+pub use crate::draw_target::{DrawTarget, SolidSource, Source, Winding, BlendMode};
 pub use crate::stroke::*;
 
 use std::collections::hash_map::DefaultHasher;

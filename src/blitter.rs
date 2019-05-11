@@ -251,6 +251,33 @@ impl<'a> Blitter for ShaderClipBlendBlitter<'a> {
     }
 }
 
+pub struct ShaderBlendBlitter<'a> {
+    pub shader: &'a Shader,
+    pub tmp: Vec<u32>,
+    pub dest: &'a mut [u32],
+    pub dest_stride: i32,
+    pub mask: &'a [u8],
+    pub mask_stride: i32,
+    pub blend_fn: fn (u32, u32) -> u32,
+}
+
+impl<'a> Blitter for ShaderBlendBlitter<'a> {
+    fn blit_span(&mut self, y: i32, x1: i32, x2: i32) {
+        let dest_row = y * self.dest_stride;
+        let mask_row = y * self.mask_stride;
+        let count = (x2 - x1) as usize;
+        self.shader.shade_span(x1, y, &mut self.tmp[..], count);
+        for i in 0..count {
+            let dest = self.dest[(dest_row + x1) as usize + i];
+            self.dest[(dest_row + x1) as usize + i] = lerp(
+                (self.blend_fn)(self.tmp[i],dest),
+                dest,
+                alpha_to_alpha256(self.mask[(mask_row + x1) as usize + i] as u32),
+            );
+        }
+    }
+}
+
 pub struct SolidBlitter<'a> {
     color: u32,
     mask: &'a [u8],
