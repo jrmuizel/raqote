@@ -91,10 +91,9 @@ impl Shader for SolidShader {
 
 fn transform_to_fixed(transform: &Transform2D<f32>) -> MatrixFixedPoint {
     MatrixFixedPoint {
-        // Is the order right?
         xx: float_to_fixed(transform.m11),
-        xy: float_to_fixed(transform.m12),
-        yx: float_to_fixed(transform.m21),
+        xy: float_to_fixed(transform.m21),
+        yx: float_to_fixed(transform.m12),
         yy: float_to_fixed(transform.m22),
         x0: float_to_fixed(transform.m31),
         y0: float_to_fixed(transform.m32),
