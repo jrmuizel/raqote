@@ -65,6 +65,7 @@ struct Clip {
 
 struct Layer {
     buf: Vec<u32>,
+    opacity: f32,
     rect: Rect,
 }
 
@@ -240,7 +241,12 @@ impl DrawTarget {
     }
 
     pub fn push_layer(&mut self, opacity: f32) {
-        unimplemented!()
+        let rect = self.clip_bounds();
+        self.layer_stack.push(Layer {
+            rect,
+            buf: vec![0; (rect.size().width * rect.size().height) as usize],
+            opacity,
+        });
     }
 
     pub fn pop_layer(&mut self) {
