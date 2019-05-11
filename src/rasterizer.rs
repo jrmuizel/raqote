@@ -289,7 +289,7 @@ impl Rasterizer {
             // we can get more accuracy here by using the input points instead of the rounded versions
             let mut A = (edge.x1 - edge.control_x - edge.control_x + edge.x2) << 15;
             let mut B = edge.control_x - edge.x1;
-            let mut C = edge.x1;
+            //let mut C = edge.x1;
             let mut shift = compute_curve_steps(&edge);
 
             if shift == 0 {
@@ -304,7 +304,7 @@ impl Rasterizer {
 
             A = (edge.y1 - edge.control_y - edge.control_y + edge.y2) << 15;
             B = edge.control_y - edge.y1;
-            C = edge.y1;
+            //C = edge.y1;
             e.dy = 2 * (A >> shift) + 2 * B * 65536;
             e.ddy = 2 * (A >> (shift - 1));
 

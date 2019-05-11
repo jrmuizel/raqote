@@ -40,7 +40,7 @@ impl MaskSuperBlitter {
 // be slower (e.g. if (tmp > 255) tmp = 255;)
 fn saturated_add(a: u8, b: u8) -> u8 {
     let tmp = a as u32 + b as u32;
-    let result = (tmp - (tmp >> 8));
+    let result = tmp - (tmp >> 8);
     result as u8
 }
 
@@ -82,7 +82,7 @@ pub struct SolidShader {
 }
 
 impl Shader for SolidShader {
-    fn shade_span(&self, x: i32, y: i32, dest: &mut [u32], count: usize) {
+    fn shade_span(&self, _x: i32, _y: i32, dest: &mut [u32], count: usize) {
         for i in 0..count {
             dest[i] = self.color;
         }

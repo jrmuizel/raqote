@@ -12,12 +12,7 @@ pub use path_builder::*;
 pub use crate::draw_target::{DrawTarget, SolidSource, Source, Winding, BlendMode};
 pub use crate::stroke::*;
 
-use std::collections::hash_map::DefaultHasher;
 pub use sw_composite::{Gradient, GradientStop, Image};
-
-use font_kit::family_name::FamilyName;
-use font_kit::properties::Properties;
-use font_kit::source::SystemSource;
 
 pub type IntRect = euclid::Box2D<i32>;
 pub type Point = euclid::Point2D<f32>;
