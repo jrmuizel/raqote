@@ -7,7 +7,7 @@ mod stroke;
 mod tests;
 
 mod path_builder;
-pub use path_builder::PathBuilder;
+pub use path_builder::*;
 
 pub use crate::draw_target::{DrawTarget, SolidSource, Source, Winding};
 pub use crate::stroke::*;
