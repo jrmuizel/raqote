@@ -18,3 +18,8 @@ pub use sw_composite::{Gradient, GradientStop, Image};
 use font_kit::family_name::FamilyName;
 use font_kit::properties::Properties;
 use font_kit::source::SystemSource;
+
+pub type Rect = euclid::Box2D<i32>;
+pub type Point = euclid::Point2D<f32>;
+pub type Transform = euclid::Transform2D<f32>;
+pub type Vector = euclid::Vector2D<f32>;

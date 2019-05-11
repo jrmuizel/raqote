@@ -4,8 +4,6 @@ use raqote::*;
 use std::fs::*;
 use sw_composite::{Gradient, GradientStop, Image};
 
-use euclid::Point2D;
-
 use font_kit::family_name::FamilyName;
 use font_kit::properties::Properties;
 use font_kit::source::SystemSource;
@@ -79,7 +77,7 @@ fn main() {
     };
 
     //dt.fill(Source::Solid(SolidSource{r: 0xff, g: 0xff, b: 0, a: 0xff}));
-    //dt.fill(Source::Bitmap(bitmap, euclid::Transform2D::create_scale(2., 2.)));
+    //dt.fill(Source::Bitmap(bitmap, Transform::create_scale(2., 2.)));
 
     let gradient = Source::RadialGradient(
         Gradient {
@@ -98,7 +96,7 @@ fn main() {
                 },
             ],
         },
-        euclid::Transform2D::create_translation(-150., -150.),
+        Transform::create_translation(-150., -150.),
     );
     dt.fill(&path, &gradient, Winding::NonZero);
 
@@ -131,7 +129,7 @@ fn main() {
         &font,
         24.,
         "Hello",
-        Point2D::new(0., 100.),
+        Point::new(0., 100.),
         &Source::Solid(SolidSource {
             r: 0,
             g: 0,

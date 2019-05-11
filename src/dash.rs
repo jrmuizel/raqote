@@ -1,8 +1,6 @@
 use crate::path_builder::*;
 
-use euclid::{Point2D, Vector2D};
-
-type Point = Point2D<f32>;
+use crate::Point;
 
 use lyon_geom::LineSegment;
 
