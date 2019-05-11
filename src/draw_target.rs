@@ -21,7 +21,7 @@ use std::io::BufWriter;
 use png::HasParameters;
 
 use crate::stroke::*;
-use crate::{Point, Rect, Transform};
+use crate::{Point, IntRect, Transform};
 
 pub fn rect<T: Copy>(x: T, y: T, w: T, h: T) -> euclid::Box2D<T> {
     euclid::Box2D::new(euclid::Point2D::new(x, y), euclid::Point2D::new(w, h))
@@ -54,14 +54,14 @@ pub enum Source {
 }
 
 struct Clip {
-    rect: Rect,
+    rect: IntRect,
     mask: Option<Vec<u8>>,
 }
 
 struct Layer {
     buf: Vec<u32>,
     opacity: f32,
-    rect: Rect,
+    rect: IntRect,
 }
 
 pub struct DrawTarget {
@@ -181,7 +181,7 @@ impl DrawTarget {
         // XXX: we'd like for this function to return the bounds of the path
     }
 
-    pub fn push_clip_rect(&mut self, rect: Rect) {
+    pub fn push_clip_rect(&mut self, rect: IntRect) {
         // intersect with current clip
         let clip = match self.clip_stack.last() {
             Some(Clip {
@@ -228,8 +228,8 @@ impl DrawTarget {
         self.rasterizer.reset();
     }
 
-    fn clip_bounds(&self) -> Rect {
-        self.clip_stack.last().map(|c| c.rect).unwrap_or(Rect::new(
+    fn clip_bounds(&self) -> IntRect {
+        self.clip_stack.last().map(|c| c.rect).unwrap_or(IntRect::new(
             euclid::Point2D::new(0, 0),
             euclid::Point2D::new(self.width, self.height),
         ))
@@ -341,7 +341,7 @@ impl DrawTarget {
         );
     }
 
-    fn composite(&mut self, src: &Source, mask: &[u8], mut rect: Rect) {
+    fn composite(&mut self, src: &Source, mask: &[u8], mut rect: IntRect) {
         let shader: &Shader;
 
         let ti = self.transform.inverse();
