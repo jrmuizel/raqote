@@ -229,6 +229,7 @@ pub struct ShaderClipBlendBlitter<'a> {
     pub mask_stride: i32,
     pub clip: &'a [u8],
     pub clip_stride: i32,
+    pub blend_fn: fn (u32, u32) -> u32,
 }
 
 impl<'a> Blitter for ShaderClipBlendBlitter<'a> {
@@ -239,9 +240,10 @@ impl<'a> Blitter for ShaderClipBlendBlitter<'a> {
         let count = (x2 - x1) as usize;
         self.shader.shade_span(x1, y, &mut self.tmp[..], count);
         for i in 0..count {
-            self.dest[(dest_row + x1) as usize + i] = over_in_in(
-                self.tmp[i],
-                self.dest[(dest_row + x1) as usize + i],
+            let dest = self.dest[(dest_row + x1) as usize + i];
+            self.dest[(dest_row + x1) as usize + i] = alpha_lerp(
+                (self.blend_fn)(self.tmp[i],dest),
+                dest,
                 self.mask[(mask_row + x1) as usize + i] as u32,
                 self.clip[(clip_row + x1) as usize + i] as u32,
             );
