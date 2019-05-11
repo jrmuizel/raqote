@@ -4,8 +4,7 @@
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE.skia file.
  */
-use euclid::Point2D;
-type Point = Point2D<f32>;
+use crate::Point;
 
 pub fn abs(a: f32) -> f32 {
     if a < 0. {

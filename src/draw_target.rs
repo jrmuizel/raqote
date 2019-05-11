@@ -8,9 +8,6 @@ use crate::geom::*;
 use crate::path_builder::*;
 
 pub use crate::rasterizer::Winding;
-use euclid::Box2D;
-use euclid::Point2D;
-use euclid::Transform2D;
 use lyon_geom::cubic_to_quadratic::cubic_to_quadratics;
 use lyon_geom::CubicBezierSegment;
 
@@ -24,12 +21,10 @@ use std::io::BufWriter;
 use png::HasParameters;
 
 use crate::stroke::*;
+use crate::{Point, Rect, Transform};
 
-type Point = Point2D<f32>;
-type Rect = Box2D<i32>;
-
-pub fn rect<T: Copy>(x: T, y: T, w: T, h: T) -> Box2D<T> {
-    Box2D::new(Point2D::new(x, y), Point2D::new(w, h))
+pub fn rect<T: Copy>(x: T, y: T, w: T, h: T) -> euclid::Box2D<T> {
+    euclid::Box2D::new(euclid::Point2D::new(x, y), euclid::Point2D::new(w, h))
 }
 
 pub struct Mask {
@@ -53,13 +48,13 @@ pub struct SolidSource {
 /// future to become more ergonomic.
 pub enum Source {
     Solid(SolidSource),
-    Image(Image, Transform2D<f32>),
-    RadialGradient(Gradient, Transform2D<f32>),
-    LinearGradient(Gradient, Transform2D<f32>),
+    Image(Image, Transform),
+    RadialGradient(Gradient, Transform),
+    LinearGradient(Gradient, Transform),
 }
 
 struct Clip {
-    rect: Box2D<i32>,
+    rect: Rect,
     mask: Option<Vec<u8>>,
 }
 
@@ -78,7 +73,7 @@ pub struct DrawTarget {
     buf: Vec<u32>,
     clip_stack: Vec<Clip>,
     layer_stack: Vec<Layer>,
-    transform: Transform2D<f32>,
+    transform: Transform,
 }
 
 impl DrawTarget {
@@ -92,15 +87,15 @@ impl DrawTarget {
             buf: vec![0; (width * height) as usize],
             clip_stack: Vec::new(),
             layer_stack: Vec::new(),
-            transform: Transform2D::identity(),
+            transform: Transform::identity(),
         }
     }
 
-    pub fn set_transform(&mut self, transform: &Transform2D<f32>) {
+    pub fn set_transform(&mut self, transform: &Transform) {
         self.transform = *transform;
     }
 
-    pub fn get_transform(&self) -> &Transform2D<f32> {
+    pub fn get_transform(&self) -> &Transform {
         &self.transform
     }
 
@@ -234,9 +229,9 @@ impl DrawTarget {
     }
 
     fn clip_bounds(&self) -> Rect {
-        self.clip_stack.last().map(|c| c.rect).unwrap_or(Box2D::new(
-            Point2D::new(0, 0),
-            Point2D::new(self.width, self.height),
+        self.clip_stack.last().map(|c| c.rect).unwrap_or(Rect::new(
+            euclid::Point2D::new(0, 0),
+            euclid::Point2D::new(self.width, self.height),
         ))
     }
 
@@ -279,7 +274,7 @@ impl DrawTarget {
         font: &Font,
         point_size: f32,
         text: &str,
-        mut start: Point2D<f32>,
+        mut start: Point,
         src: &Source,
     ) {
         let mut ids = Vec::new();
@@ -298,7 +293,7 @@ impl DrawTarget {
         font: &Font,
         point_size: f32,
         ids: &[u32],
-        positions: &[Point2D<f32>],
+        positions: &[Point],
         src: &Source,
     ) {
         let mut combined_bounds = euclid::Rect::zero();

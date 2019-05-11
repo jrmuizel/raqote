@@ -1,8 +1,5 @@
 use crate::path_builder::{Path, PathBuilder, PathOp};
-use euclid::{Point2D, Vector2D};
-
-type Point = Point2D<f32>;
-type Vector = Vector2D<f32>;
+use crate::{Point, Vector};
 
 pub struct StrokeStyle {
     pub width: f32,

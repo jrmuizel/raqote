@@ -1,6 +1,6 @@
 use sw_composite::*;
 
-use euclid::Transform2D;
+use crate::Transform;
 
 pub trait Blitter {
     fn blit_span(&mut self, y: i32, x1: i32, x2: i32);
@@ -89,7 +89,7 @@ impl Shader for SolidShader {
     }
 }
 
-fn transform_to_fixed(transform: &Transform2D<f32>) -> MatrixFixedPoint {
+fn transform_to_fixed(transform: &Transform) -> MatrixFixedPoint {
     MatrixFixedPoint {
         xx: float_to_fixed(transform.m11),
         xy: float_to_fixed(transform.m21),
@@ -106,7 +106,7 @@ pub struct ImageShader<'a> {
 }
 
 impl<'a> ImageShader<'a> {
-    pub fn new(image: &'a Image, transform: &Transform2D<f32>) -> ImageShader<'a> {
+    pub fn new(image: &'a Image, transform: &Transform) -> ImageShader<'a> {
         ImageShader {
             image,
             xfm: transform_to_fixed(transform),
@@ -129,7 +129,7 @@ pub struct RadialGradientShader {
 }
 
 impl RadialGradientShader {
-    pub fn new(gradient: &Gradient, transform: &Transform2D<f32>) -> RadialGradientShader {
+    pub fn new(gradient: &Gradient, transform: &Transform) -> RadialGradientShader {
         RadialGradientShader {
             gradient: gradient.make_source(&transform_to_fixed(transform)),
         }
@@ -150,7 +150,7 @@ pub struct LinearGradientShader {
 }
 
 impl LinearGradientShader {
-    pub fn new(gradient: &Gradient, transform: &Transform2D<f32>) -> LinearGradientShader {
+    pub fn new(gradient: &Gradient, transform: &Transform) -> LinearGradientShader {
         LinearGradientShader {
             gradient: gradient.make_source(&transform_to_fixed(transform)),
         }
