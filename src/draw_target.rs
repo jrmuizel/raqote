@@ -434,14 +434,14 @@ impl DrawTarget {
         &self.buf
     }
 
-    pub fn write_png<P: std::convert::AsRef<std::path::Path>>(&self, path: P) {
-        let file = File::create(path).unwrap();
+    pub fn write_png<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), png::EncodingError> {
+        let file = File::create(path)?;
 
         let ref mut w = BufWriter::new(file);
 
         let mut encoder = png::Encoder::new(w, self.width as u32, self.height as u32);
         encoder.set(png::ColorType::RGBA).set(png::BitDepth::Eight);
-        let mut writer = encoder.write_header().unwrap();
+        let mut writer = encoder.write_header()?;
         let mut output = Vec::with_capacity(self.buf.len() * 4);
 
         for pixel in &self.buf {
@@ -462,6 +462,6 @@ impl DrawTarget {
             output.push(a as u8);
         }
 
-        writer.write_image_data(&output).unwrap();
+        writer.write_image_data(&output)
     }
 }
