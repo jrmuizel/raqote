@@ -23,8 +23,8 @@ use png::HasParameters;
 use crate::stroke::*;
 use crate::{IntRect, Point, Transform, Vector};
 
-pub fn intrect<T: Copy>(x: T, y: T, w: T, h: T) -> euclid::Box2D<T> {
-    euclid::Box2D::new(euclid::Point2D::new(x, y), euclid::Point2D::new(w, h))
+pub fn intrect<T: Copy>(x1: T, y1: T, x2: T, y2: T) -> euclid::Box2D<T> {
+    euclid::Box2D::new(euclid::Point2D::new(x1, y1), euclid::Point2D::new(x2, y2))
 }
 
 pub struct Mask {
