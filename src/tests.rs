@@ -25,7 +25,7 @@ mod tests {
     #[test]
     fn clip_rect() {
         let mut dt = DrawTarget::new(2, 2);
-        dt.push_clip_rect(rect(1, 1, 2, 2));
+        dt.push_clip_rect(intrect(1, 1, 2, 2));
         let mut pb = PathBuilder::new();
         pb.rect(0., 0., 2., 2.);
         dt.fill(
@@ -45,8 +45,8 @@ mod tests {
     #[test]
     fn nested_clip_rect() {
         let mut dt = DrawTarget::new(2, 2);
-        dt.push_clip_rect(rect(0, 1, 2, 2));
-        dt.push_clip_rect(rect(1, 0, 2, 2));
+        dt.push_clip_rect(intrect(0, 1, 2, 2));
+        dt.push_clip_rect(intrect(1, 0, 2, 2));
         let mut pb = PathBuilder::new();
         pb.rect(0., 0., 2., 2.);
         dt.fill(

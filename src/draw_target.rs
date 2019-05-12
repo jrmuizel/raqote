@@ -23,7 +23,7 @@ use png::HasParameters;
 use crate::stroke::*;
 use crate::{IntRect, Point, Transform, Vector};
 
-pub fn rect<T: Copy>(x: T, y: T, w: T, h: T) -> euclid::Box2D<T> {
+pub fn intrect<T: Copy>(x: T, y: T, w: T, h: T) -> euclid::Box2D<T> {
     euclid::Box2D::new(euclid::Point2D::new(x, y), euclid::Point2D::new(w, h))
 }
 
@@ -335,7 +335,7 @@ impl DrawTarget {
     }
 
     pub fn mask(&mut self, src: &Source, x: i32, y: i32, mask: &Mask) {
-        self.composite(src, &mask.data, rect(x, y, mask.width, mask.height), BlendMode::SrcOver);
+        self.composite(src, &mask.data, intrect(x, y, mask.width, mask.height), BlendMode::SrcOver);
     }
 
     pub fn stroke(&mut self, path: &Path, src: &Source, style: &StrokeStyle, options: &DrawOptions) {
@@ -351,7 +351,7 @@ impl DrawTarget {
         self.apply_path(path);
         let mut blitter = MaskSuperBlitter::new(self.width, self.height);
         self.rasterizer.rasterize(&mut blitter, path.winding);
-        self.composite(src, &blitter.buf, rect(0, 0, self.width, self.height), options.blend_mode);
+        self.composite(src, &blitter.buf, intrect(0, 0, self.width, self.height), options.blend_mode);
         self.rasterizer.reset();
     }
 
@@ -444,7 +444,7 @@ impl DrawTarget {
         self.composite(
             src,
             &canvas.pixels,
-            rect(0, 0, canvas.size.width as i32, canvas.size.height as i32),
+            intrect(0, 0, canvas.size.width as i32, canvas.size.height as i32),
             options.blend_mode,
         );
     }
@@ -488,10 +488,20 @@ impl DrawTarget {
             }
         };
 
-        rect = rect.intersection(&self.clip_bounds());
+        let clip_bounds = self.clip_bounds();
+
+        let (dest, dest_bounds) = match self.layer_stack.last_mut() {
+            Some(layer) => (&mut layer.buf[..], layer.rect),
+            None => (&mut self.buf[..], intrect(0, 0, self.width, self.height))
+        };
+
+        rect = rect
+            .intersection(&clip_bounds)
+            .intersection(&dest_bounds);
         if rect.is_negative() {
             return;
         }
+
 
         let blitter: &mut Blitter;
         let mut scb;
@@ -507,8 +517,8 @@ impl DrawTarget {
                     scb = ShaderClipBlitter {
                         shader: shader,
                         tmp: vec![0; self.width as usize],
-                        dest: &mut self.buf,
-                        dest_stride: self.width,
+                        dest,
+                        dest_stride: dest_bounds.size().width,
                         mask,
                         mask_stride: self.width,
                         clip,
@@ -521,8 +531,8 @@ impl DrawTarget {
                     sb = ShaderBlitter {
                         shader: &*shader,
                         tmp: vec![0; self.width as usize],
-                        dest: &mut self.buf,
-                        dest_stride: self.width,
+                        dest,
+                        dest_stride: dest_bounds.size().width,
                         mask,
                         mask_stride: self.width,
                     };
@@ -539,8 +549,8 @@ impl DrawTarget {
                     scb_blend = ShaderClipBlendBlitter {
                         shader: shader,
                         tmp: vec![0; self.width as usize],
-                        dest: &mut self.buf,
-                        dest_stride: self.width,
+                        dest,
+                        dest_stride: dest_bounds.size().width,
                         mask,
                         mask_stride: self.width,
                         clip,
@@ -554,8 +564,8 @@ impl DrawTarget {
                     sb_blend = ShaderBlendBlitter {
                         shader: &*shader,
                         tmp: vec![0; self.width as usize],
-                        dest: &mut self.buf,
-                        dest_stride: self.width,
+                        dest,
+                        dest_stride: dest_bounds.size().width,
                         mask,
                         mask_stride: self.width,
                         blend_fn
