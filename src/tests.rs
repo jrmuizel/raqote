@@ -105,4 +105,26 @@ mod tests {
         dt.clear(SolidSource { r: 0, g: 0, b: 0, a: 0 });
         assert_eq!(dt.get_data(), &vec![0, 0, 0, 0][..])
     }
+
+    #[test]
+    fn basic_push_layer() {
+        let mut dt = DrawTarget::new(2, 2);
+        let mut pb = PathBuilder::new();
+        dt.push_clip_rect(intrect(1, 1, 2, 2));
+        dt.push_layer(1.);
+        pb.rect(1., 1., 1., 1.);
+        dt.fill(
+            &pb.finish(),
+            &Source::Solid(SolidSource {
+                r: 0xff,
+                g: 0xff,
+                b: 0xff,
+                a: 0xff,
+            }),
+            &DrawOptions::new(),
+        );
+        let white = 0xffffffff;
+        dt.pop_layer();
+        assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
+    }
 }

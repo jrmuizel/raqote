@@ -331,7 +331,19 @@ impl DrawTarget {
     }
 
     pub fn pop_layer(&mut self) {
-        unimplemented!()
+        let layer = self.layer_stack.pop().unwrap();
+        let opacity = (layer.opacity * 255. + 0.5) as u8;
+        let mask = vec![opacity; (self.width * self.height) as usize];
+        let size = layer.rect.size();
+        let ctm = self.transform;
+        self.transform = Transform::identity();
+        let image = Source::Image(Image { width: size.width,
+                                          height: size.height,
+                                          data: &layer.buf},
+                                  Transform::create_translation(-layer.rect.min.x as f32,
+                                                                -layer.rect.min.y as f32));
+        self.composite(&image, &mask, layer.rect, BlendMode::SrcOver);
+        self.transform = ctm;
     }
 
     pub fn mask(&mut self, src: &Source, x: i32, y: i32, mask: &Mask) {
@@ -511,6 +523,8 @@ impl DrawTarget {
                          mask: Some(clip),
                      }) => {
                     scb = ShaderClipBlitter {
+                        x: dest_bounds.min.x,
+                        y: dest_bounds.min.y,
                         shader: shader,
                         tmp: vec![0; self.width as usize],
                         dest,
@@ -525,6 +539,8 @@ impl DrawTarget {
                 }
                 _ => {
                     sb = ShaderBlitter {
+                        x: dest_bounds.min.x,
+                        y: dest_bounds.min.y,
                         shader: &*shader,
                         tmp: vec![0; self.width as usize],
                         dest,
@@ -543,6 +559,8 @@ impl DrawTarget {
                          mask: Some(clip),
                      }) => {
                     scb_blend = ShaderClipBlendBlitter {
+                        x: dest_bounds.min.x,
+                        y: dest_bounds.min.y,
                         shader: shader,
                         tmp: vec![0; self.width as usize],
                         dest,
@@ -558,6 +576,8 @@ impl DrawTarget {
                 }
                 _ => {
                     sb_blend = ShaderBlendBlitter {
+                        x: dest_bounds.min.x,
+                        y: dest_bounds.min.y,
                         shader: &*shader,
                         tmp: vec![0; self.width as usize],
                         dest,

@@ -7,6 +7,8 @@ pub trait Blitter {
 }
 
 pub struct MaskSuperBlitter {
+    pub x: i32,
+    pub y: i32,
     width: i32,
     height: i32,
     pub buf: Vec<u8>,
@@ -25,6 +27,7 @@ fn coverage_to_partial_alpha(mut aa: i32) -> u8 {
 impl MaskSuperBlitter {
     pub fn new(width: i32, height: i32) -> MaskSuperBlitter {
         MaskSuperBlitter {
+            x: 0, y: 0,
             width,
             height,
             // we can end up writing one byte past the end of the buffer so allocate that
@@ -45,7 +48,10 @@ fn saturated_add(a: u8, b: u8) -> u8 {
 }
 
 impl Blitter for MaskSuperBlitter {
-    fn blit_span(&mut self, y: i32, x1: i32, x2: i32) {
+    fn blit_span(&mut self, mut y: i32, mut x1: i32, mut x2: i32) {
+        y -= self.y;
+        x1 -= self.x;
+        x2 -= self.x;
         let max: u8 = ((1 << (8 - SHIFT)) - (((y & MASK) + 1) >> SHIFT)) as u8;
         let mut b: *mut u8 = &mut self.buf[(y / 4 * self.width + (x1 >> SHIFT)) as usize];
 
@@ -167,6 +173,8 @@ impl Shader for LinearGradientShader {
 }
 
 pub struct ShaderBlitter<'a> {
+    pub x: i32,
+    pub y: i32,
     pub shader: &'a Shader,
     pub tmp: Vec<u32>,
     pub dest: &'a mut [u32],
@@ -177,14 +185,14 @@ pub struct ShaderBlitter<'a> {
 
 impl<'a> Blitter for ShaderBlitter<'a> {
     fn blit_span(&mut self, y: i32, x1: i32, x2: i32) {
-        let dest_row = y * self.dest_stride;
+        let dest_row = (y - self.y) * self.dest_stride;
         let mask_row = y * self.mask_stride;
         let count = (x2 - x1) as usize;
         self.shader.shade_span(x1, y, &mut self.tmp[..], count);
         for i in 0..count {
-            self.dest[(dest_row + x1) as usize + i] = over_in(
+            self.dest[(dest_row + x1 - self.x) as usize + i] = over_in(
                 self.tmp[i],
-                self.dest[(dest_row + x1) as usize + i],
+                self.dest[(dest_row + x1 - self.x) as usize + i],
                 self.mask[(mask_row + x1) as usize + i] as u32,
             );
         }
@@ -192,6 +200,8 @@ impl<'a> Blitter for ShaderBlitter<'a> {
 }
 
 pub struct ShaderClipBlitter<'a> {
+    pub x: i32,
+    pub y: i32,
     pub shader: &'a Shader,
     pub tmp: Vec<u32>,
     pub dest: &'a mut [u32],
@@ -204,15 +214,15 @@ pub struct ShaderClipBlitter<'a> {
 
 impl<'a> Blitter for ShaderClipBlitter<'a> {
     fn blit_span(&mut self, y: i32, x1: i32, x2: i32) {
-        let dest_row = y * self.dest_stride;
+        let dest_row = (y - self.y) * self.dest_stride;
         let mask_row = y * self.mask_stride;
         let clip_row = y * self.clip_stride;
         let count = (x2 - x1) as usize;
         self.shader.shade_span(x1, y, &mut self.tmp[..], count);
         for i in 0..count {
-            self.dest[(dest_row + x1) as usize + i] = over_in_in(
+            self.dest[(dest_row + x1 - self.x) as usize + i] = over_in_in(
                 self.tmp[i],
-                self.dest[(dest_row + x1) as usize + i],
+                self.dest[(dest_row + x1 - self.x) as usize + i],
                 self.mask[(mask_row + x1) as usize + i] as u32,
                 self.clip[(clip_row + x1) as usize + i] as u32,
             );
@@ -221,6 +231,8 @@ impl<'a> Blitter for ShaderClipBlitter<'a> {
 }
 
 pub struct ShaderClipBlendBlitter<'a> {
+    pub x: i32,
+    pub y: i32,
     pub shader: &'a Shader,
     pub tmp: Vec<u32>,
     pub dest: &'a mut [u32],
@@ -233,15 +245,15 @@ pub struct ShaderClipBlendBlitter<'a> {
 }
 
 impl<'a> Blitter for ShaderClipBlendBlitter<'a> {
-    fn blit_span(&mut self, y: i32, x1: i32, x2: i32) {
-        let dest_row = y * self.dest_stride;
+    fn blit_span(&mut self, mut y: i32, mut x1: i32, mut x2: i32) {
+        let dest_row = (y - self.y) * self.dest_stride;
         let mask_row = y * self.mask_stride;
         let clip_row = y * self.clip_stride;
         let count = (x2 - x1) as usize;
         self.shader.shade_span(x1, y, &mut self.tmp[..], count);
         for i in 0..count {
-            let dest = self.dest[(dest_row + x1) as usize + i];
-            self.dest[(dest_row + x1) as usize + i] = alpha_lerp(
+            let dest = self.dest[(dest_row + x1 - self.x) as usize + i];
+            self.dest[(dest_row + x1 - self.x) as usize + i] = alpha_lerp(
                 dest,
                 (self.blend_fn)(self.tmp[i],dest),
                 self.mask[(mask_row + x1) as usize + i] as u32,
@@ -252,6 +264,8 @@ impl<'a> Blitter for ShaderClipBlendBlitter<'a> {
 }
 
 pub struct ShaderBlendBlitter<'a> {
+    pub x: i32,
+    pub y: i32,
     pub shader: &'a Shader,
     pub tmp: Vec<u32>,
     pub dest: &'a mut [u32],
@@ -263,13 +277,13 @@ pub struct ShaderBlendBlitter<'a> {
 
 impl<'a> Blitter for ShaderBlendBlitter<'a> {
     fn blit_span(&mut self, y: i32, x1: i32, x2: i32) {
-        let dest_row = y * self.dest_stride;
+        let dest_row = (y - self.y) * self.dest_stride;
         let mask_row = y * self.mask_stride;
         let count = (x2 - x1) as usize;
         self.shader.shade_span(x1, y, &mut self.tmp[..], count);
         for i in 0..count {
-            let dest = self.dest[(dest_row + x1) as usize + i];
-            self.dest[(dest_row + x1) as usize + i] = lerp(
+            let dest = self.dest[(dest_row + x1 - self.x) as usize + i];
+            self.dest[(dest_row + x1 - self.x) as usize + i] = lerp(
                 dest,
                 (self.blend_fn)(self.tmp[i],dest),
                 alpha_to_alpha256(self.mask[(mask_row + x1) as usize + i] as u32),
@@ -287,7 +301,7 @@ pub struct SolidBlitter<'a> {
 }
 
 impl<'a> Blitter for SolidBlitter<'a> {
-    fn blit_span(&mut self, y: i32, x1: i32, x2: i32) {
+    fn blit_span(&mut self, mut y: i32, mut x1: i32, mut x2: i32) {
         let dest_row = y * self.dest_stride;
         let mask_row = y * self.mask_stride;
         for i in x1..x2 {
