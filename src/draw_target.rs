@@ -21,7 +21,7 @@ use std::io::BufWriter;
 use png::HasParameters;
 
 use crate::stroke::*;
-use crate::{IntRect, Point, Transform};
+use crate::{IntRect, Point, Transform, Vector};
 
 pub fn rect<T: Copy>(x: T, y: T, w: T, h: T) -> euclid::Box2D<T> {
     euclid::Box2D::new(euclid::Point2D::new(x, y), euclid::Point2D::new(w, h))
@@ -86,6 +86,39 @@ pub enum Source {
     Image(Image, Transform),
     RadialGradient(Gradient, Transform),
     LinearGradient(Gradient, Transform),
+}
+
+impl Source {
+    /// Creates a new linear gradient source where the start point corresponds to the gradient
+    /// stop at position = 0 and the end point corresponds to the graident stop at position = 1.
+    pub fn new_linear_gradient(gradient: Gradient, start: Point, end: Point) -> Source {
+        let gradient_vector = Vector::new(end.x - start.x, end.y - start.y);
+        // Translate the gradient vector to the start point
+        let translate = Transform::create_translation(start.x, start.y);
+        // Get length of desired gradient vector
+        let length = gradient_vector.length();
+        // Scale gradient to desired length
+        // Linear gradients go from (0, 0) to (256, 0), this may change
+        let scale = Transform::create_scale(length / 256.0, length / 256.0);
+        // Rotate gradient to desired angle
+        let rotation = Transform::create_rotation(gradient_vector.angle_from_x_axis());
+        // Compute final transform
+        let transform = translate.pre_mul(&rotation).pre_mul(&scale).inverse().unwrap();
+
+        Source::LinearGradient(gradient, transform)
+    }
+
+    /// Creates a new radial gradient that is centered at the given point and has the given radius.
+    pub fn new_radial_gradient(gradient: Gradient, center: Point, radius: f32) -> Source {
+        // Scale gradient to desired radius
+        let scale = Transform::create_scale(radius / 128.0, radius / 128.0);
+        // Transform gradient to center of gradient
+        let translate = Transform::create_translation(center.x, center.y);
+        // Compute final transform
+        let transform = translate.pre_mul(&scale).inverse().unwrap();
+
+        Source::RadialGradient(gradient, transform)
+    }
 }
 
 pub struct DrawOptions {
