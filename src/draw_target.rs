@@ -366,7 +366,8 @@ impl DrawTarget {
             &DrawOptions {
                 blend_mode: BlendMode::Src,
             },
-        )
+        );
+        self.transform = ctm;
     }
 
     pub fn draw_text(
