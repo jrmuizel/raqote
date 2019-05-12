@@ -100,13 +100,13 @@ fn transform_to_fixed(transform: &Transform) -> MatrixFixedPoint {
     }
 }
 
-pub struct ImageShader<'a> {
-    image: &'a Image,
+pub struct ImageShader<'a, 'b> {
+    image: &'a Image<'b>,
     xfm: MatrixFixedPoint,
 }
 
-impl<'a> ImageShader<'a> {
-    pub fn new(image: &'a Image, transform: &Transform) -> ImageShader<'a> {
+impl<'a, 'b> ImageShader<'a, 'b> {
+    pub fn new(image: &'a Image<'b>, transform: &Transform) -> ImageShader<'a, 'b> {
         ImageShader {
             image,
             xfm: transform_to_fixed(transform),
@@ -114,7 +114,7 @@ impl<'a> ImageShader<'a> {
     }
 }
 
-impl<'a> Shader for ImageShader<'a> {
+impl<'a, 'b> Shader for ImageShader<'a, 'b> {
     fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
         for i in 0..count {
             let p = self.xfm.transform(x as u16, y as u16);

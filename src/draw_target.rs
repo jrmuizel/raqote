@@ -81,17 +81,17 @@ fn blend_proc(mode: BlendMode) -> fn(u32, u32) -> u32 {
 ///
 /// These locations are an artifact of the blitter implementation and will probably change in the
 /// future to become more ergonomic.
-pub enum Source {
+pub enum Source<'a> {
     Solid(SolidSource),
-    Image(Image, Transform),
+    Image(Image<'a>, Transform),
     RadialGradient(Gradient, Transform),
     LinearGradient(Gradient, Transform),
 }
 
-impl Source {
+impl<'a> Source<'a> {
     /// Creates a new linear gradient source where the start point corresponds to the gradient
     /// stop at position = 0 and the end point corresponds to the graident stop at position = 1.
-    pub fn new_linear_gradient(gradient: Gradient, start: Point, end: Point) -> Source {
+    pub fn new_linear_gradient(gradient: Gradient, start: Point, end: Point) -> Source<'a> {
         let gradient_vector = Vector::new(end.x - start.x, end.y - start.y);
         // Translate the gradient vector to the start point
         let translate = Transform::create_translation(start.x, start.y);
@@ -109,7 +109,7 @@ impl Source {
     }
 
     /// Creates a new radial gradient that is centered at the given point and has the given radius.
-    pub fn new_radial_gradient(gradient: Gradient, center: Point, radius: f32) -> Source {
+    pub fn new_radial_gradient(gradient: Gradient, center: Point, radius: f32) -> Source<'a> {
         // Scale gradient to desired radius
         let scale = Transform::create_scale(radius / 128.0, radius / 128.0);
         // Transform gradient to center of gradient

@@ -73,7 +73,7 @@ fn main() {
     let _bitmap = Image {
         width: info.width as i32,
         height: info.height as i32,
-        data: image,
+        data: &image[..],
     };
 
     //dt.fill(Source::Solid(SolidSource{r: 0xff, g: 0xff, b: 0, a: 0xff}));
