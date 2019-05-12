@@ -102,7 +102,7 @@ mod tests {
             }),
             &DrawOptions::new(),
         );
-        dt.clear();
+        dt.clear(SolidSource { r: 0, g: 0, b: 0, a: 0 });
         assert_eq!(dt.get_data(), &vec![0, 0, 0, 0][..])
     }
 }
