@@ -73,7 +73,10 @@ pub struct PathBuilder {
 impl PathBuilder {
     pub fn new() -> PathBuilder {
         PathBuilder {
-            path: Path { ops: Vec::new(), winding: Winding::NonZero },
+            path: Path {
+                ops: Vec::new(),
+                winding: Winding::NonZero,
+            },
         }
     }
 

@@ -33,6 +33,7 @@ fn main() {
             b: 0,
             a: 0x80,
         }),
+        &DrawOptions::new(),
     );
 
     let mut pb = PathBuilder::new();
@@ -97,7 +98,7 @@ fn main() {
         },
         Transform::create_translation(-150., -150.),
     );
-    dt.fill(&path, &gradient);
+    dt.fill(&path, &gradient, &DrawOptions::new());
 
     let mut pb = PathBuilder::new();
     pb.move_to(200., 200.);
@@ -116,6 +117,7 @@ fn main() {
             dash_array: vec![10., 5.],
             dash_offset: 3.,
         },
+        &DrawOptions::new(),
     );
 
     let font = SystemSource::new()
@@ -135,6 +137,7 @@ fn main() {
             b: 0xff,
             a: 0xff,
         }),
+        &DrawOptions::new(),
     );
 
     dt.write_png("out.png").unwrap();

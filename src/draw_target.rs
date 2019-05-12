@@ -21,7 +21,7 @@ use std::io::BufWriter;
 use png::HasParameters;
 
 use crate::stroke::*;
-use crate::{Point, IntRect, Transform};
+use crate::{IntRect, Point, Transform};
 
 pub fn rect<T: Copy>(x: T, y: T, w: T, h: T) -> euclid::Box2D<T> {
     euclid::Box2D::new(euclid::Point2D::new(x, y), euclid::Point2D::new(w, h))
@@ -40,7 +40,7 @@ pub struct SolidSource {
     pub a: u8,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum BlendMode {
     Dst,
     Src,
@@ -86,6 +86,24 @@ pub enum Source {
     Image(Image, Transform),
     RadialGradient(Gradient, Transform),
     LinearGradient(Gradient, Transform),
+}
+
+pub struct DrawOptions {
+    blend_mode: BlendMode,
+}
+
+impl DrawOptions {
+    pub fn new() -> Self {
+        Default::default()
+    }
+}
+
+impl Default for DrawOptions {
+    fn default() -> Self {
+        DrawOptions {
+            blend_mode: BlendMode::SrcOver,
+        }
+    }
 }
 
 struct Clip {
@@ -287,16 +305,16 @@ impl DrawTarget {
         self.composite(src, &mask.data, rect(x, y, mask.width, mask.height), BlendMode::SrcOver);
     }
 
-    pub fn stroke(&mut self, path: &Path, src: &Source, style: &StrokeStyle) {
+    pub fn stroke(&mut self, path: &Path, src: &Source, style: &StrokeStyle, options: &DrawOptions) {
         let mut path = path.flatten(0.1);
         if !style.dash_array.is_empty() {
             path = dash_path(&path, &style.dash_array, style.dash_offset);
         }
         let stroked = stroke_to_path(&path, style);
-        self.fill(&stroked, src);
+        self.fill(&stroked, src, options);
     }
 
-    pub fn fill(&mut self, path: &Path, src: &Source) {
+    pub fn fill(&mut self, path: &Path, src: &Source, options: &DrawOptions) {
         self.apply_path(path);
         let mut blitter = MaskSuperBlitter::new(self.width, self.height);
         self.rasterizer.rasterize(&mut blitter, path.winding);
@@ -311,6 +329,7 @@ impl DrawTarget {
         text: &str,
         mut start: Point,
         src: &Source,
+        options: &DrawOptions,
     ) {
         let mut ids = Vec::new();
         let mut positions = Vec::new();
@@ -320,7 +339,7 @@ impl DrawTarget {
             positions.push(start);
             start += font.advance(id).unwrap() / 96.;
         }
-        self.draw_glyphs(font, point_size, &ids, &positions, src);
+        self.draw_glyphs(font, point_size, &ids, &positions, src, options);
     }
 
     pub fn draw_glyphs(
@@ -330,6 +349,7 @@ impl DrawTarget {
         ids: &[u32],
         positions: &[Point],
         src: &Source,
+        options: &DrawOptions,
     ) {
         let mut combined_bounds = euclid::Rect::zero();
         for (id, position) in ids.iter().zip(positions.iter()) {
@@ -373,7 +393,7 @@ impl DrawTarget {
             src,
             &canvas.pixels,
             rect(0, 0, canvas.size.width as i32, canvas.size.height as i32),
-            BlendMode::SrcOver
+            options.blend_mode,
         );
     }
 

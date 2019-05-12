@@ -16,6 +16,7 @@ mod tests {
                 b: 0xff,
                 a: 0xff,
             }),
+            &DrawOptions::new(),
         );
         let white = 0xffffffff;
         assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
@@ -35,6 +36,7 @@ mod tests {
                 b: 0xff,
                 a: 0xff,
             }),
+            &DrawOptions::new(),
         );
         let white = 0xffffffff;
         assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
@@ -55,6 +57,7 @@ mod tests {
                 b: 0xff,
                 a: 0xff,
             }),
+            &DrawOptions::new(),
         );
         let white = 0xffffffff;
         assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
@@ -77,6 +80,7 @@ mod tests {
                 b: 0xff,
                 a: 0xff,
             }),
+            &DrawOptions::new(),
         );
         let white = 0xffffffff;
         assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])

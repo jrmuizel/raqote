@@ -9,7 +9,7 @@ mod tests;
 mod path_builder;
 pub use path_builder::*;
 
-pub use crate::draw_target::{DrawTarget, SolidSource, Source, Winding, BlendMode};
+pub use crate::draw_target::{BlendMode, DrawOptions, DrawTarget, SolidSource, Source, Winding};
 pub use crate::stroke::*;
 
 pub use sw_composite::{Gradient, GradientStop, Image};
