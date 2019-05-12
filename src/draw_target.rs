@@ -318,8 +318,27 @@ impl DrawTarget {
         self.apply_path(path);
         let mut blitter = MaskSuperBlitter::new(self.width, self.height);
         self.rasterizer.rasterize(&mut blitter, path.winding);
-        self.composite(src, &blitter.buf, rect(0, 0, self.width, self.height), BlendMode::SrcOver);
+        self.composite(src, &blitter.buf, rect(0, 0, self.width, self.height), options.blend_mode);
         self.rasterizer.reset();
+    }
+
+    pub fn clear(&mut self) {
+        let mut pb = PathBuilder::new();
+        let ctm = self.transform;
+        self.transform = Transform::identity();
+        pb.rect(0., 0., self.width as f32, self.height as f32);
+        self.fill(
+            &pb.finish(),
+            &Source::Solid(SolidSource {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 0,
+            }),
+            &DrawOptions {
+                blend_mode: BlendMode::Clear,
+            },
+        )
     }
 
     pub fn draw_text(

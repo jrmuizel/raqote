@@ -85,4 +85,24 @@ mod tests {
         let white = 0xffffffff;
         assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
     }
+
+    #[test]
+    fn clear() {
+        let mut dt = DrawTarget::new(2, 2);
+        let mut pb = PathBuilder::new();
+        pb.rect(0., 0., 2., 2.);
+        let mut path = pb.finish();
+        dt.fill(
+            &path,
+            &Source::Solid(SolidSource {
+                r: 0xff,
+                g: 0xff,
+                b: 0xff,
+                a: 0xff,
+            }),
+            &DrawOptions::new(),
+        );
+        dt.clear();
+        assert_eq!(dt.get_data(), &vec![0, 0, 0, 0][..])
+    }
 }

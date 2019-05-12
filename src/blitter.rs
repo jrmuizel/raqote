@@ -242,8 +242,8 @@ impl<'a> Blitter for ShaderClipBlendBlitter<'a> {
         for i in 0..count {
             let dest = self.dest[(dest_row + x1) as usize + i];
             self.dest[(dest_row + x1) as usize + i] = alpha_lerp(
-                (self.blend_fn)(self.tmp[i],dest),
                 dest,
+                (self.blend_fn)(self.tmp[i],dest),
                 self.mask[(mask_row + x1) as usize + i] as u32,
                 self.clip[(clip_row + x1) as usize + i] as u32,
             );
@@ -270,8 +270,8 @@ impl<'a> Blitter for ShaderBlendBlitter<'a> {
         for i in 0..count {
             let dest = self.dest[(dest_row + x1) as usize + i];
             self.dest[(dest_row + x1) as usize + i] = lerp(
-                (self.blend_fn)(self.tmp[i],dest),
                 dest,
+                (self.blend_fn)(self.tmp[i],dest),
                 alpha_to_alpha256(self.mask[(mask_row + x1) as usize + i] as u32),
             );
         }
