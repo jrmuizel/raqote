@@ -146,21 +146,17 @@ impl ActiveEdge {
 
 
 pub struct Rasterizer {
-    /*
-        Rasterizer(int width, int height);
-        ~Rasterizer() { delete[] edge_starts; };
-    */
     edge_starts: Vec<Option<NonNull<ActiveEdge>>>,
-    width: i32,
-    height: i32,
-    cur_y: i32,
+    width: u32,
+    height: u32,
+    cur_y: u32,
     active_edges: Option<NonNull<ActiveEdge>>,
 
     edge_arena: Arena<ActiveEdge>,
 }
 
 impl Rasterizer {
-    pub fn new(width: i32, height: i32) -> Rasterizer {
+    pub fn new(width: u32, height: u32) -> Rasterizer {
         let mut edge_starts = Vec::new();
         for _ in 0..(height * 4) {
             edge_starts.push(None);
@@ -273,7 +269,7 @@ impl Rasterizer {
         e.fullx = edge.x1 << 16;
 
         // if the edge is completely above or completely below we can drop it
-        if edge.y2 < 0 || edge.y1 > self.height {
+        if edge.y2 < 0 || edge.y1 > self.height as i32 {
             return;
         }
 
@@ -358,7 +354,7 @@ impl Rasterizer {
     fn step_edges(&mut self) {
         let mut prev_ptr = &mut self.active_edges as *mut _;
         let mut edge = self.active_edges;
-        let cury = self.cur_y; // avoid any aliasing problems
+        let cury = self.cur_y as i32; // avoid any aliasing problems
         while let Some(mut e_ptr) = edge {
             let e = unsafe { e_ptr.as_mut() };
             e.step(cury);
@@ -469,13 +465,13 @@ impl Rasterizer {
 
             if inside {
                 blitter.blit_span(
-                    self.cur_y,
+                    self.cur_y as i32,
                     (prevx + (1 << 15)) >> 16,
                     (e.fullx + (1 << 15)) >> 16,
                 );
             }
 
-            if (e.fullx >> 16) >= self.width {
+            if (e.fullx >> 16) >= self.width as i32 {
                 break;
             }
             winding += e.winding as i32;

@@ -7,8 +7,8 @@ pub trait Blitter {
 }
 
 pub struct MaskSuperBlitter {
-    width: i32,
-    height: i32,
+    width: u32,
+    height: u32,
     pub buf: Vec<u8>,
 }
 
@@ -23,7 +23,7 @@ fn coverage_to_partial_alpha(mut aa: i32) -> u8 {
 }
 
 impl MaskSuperBlitter {
-    pub fn new(width: i32, height: i32) -> MaskSuperBlitter {
+    pub fn new(width: u32, height: u32) -> MaskSuperBlitter {
         MaskSuperBlitter {
             width,
             height,
@@ -47,7 +47,7 @@ fn saturated_add(a: u8, b: u8) -> u8 {
 impl Blitter for MaskSuperBlitter {
     fn blit_span(&mut self, y: i32, x1: i32, x2: i32) {
         let max: u8 = ((1 << (8 - SHIFT)) - (((y & MASK) + 1) >> SHIFT)) as u8;
-        let mut b: *mut u8 = &mut self.buf[(y / 4 * self.width + (x1 >> SHIFT)) as usize];
+        let mut b: *mut u8 = &mut self.buf[(y / 4 * self.width as i32 + (x1 >> SHIFT)) as usize];
 
         let mut fb = x1 & SUPER_MASK;
         let fe = x2 & SUPER_MASK;

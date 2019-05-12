@@ -151,8 +151,8 @@ struct Layer {
 }
 
 pub struct DrawTarget {
-    width: i32,
-    height: i32,
+    width: u32,
+    height: u32,
     rasterizer: Rasterizer,
     current_point: Point,
     first_point: Point,
@@ -163,7 +163,7 @@ pub struct DrawTarget {
 }
 
 impl DrawTarget {
-    pub fn new(width: i32, height: i32) -> DrawTarget {
+    pub fn new(width: u32, height: u32) -> DrawTarget {
         DrawTarget {
             width,
             height,
@@ -317,7 +317,7 @@ impl DrawTarget {
     fn clip_bounds(&self) -> IntRect {
         self.clip_stack.last().map(|c| c.rect).unwrap_or(IntRect::new(
             euclid::Point2D::new(0, 0),
-            euclid::Point2D::new(self.width, self.height),
+            euclid::Point2D::new(self.width as i32, self.height as i32),
         ))
     }
 
@@ -351,7 +351,7 @@ impl DrawTarget {
         self.apply_path(path);
         let mut blitter = MaskSuperBlitter::new(self.width, self.height);
         self.rasterizer.rasterize(&mut blitter, path.winding);
-        self.composite(src, &blitter.buf, intrect(0, 0, self.width, self.height), options.blend_mode);
+        self.composite(src, &blitter.buf, intrect(0, 0, self.width as i32, self.height as i32), options.blend_mode);
         self.rasterizer.reset();
     }
 
@@ -492,7 +492,7 @@ impl DrawTarget {
 
         let (dest, dest_bounds) = match self.layer_stack.last_mut() {
             Some(layer) => (&mut layer.buf[..], layer.rect),
-            None => (&mut self.buf[..], intrect(0, 0, self.width, self.height))
+            None => (&mut self.buf[..], intrect(0, 0, self.width as i32, self.height as i32))
         };
 
         rect = rect
@@ -515,14 +515,14 @@ impl DrawTarget {
                          mask: Some(clip),
                      }) => {
                     scb = ShaderClipBlitter {
-                        shader: shader,
+                        shader,
                         tmp: vec![0; self.width as usize],
                         dest,
                         dest_stride: dest_bounds.size().width,
                         mask,
-                        mask_stride: self.width,
+                        mask_stride: self.width as i32,
                         clip,
-                        clip_stride: self.width,
+                        clip_stride: self.width as i32,
                     };
 
                     blitter = &mut scb;
@@ -534,7 +534,7 @@ impl DrawTarget {
                         dest,
                         dest_stride: dest_bounds.size().width,
                         mask,
-                        mask_stride: self.width,
+                        mask_stride: self.width as i32,
                     };
                     blitter = &mut sb;
                 }
@@ -552,9 +552,9 @@ impl DrawTarget {
                         dest,
                         dest_stride: dest_bounds.size().width,
                         mask,
-                        mask_stride: self.width,
+                        mask_stride: self.width as i32,
                         clip,
-                        clip_stride: self.width,
+                        clip_stride: self.width as i32,
                         blend_fn
                     };
 
@@ -567,7 +567,7 @@ impl DrawTarget {
                         dest,
                         dest_stride: dest_bounds.size().width,
                         mask,
-                        mask_stride: self.width,
+                        mask_stride: self.width as i32,
                         blend_fn
                     };
                     blitter = &mut sb_blend;
