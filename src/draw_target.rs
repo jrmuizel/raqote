@@ -355,21 +355,16 @@ impl DrawTarget {
         self.rasterizer.reset();
     }
 
-    pub fn clear(&mut self) {
+    pub fn clear(&mut self, solid: SolidSource) {
         let mut pb = PathBuilder::new();
         let ctm = self.transform;
         self.transform = Transform::identity();
         pb.rect(0., 0., self.width as f32, self.height as f32);
         self.fill(
             &pb.finish(),
-            &Source::Solid(SolidSource {
-                r: 0,
-                g: 0,
-                b: 0,
-                a: 0,
-            }),
+            &Source::Solid(solid),
             &DrawOptions {
-                blend_mode: BlendMode::Clear,
+                blend_mode: BlendMode::Src,
             },
         )
     }
