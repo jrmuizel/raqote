@@ -333,6 +333,8 @@ impl DrawTarget {
     pub fn pop_layer(&mut self) {
         let layer = self.layer_stack.pop().unwrap();
         let opacity = (layer.opacity * 255. + 0.5) as u8;
+        // Allocating an entire mask just for the opacity is needlessly bad.
+        // We should be able to fix it once the blitters work better.
         let mask = vec![opacity; (self.width * self.height) as usize];
         let size = layer.rect.size();
         let ctm = self.transform;
