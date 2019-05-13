@@ -8,6 +8,7 @@ license = "BSD-3-Clause"
 repository = "https://github.com/jrmuizel/raqote"
 documentation = "https://docs.rs/raqote"
 readme = "README.md"
+keywords = ["2d", "graphics"]
 
 [dependencies]
 euclid = "0.19.8"
