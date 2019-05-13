@@ -321,6 +321,8 @@ impl DrawTarget {
         ))
     }
 
+    /// Pushes a new layer as the drawing target. This is used for implementing
+    /// group opacity effects.
     pub fn push_layer(&mut self, opacity: f32) {
         let rect = self.clip_bounds();
         self.layer_stack.push(Layer {
@@ -330,6 +332,8 @@ impl DrawTarget {
         });
     }
 
+    /// Draws the most recently pushed layer to the drawing target with
+    /// the pushed opacity applied.
     pub fn pop_layer(&mut self) {
         let layer = self.layer_stack.pop().unwrap();
         let opacity = (layer.opacity * 255. + 0.5) as u8;
