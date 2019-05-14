@@ -174,4 +174,24 @@ mod tests {
                                         white, 0, white,
                                         white, white, white][..])
     }
+
+    #[cfg(not(miri))]
+    #[test]
+    fn degenerate_stroke() {
+        let mut dt = DrawTarget::new(3, 3);
+        let mut pb = PathBuilder::new();
+        pb.move_to(0.5, 0.5);
+        pb.line_to(2., 2.);
+        pb.line_to(2., 2.);
+        pb.line_to(4., 2.);
+        dt.stroke(&pb.finish(), &Source::Solid(SolidSource {
+            r: 0xff,
+            g: 0xff,
+            b: 0xff,
+            a: 0xff,
+        }),
+                  &StrokeStyle { width: 1., ..Default::default()},
+                  &DrawOptions::new());
+
+    }
 }

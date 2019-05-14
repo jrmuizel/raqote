@@ -35,16 +35,18 @@ pub enum LineJoin {
     Bevel,
 }
 
-fn compute_normal(p0: Point, p1: Point) -> Vector {
+fn compute_normal(p0: Point, p1: Point) -> Option<Vector> {
     let ux = p1.x - p0.x;
     let uy = p1.y - p0.y;
 
     // this could overflow f32. Skia checks for this and
     // uses a double in that situation
     let ulen = ux.hypot(uy);
-    assert!(ulen != 0.);
+    if ulen == 0. {
+        return None;
+    }
     // the normal is perpendicular to the *unit* vector
-    Vector::new(-uy / ulen, ux / ulen)
+    Some(Vector::new(-uy / ulen, ux / ulen))
 }
 
 fn flip(v: Vector) -> Vector {
@@ -284,51 +286,55 @@ pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
                 cur_pt = pt;
             }
             PathOp::LineTo(pt) => {
-                let normal = compute_normal(cur_pt, pt);
-                if start_point.is_none() {
-                    start_point = Some((cur_pt, normal));
-                } else {
-                    join_line(&mut stroked_path, style, cur_pt, last_normal, normal);
-                }
-
-                stroked_path.move_to(
-                    cur_pt.x + normal.x * half_width,
-                    cur_pt.y + normal.y * half_width,
-                );
-                stroked_path.line_to(pt.x + normal.x * half_width, pt.y + normal.y * half_width);
-                stroked_path.line_to(pt.x + -normal.x * half_width, pt.y + -normal.y * half_width);
-                stroked_path.line_to(
-                    cur_pt.x - normal.x * half_width,
-                    cur_pt.y - normal.y * half_width,
-                );
-                stroked_path.close();
-                last_normal = normal;
-
-                cur_pt = pt;
-            }
-            PathOp::Close => {
-                if let Some((point, start_normal)) = start_point {
-                    let normal = compute_normal(cur_pt, point);
-                    join_line(&mut stroked_path, style, cur_pt, last_normal, normal);
+                if let Some(normal) = compute_normal(cur_pt, pt) {
+                    if start_point.is_none() {
+                        start_point = Some((cur_pt, normal));
+                    } else {
+                        join_line(&mut stroked_path, style, cur_pt, last_normal, normal);
+                    }
 
                     stroked_path.move_to(
                         cur_pt.x + normal.x * half_width,
                         cur_pt.y + normal.y * half_width,
                     );
-                    stroked_path.line_to(
-                        point.x + normal.x * half_width,
-                        point.y + normal.y * half_width,
-                    );
-                    stroked_path.line_to(
-                        point.x + -normal.x * half_width,
-                        point.y + -normal.y * half_width,
-                    );
+                    stroked_path.line_to(pt.x + normal.x * half_width, pt.y + normal.y * half_width);
+                    stroked_path.line_to(pt.x + -normal.x * half_width, pt.y + -normal.y * half_width);
                     stroked_path.line_to(
                         cur_pt.x - normal.x * half_width,
                         cur_pt.y - normal.y * half_width,
                     );
                     stroked_path.close();
-                    join_line(&mut stroked_path, style, point, normal, start_normal);
+                    last_normal = normal;
+
+                    cur_pt = pt;
+                }
+            }
+            PathOp::Close => {
+                if let Some((end_point, start_normal)) = start_point {
+                    if let Some(normal) = compute_normal(cur_pt, end_point) {
+                        join_line(&mut stroked_path, style, cur_pt, last_normal, normal);
+
+                        stroked_path.move_to(
+                            cur_pt.x + normal.x * half_width,
+                            cur_pt.y + normal.y * half_width,
+                        );
+                        stroked_path.line_to(
+                            end_point.x + normal.x * half_width,
+                            end_point.y + normal.y * half_width,
+                        );
+                        stroked_path.line_to(
+                            end_point.x + -normal.x * half_width,
+                            end_point.y + -normal.y * half_width,
+                        );
+                        stroked_path.line_to(
+                            cur_pt.x - normal.x * half_width,
+                            cur_pt.y - normal.y * half_width,
+                        );
+                        stroked_path.close();
+                        join_line(&mut stroked_path, style, end_point, normal, start_normal);
+                    } else {
+                        join_line(&mut stroked_path, style, end_point, last_normal, start_normal);
+                    }
                 }
             }
             PathOp::QuadTo(..) => panic!("Only flat paths handled"),
