@@ -27,12 +27,14 @@ pub fn intrect<T: Copy>(x1: T, y1: T, x2: T, y2: T) -> euclid::Box2D<T> {
     euclid::Box2D::new(euclid::Point2D::new(x1, y1), euclid::Point2D::new(x2, y2))
 }
 
+#[derive(Clone)]
 pub struct Mask {
     pub width: i32,
     pub height: i32,
     pub data: Vec<u8>,
 }
 
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct SolidSource {
     pub r: u8,
     pub g: u8,
@@ -40,7 +42,7 @@ pub struct SolidSource {
     pub a: u8,
 }
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum BlendMode {
     Dst,
     Src,
@@ -121,6 +123,7 @@ impl<'a> Source<'a> {
     }
 }
 
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub struct DrawOptions {
     blend_mode: BlendMode,
 }
@@ -139,11 +142,13 @@ impl Default for DrawOptions {
     }
 }
 
+#[derive(Clone)]
 struct Clip {
     rect: IntRect,
     mask: Option<Vec<u8>>,
 }
 
+#[derive(Clone)]
 struct Layer {
     buf: Vec<u32>,
     opacity: f32,
