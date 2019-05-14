@@ -75,7 +75,7 @@ dt.stroke(
         cap: LineCap::Round,
         join: LineJoin::Round,
         width: 10.,
-        mitre_limit: 2.,
+        miter_limit: 2.,
         dash_array: vec![10., 18.],
         dash_offset: 16.,
     },

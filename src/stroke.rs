@@ -5,7 +5,7 @@ pub struct StrokeStyle {
     pub width: f32,
     pub cap: LineCap,
     pub join: LineJoin,
-    pub mitre_limit: f32,
+    pub miter_limit: f32,
     pub dash_array: Vec<f32>,
     pub dash_offset: f32,
 }
@@ -18,7 +18,7 @@ pub enum LineCap {
 
 pub enum LineJoin {
     Round,
-    Mitre,
+    Miter,
     Bevel,
 }
 
@@ -231,9 +231,9 @@ fn join_line(
             dest.line_to(pt.x, pt.y);
             dest.close();
         }
-        LineJoin::Mitre => {
+        LineJoin::Miter => {
             let in_dot_out = -s1_normal.x * s2_normal.x + -s1_normal.y * s2_normal.y;
-            if 2. <= style.mitre_limit * style.mitre_limit * (1. - in_dot_out) {
+            if 2. <= style.miter_limit * style.miter_limit * (1. - in_dot_out) {
                 let start = pt + s1_normal * offset;
                 let end = pt + s2_normal * offset;
                 let intersection = line_intersection(start, s1_normal, end, s2_normal);
