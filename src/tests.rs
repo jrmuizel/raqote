@@ -153,6 +153,8 @@ mod tests {
         assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
     }
 
+    // This test is disable on miri because miri doesn't support hypot()
+    #[cfg(not(miri))]
     #[test]
     fn stroke() {
         let mut dt = DrawTarget::new(3, 3);
