@@ -177,6 +177,14 @@ impl DrawTarget {
         }
     }
 
+    pub fn width(&self) -> i32 {
+        self.width
+    }
+
+    pub fn height(&self) -> i32 {
+        self.height
+    }
+
     pub fn set_transform(&mut self, transform: &Transform) {
         self.transform = *transform;
     }
