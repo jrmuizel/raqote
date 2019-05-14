@@ -10,6 +10,19 @@ pub struct StrokeStyle {
     pub dash_offset: f32,
 }
 
+impl Default for StrokeStyle {
+    fn default() -> Self {
+        StrokeStyle {
+            width: 1.,
+            cap: LineCap::Butt,
+            join: LineJoin::Miter,
+            miter_limit: 10.,
+            dash_array: Vec::new(),
+            dash_offset: 0.,
+        }
+    }
+}
+
 pub enum LineCap {
     Round,
     Square,
@@ -294,8 +307,9 @@ pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
                 cur_pt = pt;
             }
             PathOp::Close => {
-                if let Some((point, normal)) = start_point {
-                    let last_normal = compute_normal(cur_pt, point);
+                if let Some((point, start_normal)) = start_point {
+                    let normal = compute_normal(cur_pt, point);
+                    join_line(&mut stroked_path, style, cur_pt, last_normal, normal);
 
                     stroked_path.move_to(
                         cur_pt.x + normal.x * half_width,
@@ -314,8 +328,7 @@ pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
                         cur_pt.y - normal.y * half_width,
                     );
                     stroked_path.close();
-
-                    join_line(&mut stroked_path, style, point, last_normal, normal);
+                    join_line(&mut stroked_path, style, point, normal, start_normal);
                 }
             }
             PathOp::QuadTo(..) => panic!("Only flat paths handled"),

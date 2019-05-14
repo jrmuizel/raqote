@@ -2,6 +2,7 @@
 mod tests {
     use crate::draw_target::*;
     use crate::path_builder::*;
+    use crate::stroke::*;
     use crate::Image;
 
     #[test]
@@ -150,5 +151,24 @@ mod tests {
         dt.draw_image_at(1., 1., &image, &DrawOptions::default());
         let white = 0xffffffff;
         assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
+    }
+
+    #[test]
+    fn stroke() {
+        let mut dt = DrawTarget::new(3, 3);
+        let mut pb = PathBuilder::new();
+        pb.rect(0.5, 0.5, 2., 2.);
+        dt.stroke(&pb.finish(), &Source::Solid(SolidSource {
+            r: 0xff,
+            g: 0xff,
+            b: 0xff,
+            a: 0xff,
+        }),
+                  &StrokeStyle { width: 1., ..Default::default()},
+                  &DrawOptions::new());
+        let white = 0xffffffff;
+        assert_eq!(dt.get_data(), &vec![white, white, white,
+                                        white, 0, white,
+                                        white, white, white][..])
     }
 }
