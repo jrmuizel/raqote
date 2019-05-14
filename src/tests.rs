@@ -194,4 +194,26 @@ mod tests {
                   &DrawOptions::new());
 
     }
+
+    #[cfg(not(miri))]
+    #[test]
+    fn dashing() {
+        let mut dt = DrawTarget::new(3, 3);
+        let mut pb = PathBuilder::new();
+        pb.move_to(40., 40.);
+        pb.line_to(160., 40.);
+        pb.line_to(160., 160.);
+        pb.line_to(160., 160.);
+        pb.close();
+        dt.stroke(&pb.finish(), &Source::Solid(SolidSource {
+            r: 0xff,
+            g: 0xff,
+            b: 0xff,
+            a: 0xff,
+        }),
+                  &StrokeStyle { width: 1., dash_array: vec![10.0, 6.0, 4.0, 10.0, 6.0, 4.0],
+                      dash_offset: 15.0, ..Default::default()},
+                  &DrawOptions::new());
+
+    }
 }

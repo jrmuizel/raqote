@@ -4,7 +4,7 @@ use crate::Point;
 
 use lyon_geom::LineSegment;
 
-pub fn dash_path(path: &Path, dash_array: &[f32], dash_offset: f32) -> Path {
+pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path {
     let mut dashed = PathBuilder::new();
 
     let mut cur_pt = Point::zero();
@@ -15,8 +15,9 @@ pub fn dash_path(path: &Path, dash_array: &[f32], dash_offset: f32) -> Path {
 
     // adjust our position in the dash array by the dash offset
     while dash_offset > remaining_dash_length {
-        remaining_dash_length = dash_array[current_dash % dash_array.len()];
+        dash_offset -= remaining_dash_length;
         current_dash += 1;
+        remaining_dash_length = dash_array[current_dash % dash_array.len()];
         dash_on = !dash_on;
     }
     remaining_dash_length -= dash_offset;
