@@ -1,14 +1,27 @@
 use crate::path_builder::{Path, PathBuilder, PathOp};
 use crate::{Point, Vector};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct StrokeStyle {
     pub width: f32,
     pub cap: LineCap,
     pub join: LineJoin,
-    pub mitre_limit: f32,
+    pub miter_limit: f32,
     pub dash_array: Vec<f32>,
     pub dash_offset: f32,
+}
+
+impl Default for StrokeStyle {
+    fn default() -> Self {
+        StrokeStyle {
+            width: 1.,
+            cap: LineCap::Butt,
+            join: LineJoin::Miter,
+            miter_limit: 10.,
+            dash_array: Vec::new(),
+            dash_offset: 0.,
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -21,20 +34,22 @@ pub enum LineCap {
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum LineJoin {
     Round,
-    Mitre,
+    Miter,
     Bevel,
 }
 
-fn compute_normal(p0: Point, p1: Point) -> Vector {
+fn compute_normal(p0: Point, p1: Point) -> Option<Vector> {
     let ux = p1.x - p0.x;
     let uy = p1.y - p0.y;
 
     // this could overflow f32. Skia checks for this and
     // uses a double in that situation
     let ulen = ux.hypot(uy);
-    assert!(ulen != 0.);
+    if ulen == 0. {
+        return None;
+    }
     // the normal is perpendicular to the *unit* vector
-    Vector::new(-uy / ulen, ux / ulen)
+    Some(Vector::new(-uy / ulen, ux / ulen))
 }
 
 fn flip(v: Vector) -> Vector {
@@ -234,9 +249,9 @@ fn join_line(
             dest.line_to(pt.x, pt.y);
             dest.close();
         }
-        LineJoin::Mitre => {
+        LineJoin::Miter => {
             let in_dot_out = -s1_normal.x * s2_normal.x + -s1_normal.y * s2_normal.y;
-            if 2. <= style.mitre_limit * style.mitre_limit * (1. - in_dot_out) {
+            if 2. <= style.miter_limit * style.miter_limit * (1. - in_dot_out) {
                 let start = pt + s1_normal * offset;
                 let end = pt + s2_normal * offset;
                 let intersection = line_intersection(start, s1_normal, end, s2_normal);
@@ -274,51 +289,55 @@ pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
                 cur_pt = pt;
             }
             PathOp::LineTo(pt) => {
-                let normal = compute_normal(cur_pt, pt);
-                if start_point.is_none() {
-                    start_point = Some((cur_pt, normal));
-                } else {
-                    join_line(&mut stroked_path, style, cur_pt, last_normal, normal);
-                }
-
-                stroked_path.move_to(
-                    cur_pt.x + normal.x * half_width,
-                    cur_pt.y + normal.y * half_width,
-                );
-                stroked_path.line_to(pt.x + normal.x * half_width, pt.y + normal.y * half_width);
-                stroked_path.line_to(pt.x + -normal.x * half_width, pt.y + -normal.y * half_width);
-                stroked_path.line_to(
-                    cur_pt.x - normal.x * half_width,
-                    cur_pt.y - normal.y * half_width,
-                );
-                stroked_path.close();
-                last_normal = normal;
-
-                cur_pt = pt;
-            }
-            PathOp::Close => {
-                if let Some((point, normal)) = start_point {
-                    let last_normal = compute_normal(cur_pt, point);
+                if let Some(normal) = compute_normal(cur_pt, pt) {
+                    if start_point.is_none() {
+                        start_point = Some((cur_pt, normal));
+                    } else {
+                        join_line(&mut stroked_path, style, cur_pt, last_normal, normal);
+                    }
 
                     stroked_path.move_to(
                         cur_pt.x + normal.x * half_width,
                         cur_pt.y + normal.y * half_width,
                     );
-                    stroked_path.line_to(
-                        point.x + normal.x * half_width,
-                        point.y + normal.y * half_width,
-                    );
-                    stroked_path.line_to(
-                        point.x + -normal.x * half_width,
-                        point.y + -normal.y * half_width,
-                    );
+                    stroked_path.line_to(pt.x + normal.x * half_width, pt.y + normal.y * half_width);
+                    stroked_path.line_to(pt.x + -normal.x * half_width, pt.y + -normal.y * half_width);
                     stroked_path.line_to(
                         cur_pt.x - normal.x * half_width,
                         cur_pt.y - normal.y * half_width,
                     );
                     stroked_path.close();
+                    last_normal = normal;
 
-                    join_line(&mut stroked_path, style, point, last_normal, normal);
+                    cur_pt = pt;
+                }
+            }
+            PathOp::Close => {
+                if let Some((end_point, start_normal)) = start_point {
+                    if let Some(normal) = compute_normal(cur_pt, end_point) {
+                        join_line(&mut stroked_path, style, cur_pt, last_normal, normal);
+
+                        stroked_path.move_to(
+                            cur_pt.x + normal.x * half_width,
+                            cur_pt.y + normal.y * half_width,
+                        );
+                        stroked_path.line_to(
+                            end_point.x + normal.x * half_width,
+                            end_point.y + normal.y * half_width,
+                        );
+                        stroked_path.line_to(
+                            end_point.x + -normal.x * half_width,
+                            end_point.y + -normal.y * half_width,
+                        );
+                        stroked_path.line_to(
+                            cur_pt.x - normal.x * half_width,
+                            cur_pt.y - normal.y * half_width,
+                        );
+                        stroked_path.close();
+                        join_line(&mut stroked_path, style, end_point, normal, start_normal);
+                    } else {
+                        join_line(&mut stroked_path, style, end_point, last_normal, start_normal);
+                    }
                 }
             }
             PathOp::QuadTo(..) => panic!("Only flat paths handled"),

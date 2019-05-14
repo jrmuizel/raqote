@@ -113,7 +113,7 @@ fn main() {
             cap: LineCap::Butt,
             join: LineJoin::Bevel,
             width: 10.,
-            mitre_limit: 2.,
+            miter_limit: 2.,
             dash_array: vec![10., 5.],
             dash_offset: 3.,
         },
