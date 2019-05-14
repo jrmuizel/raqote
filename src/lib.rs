@@ -12,9 +12,10 @@ Current functionality
  - image, solid, and gradient fills
  - rectangular and path clipping
  - blend modes
+ - layers
 
 Planned functionality
- - layers
+ - repeat modes for images
  - extended blend modes
  - two circle radial gradients
  - perspective image drawing
