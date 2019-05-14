@@ -154,6 +154,7 @@ mod tests {
     }
 
     // This test is disable on miri because miri doesn't support hypot()
+    // https://github.com/rust-lang/miri/issues/667
     #[cfg(not(miri))]
     #[test]
     fn stroke() {
