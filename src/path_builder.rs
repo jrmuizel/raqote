@@ -5,13 +5,13 @@ use lyon_geom::QuadraticBezierSegment;
 
 use crate::{Point, Vector};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Winding {
     EvenOdd,
     NonZero,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum PathOp {
     MoveTo(Point),
     LineTo(Point),
@@ -20,7 +20,7 @@ pub enum PathOp {
     Close,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Path {
     pub ops: Vec<PathOp>,
     pub winding: Winding,

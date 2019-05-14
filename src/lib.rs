@@ -91,6 +91,8 @@ Produces:
 
 */
 
+#![warn(missing_copy_implementations)]
+
 mod blitter;
 mod dash;
 mod draw_target;

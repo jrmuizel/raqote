@@ -1,6 +1,7 @@
 use crate::path_builder::{Path, PathBuilder, PathOp};
 use crate::{Point, Vector};
 
+#[derive(Clone, PartialEq, Debug)]
 pub struct StrokeStyle {
     pub width: f32,
     pub cap: LineCap,
@@ -23,12 +24,14 @@ impl Default for StrokeStyle {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum LineCap {
     Round,
     Square,
     Butt,
 }
 
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum LineJoin {
     Round,
     Miter,
