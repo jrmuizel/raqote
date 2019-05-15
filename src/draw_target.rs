@@ -383,7 +383,7 @@ impl DrawTarget {
     }
 
     pub fn stroke(&mut self, path: &Path, src: &Source, style: &StrokeStyle, options: &DrawOptions) {
-        let mut path = path.flatten(0.05);
+        let mut path = path.flatten(0.1);
         if !style.dash_array.is_empty() {
             path = dash_path(&path, &style.dash_array, style.dash_offset);
         }
