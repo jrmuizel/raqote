@@ -77,6 +77,12 @@ fn blend_proc(mode: BlendMode) -> fn(u32, u32) -> u32 {
     }
 }
 
+#[derive(Copy, Clone)]
+pub enum ExtendMode {
+    Pad,
+    Repeat
+}
+
 /// LinearGradients have an implicit start point at 0,0 and an end point at 256,0. The transform
 /// parameter can be used to adjust them to the desired location.
 /// RadialGradients have an implict center at 0,0 and a radius of 128.
@@ -85,7 +91,7 @@ fn blend_proc(mode: BlendMode) -> fn(u32, u32) -> u32 {
 /// future to become more ergonomic.
 pub enum Source<'a> {
     Solid(SolidSource),
-    Image(Image<'a>, Transform),
+    Image(Image<'a>, ExtendMode, Transform),
     RadialGradient(Gradient, Transform),
     LinearGradient(Gradient, Transform),
 }
@@ -359,6 +365,7 @@ impl DrawTarget {
         let image = Source::Image(Image { width: size.width,
                                           height: size.height,
                                           data: &layer.buf},
+                                  ExtendMode::Pad,
                                   Transform::create_translation(-layer.rect.min.x as f32,
                                                                 -layer.rect.min.y as f32));
         self.composite(&image, &mask, layer.rect, BlendMode::SrcOver);
@@ -373,6 +380,7 @@ impl DrawTarget {
         let source = Source::Image(Image { width: image.width,
                                            height: image.height,
                                            data: image.data},
+                                   ExtendMode::Pad,
                                    Transform::create_translation(-x, -y));
 
         self.fill(&pb.finish(), &source, options);
@@ -504,6 +512,7 @@ impl DrawTarget {
 
         let cs;
         let is;
+        let irs;
         let rgs;
         let lgs;
 
@@ -516,9 +525,13 @@ impl DrawTarget {
                 cs = SolidShader { color };
                 shader = &cs;
             }
-            Source::Image(ref image, transform) => {
+            Source::Image(ref image, ExtendMode::Pad, transform) => {
                 is = ImageShader::new(image, &ti.post_mul(&transform));
                 shader = &is;
+            }
+            Source::Image(ref image, ExtendMode::Repeat, transform) => {
+                irs = ImageRepeatShader::new(image, &ti.post_mul(&transform));
+                shader = &irs;
             }
             Source::RadialGradient(ref gradient, transform) => {
                 rgs = RadialGradientShader::new(gradient, &ti.post_mul(&transform));

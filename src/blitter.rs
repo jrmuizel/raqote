@@ -124,7 +124,31 @@ impl<'a, 'b> Shader for ImageShader<'a, 'b> {
     fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
         for i in 0..count {
             let p = self.xfm.transform(x as u16, y as u16);
-            dest[i] = fetch_bilinear(self.image, p.x, p.y);
+            dest[i] = fetch_bilinear::<PadFetch>(self.image, p.x, p.y);
+            x += 1;
+        }
+    }
+}
+
+pub struct ImageRepeatShader<'a, 'b> {
+    image: &'a Image<'b>,
+    xfm: MatrixFixedPoint,
+}
+
+impl<'a, 'b> ImageRepeatShader<'a, 'b> {
+    pub fn new(image: &'a Image<'b>, transform: &Transform) -> ImageRepeatShader<'a, 'b> {
+        ImageRepeatShader {
+            image,
+            xfm: transform_to_fixed(transform),
+        }
+    }
+}
+
+impl<'a, 'b> Shader for ImageRepeatShader<'a, 'b> {
+    fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
+        for i in 0..count {
+            let p = self.xfm.transform(x as u16, y as u16);
+            dest[i] = fetch_bilinear::<RepeatFetch>(self.image, p.x, p.y);
             x += 1;
         }
     }

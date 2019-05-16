@@ -1,9 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use crate::draw_target::*;
-    use crate::path_builder::*;
-    use crate::stroke::*;
-    use crate::Image;
+
+    use crate::*;
+    use crate::draw_target::intrect;
 
     #[test]
     fn basic_rasterizer() {
@@ -151,6 +150,35 @@ mod tests {
         dt.draw_image_at(1., 1., &image, &DrawOptions::default());
         let white = 0xffffffff;
         assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
+    }
+
+    #[test]
+    fn repeating_draw_image() {
+        let mut dt = DrawTarget::new(4, 1);
+        let mut dt2 = DrawTarget::new(2, 1);
+
+        let mut pb = PathBuilder::new();
+        pb.rect(0., 0., 1., 1.);
+        dt2.fill(
+            &pb.finish(),
+            &Source::Solid(SolidSource {
+                r: 0xff,
+                g: 0xff,
+                b: 0xff,
+                a: 0xff,
+            }),
+            &DrawOptions::new(),
+        );
+        let image = Image {width: 2, height: 1, data: dt2.get_data()};
+        let mut pb = PathBuilder::new();
+        pb.rect(0., 0., 4., 1.);
+        let source = Source::Image(image,
+                                   ExtendMode::Repeat,
+                                   Transform::create_translation(0., 0.));
+
+        dt.fill(&pb.finish(), &source, &DrawOptions::default());
+        let white = 0xffffffff;
+        assert_eq!(dt.get_data(), &vec![white, 0, white, 0][..])
     }
 
     // This test is disable on miri because miri doesn't support hypot()
