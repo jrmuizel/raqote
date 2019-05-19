@@ -36,7 +36,7 @@ pb.quad_to(150., 180., 300., 300.);
 pb.close();
 let path = pb.finish();
 
-let gradient = Source::RadialGradient(
+let gradient = Source::new_radial_gradient(
     Gradient {
         stops: vec![
             GradientStop {
@@ -53,7 +53,9 @@ let gradient = Source::RadialGradient(
             },
         ],
     },
-    Transform::create_translation(-150., -150.),
+    Point::new(150., 150.),
+    128.,
+    Spread::Pad,
 );
 dt.fill(&path, &gradient, &DrawOptions::new());
 
@@ -107,7 +109,7 @@ pub use path_builder::*;
 pub use crate::draw_target::{BlendMode, DrawOptions, DrawTarget, SolidSource, Source, Winding, ExtendMode};
 pub use crate::stroke::*;
 
-pub use sw_composite::{Gradient, GradientStop, Image};
+pub use sw_composite::{Gradient, GradientStop, Image, Spread};
 
 pub type IntRect = euclid::Box2D<i32>;
 pub type Point = euclid::Point2D<f32>;

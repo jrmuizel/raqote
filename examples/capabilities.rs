@@ -96,6 +96,7 @@ fn main() {
                 },
             ],
         },
+        Spread::Pad,
         Transform::create_translation(-150., -150.),
     );
     dt.fill(&path, &gradient, &DrawOptions::new());

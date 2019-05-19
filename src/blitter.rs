@@ -209,12 +209,14 @@ impl<'a, 'b> Shader for ImageAlphaRepeatShader<'a, 'b> {
 
 pub struct RadialGradientShader {
     gradient: Box<GradientSource>,
+    spread: Spread,
 }
 
 impl RadialGradientShader {
-    pub fn new(gradient: &Gradient, transform: &Transform, alpha: u32) -> RadialGradientShader {
+    pub fn new(gradient: &Gradient, transform: &Transform, spread: Spread, alpha: u32) -> RadialGradientShader {
         RadialGradientShader {
             gradient: gradient.make_source(&transform_to_fixed(transform), alpha),
+            spread,
         }
     }
 }
@@ -222,7 +224,7 @@ impl RadialGradientShader {
 impl Shader for RadialGradientShader {
     fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
         for i in 0..count {
-            dest[i] = self.gradient.radial_gradient_eval(x as u16, y as u16);
+            dest[i] = self.gradient.radial_gradient_eval(x as u16, y as u16, self.spread);
             x += 1;
         }
     }
@@ -230,12 +232,14 @@ impl Shader for RadialGradientShader {
 
 pub struct LinearGradientShader {
     gradient: Box<GradientSource>,
+    spread: Spread,
 }
 
 impl LinearGradientShader {
-    pub fn new(gradient: &Gradient, transform: &Transform, alpha: u32) -> LinearGradientShader {
+    pub fn new(gradient: &Gradient, transform: &Transform, spread: Spread, alpha: u32) -> LinearGradientShader {
         LinearGradientShader {
             gradient: gradient.make_source(&transform_to_fixed(transform), alpha),
+            spread,
         }
     }
 }
@@ -243,7 +247,7 @@ impl LinearGradientShader {
 impl Shader for LinearGradientShader {
     fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
         for i in 0..count {
-            dest[i] = self.gradient.linear_gradient_eval(x as u16, y as u16);
+            dest[i] = self.gradient.linear_gradient_eval(x as u16, y as u16, self.spread);
             x += 1;
         }
     }

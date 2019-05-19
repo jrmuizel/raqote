@@ -95,40 +95,40 @@ pub enum ExtendMode {
 pub enum Source<'a> {
     Solid(SolidSource),
     Image(Image<'a>, ExtendMode, Transform),
-    RadialGradient(Gradient, Transform),
-    LinearGradient(Gradient, Transform),
+    RadialGradient(Gradient, Spread, Transform),
+    LinearGradient(Gradient, Spread, Transform),
 }
 
 impl<'a> Source<'a> {
     /// Creates a new linear gradient source where the start point corresponds to the gradient
     /// stop at position = 0 and the end point corresponds to the graident stop at position = 1.
-    pub fn new_linear_gradient(gradient: Gradient, start: Point, end: Point) -> Source<'a> {
+    pub fn new_linear_gradient(gradient: Gradient, start: Point, end: Point, spread: Spread) -> Source<'a> {
         let gradient_vector = Vector::new(end.x - start.x, end.y - start.y);
         // Translate the gradient vector to the start point
         let translate = Transform::create_translation(start.x, start.y);
         // Get length of desired gradient vector
         let length = gradient_vector.length();
         // Scale gradient to desired length
-        // Linear gradients go from (0, 0) to (256, 0), this may change
-        let scale = Transform::create_scale(length / 256.0, length / 256.0);
+        // Linear gradients go from (0, 0) to (255, 0), this may change
+        let scale = Transform::create_scale(length / 255.0, length / 255.0);
         // Rotate gradient to desired angle
         let rotation = Transform::create_rotation(gradient_vector.angle_from_x_axis());
         // Compute final transform
         let transform = translate.pre_mul(&rotation).pre_mul(&scale).inverse().unwrap();
 
-        Source::LinearGradient(gradient, transform)
+        Source::LinearGradient(gradient, spread, transform)
     }
 
     /// Creates a new radial gradient that is centered at the given point and has the given radius.
-    pub fn new_radial_gradient(gradient: Gradient, center: Point, radius: f32) -> Source<'a> {
+    pub fn new_radial_gradient(gradient: Gradient, center: Point, radius: f32, spread: Spread) -> Source<'a> {
         // Scale gradient to desired radius
-        let scale = Transform::create_scale(radius / 128.0, radius / 128.0);
+        let scale = Transform::create_scale(radius / 255.0, radius / 255.0);
         // Transform gradient to center of gradient
         let translate = Transform::create_translation(center.x, center.y);
         // Compute final transform
         let transform = translate.pre_mul(&scale).inverse().unwrap();
 
-        Source::RadialGradient(gradient, transform)
+        Source::RadialGradient(gradient, spread, transform)
     }
 }
 
@@ -559,12 +559,12 @@ impl DrawTarget {
                     shader = &irs;
                 }
             }
-            Source::RadialGradient(ref gradient, transform) => {
-                rgs = RadialGradientShader::new(gradient, &ti.post_mul(&transform), alpha);
+            Source::RadialGradient(ref gradient, spread, transform) => {
+                rgs = RadialGradientShader::new(gradient, &ti.post_mul(&transform), *spread, alpha);
                 shader = &rgs;
             }
-            Source::LinearGradient(ref gradient, transform) => {
-                lgs = LinearGradientShader::new(gradient, &ti.post_mul(&transform), alpha);
+            Source::LinearGradient(ref gradient, spread, transform) => {
+                lgs = LinearGradientShader::new(gradient, &ti.post_mul(&transform), *spread, alpha);
                 shader = &lgs;
             }
         };
