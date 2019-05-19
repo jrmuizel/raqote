@@ -11,9 +11,12 @@ pub use crate::path_builder::Winding;
 use lyon_geom::cubic_to_quadratic::cubic_to_quadratics;
 use lyon_geom::CubicBezierSegment;
 
-use font_kit::canvas::{Canvas, Format, RasterizationOptions};
-use font_kit::font::Font;
-use font_kit::hinting::HintingOptions;
+#[cfg(feature = "text")]
+mod fk {
+    pub use font_kit::canvas::{Canvas, Format, RasterizationOptions};
+    pub use font_kit::font::Font;
+    pub use font_kit::hinting::HintingOptions;
+}
 
 use std::fs::*;
 use std::io::BufWriter;
@@ -427,9 +430,10 @@ impl DrawTarget {
     }
 
     /// Note: text positioning works very poorly because of limitations and bugs in font-kit
+    #[cfg(feature = "text")]
     pub fn draw_text(
         &mut self,
-        font: &Font,
+        font: &fk::Font,
         point_size: f32,
         text: &str,
         mut start: Point,
@@ -448,9 +452,10 @@ impl DrawTarget {
     }
 
     /// Note: text positioning works very poorly because of limitations and bugs in font-kit
+    #[cfg(feature = "text")]
     pub fn draw_glyphs(
         &mut self,
-        font: &Font,
+        font: &fk::Font,
         point_size: f32,
         ids: &[u32],
         positions: &[Point],
@@ -463,8 +468,8 @@ impl DrawTarget {
                 *id,
                 point_size,
                 position,
-                HintingOptions::None,
-                RasterizationOptions::GrayscaleAa,
+                fk::HintingOptions::None,
+                fk::RasterizationOptions::GrayscaleAa,
             );
             combined_bounds = match bounds {
                 Ok(bounds) => {
@@ -480,9 +485,9 @@ impl DrawTarget {
 
         /*let mut canvas = Canvas::new(&euclid::Size2D::new(combined_bounds.size.width as u32,
         combined_bounds.size.height as u32), Format::A8);*/
-        let mut canvas = Canvas::new(
+        let mut canvas = fk::Canvas::new(
             &euclid::Size2D::new(self.width as u32, self.height as u32),
-            Format::A8,
+            fk::Format::A8,
         );
         for (id, position) in ids.iter().zip(positions.iter()) {
             font.rasterize_glyph(
@@ -490,8 +495,8 @@ impl DrawTarget {
                 *id,
                 point_size,
                 position,
-                HintingOptions::None,
-                RasterizationOptions::GrayscaleAa,
+                fk::HintingOptions::None,
+                fk::RasterizationOptions::GrayscaleAa,
             ).unwrap();
         }
 
