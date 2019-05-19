@@ -244,4 +244,25 @@ mod tests {
                   &DrawOptions::new());
 
     }
+
+    #[test]
+    fn draw_options_alpha() {
+        let mut dt = DrawTarget::new(2, 2);
+        let mut pb = PathBuilder::new();
+        pb.rect(1., 1., 1., 1.);
+        dt.fill(
+            &pb.finish(),
+            &Source::Solid(SolidSource {
+                r: 0xff,
+                g: 0xff,
+                b: 0xff,
+                a: 0xff,
+            }),
+            &DrawOptions {
+                blend_mode: BlendMode::SrcOver,
+                alpha: 0.,
+            }
+        );
+        assert_eq!(dt.get_data(), &vec![0, 0, 0, 0][..])
+    }
 }

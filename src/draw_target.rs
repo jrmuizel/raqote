@@ -131,7 +131,8 @@ impl<'a> Source<'a> {
 
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub struct DrawOptions {
-    blend_mode: BlendMode,
+    pub blend_mode: BlendMode,
+    pub alpha: f32,
 }
 
 impl DrawOptions {
@@ -144,6 +145,7 @@ impl Default for DrawOptions {
     fn default() -> Self {
         DrawOptions {
             blend_mode: BlendMode::SrcOver,
+            alpha: 1.
         }
     }
 }
@@ -368,7 +370,7 @@ impl DrawTarget {
                                   ExtendMode::Pad,
                                   Transform::create_translation(-layer.rect.min.x as f32,
                                                                 -layer.rect.min.y as f32));
-        self.composite(&image, &mask, layer.rect, BlendMode::SrcOver);
+        self.composite(&image, &mask, layer.rect, BlendMode::SrcOver, 1.);
         self.transform = ctm;
     }
 
@@ -387,7 +389,7 @@ impl DrawTarget {
     }
 
     pub fn mask(&mut self, src: &Source, x: i32, y: i32, mask: &Mask) {
-        self.composite(src, &mask.data, intrect(x, y, mask.width, mask.height), BlendMode::SrcOver);
+        self.composite(src, &mask.data, intrect(x, y, mask.width, mask.height), BlendMode::SrcOver, 1.);
     }
 
     pub fn stroke(&mut self, path: &Path, src: &Source, style: &StrokeStyle, options: &DrawOptions) {
@@ -403,7 +405,8 @@ impl DrawTarget {
         self.apply_path(path);
         let mut blitter = MaskSuperBlitter::new(self.width, self.height);
         self.rasterizer.rasterize(&mut blitter, path.winding);
-        self.composite(src, &blitter.buf, intrect(0, 0, self.width, self.height), options.blend_mode);
+        self.composite(src, &blitter.buf, intrect(0, 0, self.width, self.height),
+                       options.blend_mode, options.alpha);
         self.rasterizer.reset();
     }
 
@@ -417,6 +420,7 @@ impl DrawTarget {
             &Source::Solid(solid),
             &DrawOptions {
                 blend_mode: BlendMode::Src,
+                alpha: 1.,
             },
         );
         self.transform = ctm;
@@ -496,10 +500,11 @@ impl DrawTarget {
             &canvas.pixels,
             intrect(0, 0, canvas.size.width as i32, canvas.size.height as i32),
             options.blend_mode,
+            1.,
         );
     }
 
-    fn composite(&mut self, src: &Source, mask: &[u8], mut rect: IntRect, blend: BlendMode) {
+    fn composite(&mut self, src: &Source, mask: &[u8], mut rect: IntRect, blend: BlendMode, alpha: f32) {
         let shader: &Shader;
 
         let ti = self.transform.inverse();
@@ -513,8 +518,13 @@ impl DrawTarget {
         let cs;
         let is;
         let irs;
+        let ias;
+        let iars;
         let rgs;
         let lgs;
+
+        // XXX: clamp alpha
+        let alpha = (alpha * 255. + 0.5) as u32;
 
         match src {
             Source::Solid(c) => {
@@ -522,23 +532,34 @@ impl DrawTarget {
                     | ((c.r as u32) << 16)
                     | ((c.g as u32) << 8)
                     | ((c.b as u32) << 0);
+                let color = alpha_mul(color, alpha_to_alpha256(alpha));
                 cs = SolidShader { color };
                 shader = &cs;
             }
             Source::Image(ref image, ExtendMode::Pad, transform) => {
-                is = ImageShader::new(image, &ti.post_mul(&transform));
-                shader = &is;
+                if alpha != 255 {
+                    ias = ImageAlphaShader::new(image, &ti.post_mul(&transform), alpha);
+                    shader = &ias;
+                } else {
+                    is = ImageShader::new(image, &ti.post_mul(&transform));
+                    shader = &is;
+                }
             }
             Source::Image(ref image, ExtendMode::Repeat, transform) => {
-                irs = ImageRepeatShader::new(image, &ti.post_mul(&transform));
-                shader = &irs;
+                if alpha != 255 {
+                    iars = ImageAlphaRepeatShader::new(image, &ti.post_mul(&transform), alpha);
+                    shader = &iars;
+                } else {
+                    irs = ImageRepeatShader::new(image, &ti.post_mul(&transform));
+                    shader = &irs;
+                }
             }
             Source::RadialGradient(ref gradient, transform) => {
-                rgs = RadialGradientShader::new(gradient, &ti.post_mul(&transform));
+                rgs = RadialGradientShader::new(gradient, &ti.post_mul(&transform), alpha);
                 shader = &rgs;
             }
             Source::LinearGradient(ref gradient, transform) => {
-                lgs = LinearGradientShader::new(gradient, &ti.post_mul(&transform));
+                lgs = LinearGradientShader::new(gradient, &ti.post_mul(&transform), alpha);
                 shader = &lgs;
             }
         };

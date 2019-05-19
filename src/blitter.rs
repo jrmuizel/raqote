@@ -154,14 +154,67 @@ impl<'a, 'b> Shader for ImageRepeatShader<'a, 'b> {
     }
 }
 
+
+pub struct ImageAlphaShader<'a, 'b> {
+    image: &'a Image<'b>,
+    xfm: MatrixFixedPoint,
+    alpha: u32,
+}
+
+impl<'a, 'b> ImageAlphaShader<'a, 'b> {
+    pub fn new(image: &'a Image<'b>, transform: &Transform, alpha: u32) -> ImageAlphaShader<'a, 'b> {
+        ImageAlphaShader {
+            image,
+            xfm: transform_to_fixed(transform),
+            alpha: alpha_to_alpha256(alpha),
+        }
+    }
+}
+
+impl<'a, 'b> Shader for ImageAlphaShader<'a, 'b> {
+    fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
+        for i in 0..count {
+            let p = self.xfm.transform(x as u16, y as u16);
+            dest[i] = fetch_bilinear_alpha::<PadFetch>(self.image, p.x, p.y, self.alpha);
+            x += 1;
+        }
+    }
+}
+
+pub struct ImageAlphaRepeatShader<'a, 'b> {
+    image: &'a Image<'b>,
+    xfm: MatrixFixedPoint,
+    alpha: u32,
+}
+
+impl<'a, 'b> ImageAlphaRepeatShader<'a, 'b> {
+    pub fn new(image: &'a Image<'b>, transform: &Transform, alpha: u32) -> ImageAlphaRepeatShader<'a, 'b> {
+        ImageAlphaRepeatShader {
+            image,
+            xfm: transform_to_fixed(transform),
+            alpha: alpha_to_alpha256(alpha)
+        }
+    }
+}
+
+impl<'a, 'b> Shader for ImageAlphaRepeatShader<'a, 'b> {
+    fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
+        for i in 0..count {
+            let p = self.xfm.transform(x as u16, y as u16);
+            dest[i] = fetch_bilinear_alpha::<RepeatFetch>(self.image, p.x, p.y, self.alpha);
+            x += 1;
+        }
+    }
+}
+
 pub struct RadialGradientShader {
     gradient: Box<GradientSource>,
 }
 
 impl RadialGradientShader {
-    pub fn new(gradient: &Gradient, transform: &Transform) -> RadialGradientShader {
+    pub fn new(gradient: &Gradient, transform: &Transform, alpha: u32) -> RadialGradientShader {
         RadialGradientShader {
-            gradient: gradient.make_source(&transform_to_fixed(transform)),
+            gradient: gradient.make_source(&transform_to_fixed(transform), alpha),
         }
     }
 }
@@ -180,9 +233,9 @@ pub struct LinearGradientShader {
 }
 
 impl LinearGradientShader {
-    pub fn new(gradient: &Gradient, transform: &Transform) -> LinearGradientShader {
+    pub fn new(gradient: &Gradient, transform: &Transform, alpha: u32) -> LinearGradientShader {
         LinearGradientShader {
-            gradient: gradient.make_source(&transform_to_fixed(transform)),
+            gradient: gradient.make_source(&transform_to_fixed(transform), alpha),
         }
     }
 }

@@ -17,6 +17,7 @@ Current functionality
  - rectangular and path clipping
  - blend modes
  - layers
+ - global alpha
 
 Planned functionality
  - extended blend modes

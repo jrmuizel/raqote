@@ -16,3 +16,5 @@ not try to handle zero-length segments.
 
 The compositor is designed around shading a scanline at a time. Gradients are sampled from a lookup
 table and bilinear filtering is a lower precision approximation that's cheaper to compute on the cpu.
+
+Global alpha is implemented by having shaders handle it manually.
