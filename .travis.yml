@@ -5,11 +5,12 @@ matrix:
       rust: nightly
       script:
         - rustup toolchain install nightly-2019-05-04
-        - rustup default nightly-2019-05-04  
+        - rustup default nightly-2019-05-04
         - rustup component add miri
         - cargo miri setup
         - cargo miri test
     - name: "debug"
       rust: stable
       script:
+        - cargo build --no-default-features
         - cargo test --verbose --all
