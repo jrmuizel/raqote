@@ -673,6 +673,11 @@ impl DrawTarget {
         &self.buf
     }
 
+    /// Take ownership of the buffer backing the DrawTarget
+    pub fn into_vec(self) -> Vec<u32> {
+        self.buf
+    }
+
     pub fn write_png<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), png::EncodingError> {
         let file = File::create(path)?;
 
