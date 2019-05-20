@@ -10,7 +10,6 @@ pub struct MaskSuperBlitter {
     pub x: i32,
     pub y: i32,
     width: i32,
-    height: i32,
     pub buf: Vec<u8>,
 }
 
@@ -29,7 +28,6 @@ impl MaskSuperBlitter {
         MaskSuperBlitter {
             x: 0, y: 0,
             width,
-            height,
             // we can end up writing one byte past the end of the buffer so allocate that
             // padding to avoid needing to do an extra check
             buf: vec![0; (width * height) as usize + 1],
@@ -326,7 +324,7 @@ pub struct ShaderClipBlendBlitter<'a> {
 }
 
 impl<'a> Blitter for ShaderClipBlendBlitter<'a> {
-    fn blit_span(&mut self, mut y: i32, mut x1: i32, mut x2: i32) {
+    fn blit_span(&mut self, y: i32, x1: i32, x2: i32) {
         let dest_row = (y - self.y) * self.dest_stride;
         let mask_row = y * self.mask_stride;
         let clip_row = y * self.clip_stride;
@@ -373,6 +371,7 @@ impl<'a> Blitter for ShaderBlendBlitter<'a> {
     }
 }
 
+/*
 pub struct SolidBlitter<'a> {
     color: u32,
     mask: &'a [u8],
@@ -382,7 +381,7 @@ pub struct SolidBlitter<'a> {
 }
 
 impl<'a> Blitter for SolidBlitter<'a> {
-    fn blit_span(&mut self, mut y: i32, mut x1: i32, mut x2: i32) {
+    fn blit_span(&mut self, y: i32, x1: i32, x2: i32) {
         let dest_row = y * self.dest_stride;
         let mask_row = y * self.mask_stride;
         for i in x1..x2 {
@@ -394,3 +393,4 @@ impl<'a> Blitter for SolidBlitter<'a> {
         }
     }
 }
+*/
