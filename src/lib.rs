@@ -13,9 +13,10 @@ Current functionality
  - rectangular and path clipping
  - blend modes
  - layers
+ - repeat modes for images
+ - global alpha
 
 Planned functionality
- - repeat modes for images
  - extended blend modes
  - two circle radial gradients
  - perspective image drawing

@@ -17,6 +17,7 @@ Current functionality
  - rectangular and path clipping
  - blend modes
  - layers
+ - repeat modes for images
  - global alpha
 
 Planned functionality
@@ -40,7 +41,7 @@ pb.quad_to(150., 180., 300., 300.);
 pb.close();
 let path = pb.finish();
 
-let gradient = Source::RadialGradient(
+let gradient = Source::new_radial_gradient(
     Gradient {
         stops: vec![
             GradientStop {
@@ -57,7 +58,9 @@ let gradient = Source::RadialGradient(
             },
         ],
     },
-    Transform::create_translation(-150., -150.),
+    Point::new(150., 150.),
+    128.,
+    Spread::Pad,
 );
 dt.fill(&path, &gradient, &DrawOptions::new());
 
@@ -79,7 +82,7 @@ dt.stroke(
         cap: LineCap::Round,
         join: LineJoin::Round,
         width: 10.,
-        mitre_limit: 2.,
+        miter_limit: 2.,
         dash_array: vec![10., 18.],
         dash_offset: 16.,
     },
