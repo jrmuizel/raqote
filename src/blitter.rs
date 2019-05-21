@@ -51,6 +51,7 @@ impl Blitter for MaskSuperBlitter {
         y -= self.y;
         x1 -= self.x;
         x2 -= self.x;
+        x2 = x2.min(self.width * SCALE);
         let max: u8 = ((1 << (8 - SHIFT)) - (((y & MASK) + 1) >> SHIFT)) as u8;
         let mut b: *mut u8 = &mut self.buf[(y / 4 * self.width + (x1 >> SHIFT)) as usize];
 
