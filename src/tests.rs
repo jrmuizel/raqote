@@ -24,6 +24,28 @@ mod tests {
     }
 
     #[test]
+    fn implict_close() {
+        let mut dt = DrawTarget::new(2, 2);
+        let mut pb = PathBuilder::new();
+        pb.move_to(1., 1.);
+        pb.line_to(2., 1.);
+        pb.line_to(2., 2.);
+        pb.line_to(1., 2.);
+        dt.fill(
+            &pb.finish(),
+            &Source::Solid(SolidSource {
+                r: 0xff,
+                g: 0xff,
+                b: 0xff,
+                a: 0xff,
+            }),
+            &DrawOptions::new(),
+        );
+        let white = 0xffffffff;
+        assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
+    }
+
+    #[test]
     fn clip_rect() {
         let mut dt = DrawTarget::new(2, 2);
         dt.push_clip_rect(intrect(1, 1, 2, 2));

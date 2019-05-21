@@ -178,7 +178,7 @@ pub struct DrawTarget {
     height: i32,
     rasterizer: Rasterizer,
     current_point: Point,
-    first_point: Point,
+    first_point: Option<Point>,
     buf: Vec<u32>,
     clip_stack: Vec<Clip>,
     layer_stack: Vec<Layer>,
@@ -191,7 +191,7 @@ impl DrawTarget {
             width,
             height,
             current_point: Point::new(0., 0.),
-            first_point: Point::new(0., 0.),
+            first_point: None,
             rasterizer: Rasterizer::new(width, height),
             buf: vec![0; (width * height) as usize],
             clip_stack: Vec::new(),
@@ -218,7 +218,7 @@ impl DrawTarget {
 
     fn move_to(&mut self, pt: Point) {
         self.current_point = pt;
-        self.first_point = pt;
+        self.first_point = Some(pt);
     }
 
     fn line_to(&mut self, pt: Point) {
@@ -270,18 +270,24 @@ impl DrawTarget {
     }
 
     fn close(&mut self) {
-        self.rasterizer.add_edge(
-            self.current_point,
-            self.first_point,
-            false,
-            Point::new(0., 0.),
-        );
+        if let Some(first_point) = self.first_point {
+            self.rasterizer.add_edge(
+                self.current_point,
+                first_point,
+                false,
+                Point::new(0., 0.),
+            );
+        }
+        self.first_point = None;
     }
 
     fn apply_path(&mut self, path: &Path) {
         for op in &path.ops {
             match *op {
-                PathOp::MoveTo(pt) => self.move_to(self.transform.transform_point(&pt)),
+                PathOp::MoveTo(pt) => {
+                    self.close();
+                    self.move_to(self.transform.transform_point(&pt));
+                },
                 PathOp::LineTo(pt) => self.line_to(self.transform.transform_point(&pt)),
                 PathOp::QuadTo(cpt, pt) => self.quad_to(
                     self.transform.transform_point(&cpt),
@@ -295,6 +301,8 @@ impl DrawTarget {
                 PathOp::Close => self.close(),
             }
         }
+        // make sure the path is closed
+        self.close();
         // XXX: we'd like for this function to return the bounds of the path
     }
 
