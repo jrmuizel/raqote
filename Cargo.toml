@@ -16,7 +16,7 @@ font-kit = { version = "0.1.0", optional = true }
 lyon_geom = "0.12.6"
 png = "0.14.0"
 typed-arena = "1.4.1"
-sw-composite = "0.5.0"
+sw-composite = "0.5.1"
 
 [features]
 default = ["text"]

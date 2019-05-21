@@ -1,6 +1,7 @@
 use sw_composite::*;
 
 use crate::Transform;
+use crate::Point;
 
 pub trait Blitter {
     fn blit_span(&mut self, y: i32, x1: i32, x2: i32);
@@ -223,6 +224,36 @@ impl Shader for RadialGradientShader {
     fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
         for i in 0..count {
             dest[i] = self.gradient.radial_gradient_eval(x as u16, y as u16, self.spread);
+            x += 1;
+        }
+    }
+}
+
+pub struct TwoCircleRadialGradientShader {
+    gradient: Box<TwoCircleRadialGradientSource>,
+    spread: Spread,
+}
+
+impl TwoCircleRadialGradientShader {
+    pub fn new(gradient: &Gradient,
+               transform: &Transform,
+               c1: Point,
+               r1: f32,
+               c2: Point,
+               r2: f32,
+               spread: Spread,
+               alpha: u32) -> TwoCircleRadialGradientShader {
+        TwoCircleRadialGradientShader {
+            gradient: gradient.make_two_circle_source(c1.x, c1.y, r1, c2.x, c2.y, r2, &transform_to_fixed(transform), alpha),
+            spread,
+        }
+    }
+}
+
+impl Shader for TwoCircleRadialGradientShader {
+    fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
+        for i in 0..count {
+            dest[i] = self.gradient.eval(x as u16, y as u16, self.spread);
             x += 1;
         }
     }

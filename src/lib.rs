@@ -18,7 +18,6 @@ Current functionality
 
 Planned functionality
  - extended blend modes
- - two circle radial gradients
  - perspective image drawing
  - shadows?
 

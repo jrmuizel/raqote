@@ -96,6 +96,7 @@ pub enum Source<'a> {
     Solid(SolidSource),
     Image(Image<'a>, ExtendMode, Transform),
     RadialGradient(Gradient, Spread, Transform),
+    TwoCircleRadialGradient(Gradient, Spread, Point, f32, Point, f32, Transform),
     LinearGradient(Gradient, Spread, Transform),
 }
 
@@ -129,6 +130,12 @@ impl<'a> Source<'a> {
         let transform = translate.pre_mul(&scale).inverse().unwrap();
 
         Source::RadialGradient(gradient, spread, transform)
+    }
+
+    /// Creates a new radial gradient that is centered at the given point and has the given radius.
+    pub fn new_two_circle_radial_gradient(gradient: Gradient, center1: Point, radius1: f32,  center2: Point, radius2: f32, spread: Spread) -> Source<'a> {
+        let transform = Transform::identity();
+        Source::TwoCircleRadialGradient(gradient, spread, center1, radius1, center2, radius2, transform)
     }
 }
 
@@ -526,6 +533,7 @@ impl DrawTarget {
         let ias;
         let iars;
         let rgs;
+        let tcrgs;
         let lgs;
 
         // XXX: clamp alpha
@@ -562,6 +570,10 @@ impl DrawTarget {
             Source::RadialGradient(ref gradient, spread, transform) => {
                 rgs = RadialGradientShader::new(gradient, &ti.post_mul(&transform), *spread, alpha);
                 shader = &rgs;
+            }
+            Source::TwoCircleRadialGradient(ref gradient, spread, c1, r1, c2, r2, transform) => {
+                tcrgs = TwoCircleRadialGradientShader::new(gradient, &ti.post_mul(&transform), *c1, *r1, *c2, *r2, *spread, alpha);
+                shader = &tcrgs;
             }
             Source::LinearGradient(ref gradient, spread, transform) => {
                 lgs = LinearGradientShader::new(gradient, &ti.post_mul(&transform), *spread, alpha);
