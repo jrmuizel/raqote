@@ -152,6 +152,7 @@ fn cap_line(dest: &mut PathBuilder, style: &StrokeStyle, pt: Point, normal: Vect
         LineCap::Round => {
             dest.move_to(pt.x + normal.x * offset, pt.y + normal.y * offset);
             arc(dest, pt.x, pt.y, offset, normal, flip(normal));
+            dest.line_to(pt.x, pt.y);
             dest.close();
         }
         LineCap::Square => {
@@ -162,6 +163,7 @@ fn cap_line(dest: &mut PathBuilder, style: &StrokeStyle, pt: Point, normal: Vect
             dest.line_to(end.x + normal.x * offset, end.y + normal.y * offset);
             dest.line_to(end.x + -normal.x * offset, end.y + -normal.y * offset);
             dest.line_to(pt.x - normal.x * offset, pt.y - normal.y * offset);
+            dest.line_to(pt.x, pt.y);
             dest.close();
         }
     }
