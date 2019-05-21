@@ -301,11 +301,14 @@ impl<'a> Blitter for ShaderBlitter<'a> {
         let count = (x2 - x1) as usize;
         self.shader.shade_span(x1, y, &mut self.tmp[..], count);
         for i in 0..count {
-            self.dest[(dest_row + x1 - self.x) as usize + i] = over_in(
-                self.tmp[i],
-                self.dest[(dest_row + x1 - self.x) as usize + i],
-                self.mask[(mask_row + x1) as usize + i] as u32,
-            );
+            let mask = self.mask[(mask_row + x1) as usize + i] as u32;
+            if mask != 0 {
+                self.dest[(dest_row + x1 - self.x) as usize + i] = over_in(
+                    self.tmp[i],
+                    self.dest[(dest_row + x1 - self.x) as usize + i],
+                    mask,
+                );
+            }
         }
     }
 }
@@ -331,12 +334,16 @@ impl<'a> Blitter for ShaderClipBlitter<'a> {
         let count = (x2 - x1) as usize;
         self.shader.shade_span(x1, y, &mut self.tmp[..], count);
         for i in 0..count {
-            self.dest[(dest_row + x1 - self.x) as usize + i] = over_in_in(
-                self.tmp[i],
-                self.dest[(dest_row + x1 - self.x) as usize + i],
-                self.mask[(mask_row + x1) as usize + i] as u32,
-                self.clip[(clip_row + x1) as usize + i] as u32,
-            );
+            let mask = self.mask[(mask_row + x1) as usize + i] as u32;
+            let clip = self.clip[(clip_row + x1) as usize + i] as u32;
+            if mask != 0 && clip != 0 {
+                self.dest[(dest_row + x1 - self.x) as usize + i] = over_in_in(
+                    self.tmp[i],
+                    self.dest[(dest_row + x1 - self.x) as usize + i],
+                    mask,
+                    clip,
+                );
+            }
         }
     }
 }

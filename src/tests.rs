@@ -306,4 +306,33 @@ mod tests {
         );
         assert_eq!(dt.get_data(), &vec![0, 0, 0, 0][..])
     }
+
+    #[test]
+    fn blend_zero() {
+        let mut dt = DrawTarget::new(2, 2);
+
+        dt.clear(SolidSource {
+            r: 0xff,
+            g: 0xff,
+            b: 0xff,
+            a: 0xff,
+        });
+
+        let source = Source::Solid(SolidSource {
+            r: 0x00,
+            g: 0x00,
+            b: 0x00,
+            a: 0xff,
+        });
+
+        let mut pb = PathBuilder::new();
+        pb.rect(0., 0., 1., 1.);
+        let path = pb.finish();
+        dt.fill(&path, &source, &DrawOptions::default());
+        let white = 0xffffffff;
+        let black = 0xff000000;
+
+        assert_eq!(dt.get_data(), &vec![black, white, white, white][..])
+
+    }
 }
