@@ -110,8 +110,8 @@ impl<'a> Source<'a> {
         // Get length of desired gradient vector
         let length = gradient_vector.length();
         // Scale gradient to desired length
-        // Linear gradients go from (0, 0) to (255, 0), this may change
-        let scale = Transform::create_scale(length / 255.0, length / 255.0);
+        // Linear gradients go from (0, 0) to (1, 0), this may change
+        let scale = Transform::create_scale(length, length);
         // Rotate gradient to desired angle
         let rotation = Transform::create_rotation(gradient_vector.angle_from_x_axis());
         // Compute final transform
@@ -123,7 +123,7 @@ impl<'a> Source<'a> {
     /// Creates a new radial gradient that is centered at the given point and has the given radius.
     pub fn new_radial_gradient(gradient: Gradient, center: Point, radius: f32, spread: Spread) -> Source<'a> {
         // Scale gradient to desired radius
-        let scale = Transform::create_scale(radius / 255.0, radius / 255.0);
+        let scale = Transform::create_scale(radius, radius);
         // Transform gradient to center of gradient
         let translate = Transform::create_translation(center.x, center.y);
         // Compute final transform
