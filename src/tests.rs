@@ -133,7 +133,7 @@ mod tests {
         let mut dt = DrawTarget::new(2, 2);
         let mut pb = PathBuilder::new();
         pb.rect(0., 0., 2., 2.);
-        let mut path = pb.finish();
+        let path = pb.finish();
         dt.fill(
             &path,
             &Source::Solid(SolidSource {
