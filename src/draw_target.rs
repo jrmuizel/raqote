@@ -26,6 +26,8 @@ use png::HasParameters;
 use crate::stroke::*;
 use crate::{IntRect, Point, Transform, Vector};
 
+use euclid::vec2;
+
 pub fn intrect<T: Copy>(x1: T, y1: T, x2: T, y2: T) -> euclid::Box2D<T> {
     euclid::Box2D::new(euclid::Point2D::new(x1, y1), euclid::Point2D::new(x2, y2))
 }
@@ -106,19 +108,22 @@ impl<'a> Source<'a> {
     /// stop at position = 0 and the end point corresponds to the graident stop at position = 1.
     pub fn new_linear_gradient(gradient: Gradient, start: Point, end: Point, spread: Spread) -> Source<'a> {
         let gradient_vector = Vector::new(end.x - start.x, end.y - start.y);
-        // Translate the gradient vector to the start point
-        let translate = Transform::create_translation(start.x, start.y);
         // Get length of desired gradient vector
         let length = gradient_vector.length();
-        // Scale gradient to desired length
-        // Linear gradients go from (0, 0) to (1, 0), this may change
-        let scale = Transform::create_scale(length, length);
-        // Rotate gradient to desired angle
-        let rotation = Transform::create_rotation(gradient_vector.angle_from_x_axis());
-        // Compute final transform
-        let transform = translate.pre_mul(&rotation).pre_mul(&scale).inverse().unwrap();
+        let gradient_vector = gradient_vector.normalize();
 
-        Source::LinearGradient(gradient, spread, transform)
+        let sin = gradient_vector.y;
+        let cos = gradient_vector.x;
+        // Build up a rotation matrix from our vector
+        let mat = Transform::row_major(cos, -sin, sin, cos, 0., 0.);
+
+        // Adjust for the start point
+        let mat = mat.pre_translate(vec2(-start.x, -start.y));
+
+        // Scale gradient to desired length
+        let mat = mat.post_scale(1./length, 1./length);
+
+        Source::LinearGradient(gradient, spread, mat)
     }
 
     /// Creates a new radial gradient that is centered at the given point and has the given radius.
