@@ -335,4 +335,38 @@ mod tests {
         assert_eq!(dt.get_data(), &vec![black, white, white, white][..])
 
     }
+
+    #[test]
+    fn two_circle_radial_gradient() {
+        let mut dt = DrawTarget::new(2, 2);
+
+        let mut gradient = Source::new_two_circle_radial_gradient(
+            Gradient {
+                stops: vec![
+                    GradientStop {
+                        position: 0.0,
+                        color: 0xff000000,
+                    },
+                    GradientStop {
+                        position: 1.0,
+                        color: 0xffffffff,
+                    },
+                ],
+            },
+            Point::new(-8., -8.),
+            0.0,
+            Point::new(-8., -8.),
+            0.5,
+            Spread::Pad,
+        );
+
+        let mut pb = PathBuilder::new();
+        pb.rect(0., 0., 2., 2.);
+        let path = pb.finish();
+        dt.fill(&path, &gradient, &DrawOptions::default());
+        let white = 0xfffefefe;
+
+        assert_eq!(dt.get_data(), &vec![white, white, white, white][..])
+
+    }
 }
