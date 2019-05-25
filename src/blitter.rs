@@ -3,6 +3,8 @@ use sw_composite::*;
 use crate::Transform;
 use crate::Point;
 
+use euclid::vec2;
+
 pub trait Blitter {
     fn blit_span(&mut self, y: i32, x1: i32, x2: i32);
 }
@@ -215,7 +217,10 @@ pub struct RadialGradientShader {
 impl RadialGradientShader {
     pub fn new(gradient: &Gradient, transform: &Transform, spread: Spread, alpha: u32) -> RadialGradientShader {
         RadialGradientShader {
-            gradient: gradient.make_source(&transform_to_fixed(transform), alpha),
+            gradient: gradient.make_source(&transform_to_fixed(
+                &transform.pre_translate(vec2(0.5, 0.5))),
+                alpha
+            ),
             spread,
         }
     }
@@ -245,7 +250,13 @@ impl TwoCircleRadialGradientShader {
                spread: Spread,
                alpha: u32) -> TwoCircleRadialGradientShader {
         TwoCircleRadialGradientShader {
-            gradient: gradient.make_two_circle_source(c1.x, c1.y, r1, c2.x, c2.y, r2, &transform_to_fixed(transform), alpha),
+            gradient: gradient.make_two_circle_source(
+                c1.x, c1.y,
+                r1,
+                c2.x, c2.y,
+                r2,
+                &transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5))), alpha
+            ),
             spread,
         }
     }
@@ -268,7 +279,10 @@ pub struct LinearGradientShader {
 impl LinearGradientShader {
     pub fn new(gradient: &Gradient, transform: &Transform, spread: Spread, alpha: u32) -> LinearGradientShader {
         LinearGradientShader {
-            gradient: gradient.make_source(&transform_to_fixed(transform), alpha),
+            gradient: gradient.make_source(&transform_to_fixed(
+                &transform.pre_translate(vec2(0.5, 0.5))),
+                alpha
+            ),
             spread,
         }
     }
