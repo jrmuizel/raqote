@@ -12,7 +12,7 @@ keywords = ["2d", "graphics"]
 
 [dependencies]
 euclid = "0.19.8"
-font-kit = { version = "0.2.0", optional = true }
+font-kit = { version = "0.3.0", optional = true }
 lyon_geom = "0.12.6"
 png = "0.14.0"
 typed-arena = "1.4.1"
