@@ -369,4 +369,20 @@ mod tests {
         assert_eq!(dt.get_data(), &vec![white, white, white, white][..])
 
     }
+
+    #[test]
+    fn get_mut_data() {
+        let mut dt = DrawTarget::new(2, 2);
+
+        let data = dt.get_data_u8_mut();
+        data[0] = 0xff;
+        data[1] = 0xff;
+        data[2] = 0xff;
+        data[3] = 0xff;
+
+        let white = 0xffffffff;
+
+        assert_eq!(dt.get_data(), &vec![white, 0, 0, 0][..])
+
+    }
 }
