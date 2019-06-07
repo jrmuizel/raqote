@@ -340,7 +340,7 @@ mod tests {
     fn two_circle_radial_gradient() {
         let mut dt = DrawTarget::new(2, 2);
 
-        let mut gradient = Source::new_two_circle_radial_gradient(
+        let gradient = Source::new_two_circle_radial_gradient(
             Gradient {
                 stops: vec![
                     GradientStop {
