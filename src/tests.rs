@@ -364,7 +364,7 @@ mod tests {
         pb.rect(0., 0., 2., 2.);
         let path = pb.finish();
         dt.fill(&path, &gradient, &DrawOptions::default());
-        let white = 0xfffefefe;
+        let white = 0xffffffff;
 
         assert_eq!(dt.get_data(), &vec![white, white, white, white][..])
 
