@@ -21,7 +21,6 @@ Current functionality
  - global alpha
 
 Planned functionality
- - extended blend modes
  - perspective image drawing
  - shadows?
 

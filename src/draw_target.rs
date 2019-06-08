@@ -63,6 +63,21 @@ pub enum BlendMode {
     DstAtop,
     Xor,
     Add,
+
+    Screen,
+    Overlay,
+    Darken,
+    Lighten,
+    ColorDodge,
+    HardLight,
+    SoftLight,
+    Difference,
+    Exclusion,
+    Multiply,
+    Hue,
+    Saturation,
+    Color,
+    Luminosity
 }
 
 fn blend_proc(mode: BlendMode) -> fn(u32, u32) -> u32 {
@@ -80,6 +95,20 @@ fn blend_proc(mode: BlendMode) -> fn(u32, u32) -> u32 {
         BlendMode::DstAtop => dst_atop,
         BlendMode::Xor => xor,
         BlendMode::Add => add,
+        BlendMode::Screen => screen,
+        BlendMode::Overlay => overlay,
+        BlendMode::Darken => darken,
+        BlendMode::Lighten => lighten,
+        BlendMode::ColorDodge => colordodge,
+        BlendMode::HardLight => hardlight,
+        BlendMode::SoftLight => softlight,
+        BlendMode::Difference => difference,
+        BlendMode::Exclusion => exclusion,
+        BlendMode::Multiply => multiply,
+        BlendMode::Hue => hue,
+        BlendMode::Saturation => saturation,
+        BlendMode::Color => color,
+        BlendMode::Luminosity => luminosity,
     }
 }
 
