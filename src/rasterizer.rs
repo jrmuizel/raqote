@@ -273,7 +273,7 @@ impl Rasterizer {
         e.fullx = edge.x1 << 16;
 
         // if the edge is completely above or completely below we can drop it
-        if edge.y2 < 0 || edge.y1 > self.height {
+        if edge.y2 < 0 || edge.y1 >= self.height {
             return;
         }
 
