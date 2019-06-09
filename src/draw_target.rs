@@ -731,7 +731,7 @@ impl DrawTarget {
     pub fn get_data_u8_mut(&mut self) -> &mut [u8] {
         let p = self.buf[..].as_mut_ptr();
         let len = self.buf[..].len();
-        unsafe { std::slice::from_raw_parts_mut(p as *mut u8, len) }
+        unsafe { std::slice::from_raw_parts_mut(p as *mut u8, len * std::mem::size_of::<u32>()) }
     }
 
     /// Take ownership of the buffer backing the DrawTarget
