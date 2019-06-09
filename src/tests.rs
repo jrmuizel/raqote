@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
 
-    use crate::*;
     use crate::draw_target::intrect;
+    use crate::*;
 
     #[test]
     fn basic_rasterizer() {
@@ -144,7 +144,12 @@ mod tests {
             }),
             &DrawOptions::new(),
         );
-        dt.clear(SolidSource { r: 0, g: 0, b: 0, a: 0 });
+        dt.clear(SolidSource {
+            r: 0,
+            g: 0,
+            b: 0,
+            a: 0,
+        });
         assert_eq!(dt.get_data(), &vec![0, 0, 0, 0][..])
     }
 
@@ -187,7 +192,11 @@ mod tests {
             }),
             &DrawOptions::new(),
         );
-        let image = Image {width: 1, height: 1, data: dt2.get_data()};
+        let image = Image {
+            width: 1,
+            height: 1,
+            data: dt2.get_data(),
+        };
         dt.draw_image_at(1., 1., &image, &DrawOptions::default());
         let white = 0xffffffff;
         assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
@@ -210,12 +219,18 @@ mod tests {
             }),
             &DrawOptions::new(),
         );
-        let image = Image {width: 2, height: 1, data: dt2.get_data()};
+        let image = Image {
+            width: 2,
+            height: 1,
+            data: dt2.get_data(),
+        };
         let mut pb = PathBuilder::new();
         pb.rect(0., 0., 4., 1.);
-        let source = Source::Image(image,
-                                   ExtendMode::Repeat,
-                                   Transform::create_translation(0., 0.));
+        let source = Source::Image(
+            image,
+            ExtendMode::Repeat,
+            Transform::create_translation(0., 0.),
+        );
 
         dt.fill(&pb.finish(), &source, &DrawOptions::default());
         let white = 0xffffffff;
@@ -230,18 +245,25 @@ mod tests {
         let mut dt = DrawTarget::new(3, 3);
         let mut pb = PathBuilder::new();
         pb.rect(0.5, 0.5, 2., 2.);
-        dt.stroke(&pb.finish(), &Source::Solid(SolidSource {
-            r: 0xff,
-            g: 0xff,
-            b: 0xff,
-            a: 0xff,
-        }),
-                  &StrokeStyle { width: 1., ..Default::default()},
-                  &DrawOptions::new());
+        dt.stroke(
+            &pb.finish(),
+            &Source::Solid(SolidSource {
+                r: 0xff,
+                g: 0xff,
+                b: 0xff,
+                a: 0xff,
+            }),
+            &StrokeStyle {
+                width: 1.,
+                ..Default::default()
+            },
+            &DrawOptions::new(),
+        );
         let white = 0xffffffff;
-        assert_eq!(dt.get_data(), &vec![white, white, white,
-                                        white, 0, white,
-                                        white, white, white][..])
+        assert_eq!(
+            dt.get_data(),
+            &vec![white, white, white, white, 0, white, white, white, white][..]
+        )
     }
 
     #[cfg(not(miri))]
@@ -253,15 +275,20 @@ mod tests {
         pb.line_to(2., 2.);
         pb.line_to(2., 2.);
         pb.line_to(4., 2.);
-        dt.stroke(&pb.finish(), &Source::Solid(SolidSource {
-            r: 0xff,
-            g: 0xff,
-            b: 0xff,
-            a: 0xff,
-        }),
-                  &StrokeStyle { width: 1., ..Default::default()},
-                  &DrawOptions::new());
-
+        dt.stroke(
+            &pb.finish(),
+            &Source::Solid(SolidSource {
+                r: 0xff,
+                g: 0xff,
+                b: 0xff,
+                a: 0xff,
+            }),
+            &StrokeStyle {
+                width: 1.,
+                ..Default::default()
+            },
+            &DrawOptions::new(),
+        );
     }
 
     #[cfg(not(miri))]
@@ -272,15 +299,20 @@ mod tests {
         pb.move_to(2., 2.);
         pb.line_to(2., 3.);
         pb.line_to(2., 4.);
-        dt.stroke(&pb.finish(), &Source::Solid(SolidSource {
-            r: 0xff,
-            g: 0xff,
-            b: 0xff,
-            a: 0xff,
-        }),
-                  &StrokeStyle { width: 1., ..Default::default()},
-                  &DrawOptions::new());
-
+        dt.stroke(
+            &pb.finish(),
+            &Source::Solid(SolidSource {
+                r: 0xff,
+                g: 0xff,
+                b: 0xff,
+                a: 0xff,
+            }),
+            &StrokeStyle {
+                width: 1.,
+                ..Default::default()
+            },
+            &DrawOptions::new(),
+        );
     }
 
     #[cfg(not(miri))]
@@ -293,16 +325,22 @@ mod tests {
         pb.line_to(160., 160.);
         pb.line_to(160., 160.);
         pb.close();
-        dt.stroke(&pb.finish(), &Source::Solid(SolidSource {
-            r: 0xff,
-            g: 0xff,
-            b: 0xff,
-            a: 0xff,
-        }),
-                  &StrokeStyle { width: 1., dash_array: vec![10.0, 6.0, 4.0, 10.0, 6.0, 4.0],
-                      dash_offset: 15.0, ..Default::default()},
-                  &DrawOptions::new());
-
+        dt.stroke(
+            &pb.finish(),
+            &Source::Solid(SolidSource {
+                r: 0xff,
+                g: 0xff,
+                b: 0xff,
+                a: 0xff,
+            }),
+            &StrokeStyle {
+                width: 1.,
+                dash_array: vec![10.0, 6.0, 4.0, 10.0, 6.0, 4.0],
+                dash_offset: 15.0,
+                ..Default::default()
+            },
+            &DrawOptions::new(),
+        );
     }
 
     #[test]
@@ -321,7 +359,7 @@ mod tests {
             &DrawOptions {
                 blend_mode: BlendMode::SrcOver,
                 alpha: 0.,
-            }
+            },
         );
         assert_eq!(dt.get_data(), &vec![0, 0, 0, 0][..])
     }
@@ -352,7 +390,6 @@ mod tests {
         let black = 0xff000000;
 
         assert_eq!(dt.get_data(), &vec![black, white, white, white][..])
-
     }
 
     #[test]
@@ -386,7 +423,6 @@ mod tests {
         let white = 0xffffffff;
 
         assert_eq!(dt.get_data(), &vec![white, white, white, white][..])
-
     }
 
     #[test]
@@ -402,6 +438,5 @@ mod tests {
         let white = 0xffffffff;
 
         assert_eq!(dt.get_data(), &vec![white][..])
-
     }
 }
