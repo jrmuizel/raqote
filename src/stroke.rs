@@ -207,19 +207,19 @@ fn dot(a: Vector, b: Vector) -> f32 {
 From "Example 2: Find the intersection of two lines" of
 "The Pleasures of "Perp Dot" Products"
 F. S. Hill, Jr. */
-fn line_intersection(a: Point, a_perp: Vector, b: Point, b_perp: Vector) -> Point {
+fn line_intersection(a: Point, a_perp: Vector, b: Point, b_perp: Vector) -> Option<Point> {
     let a_parallel = unperp(a_perp);
     let c = b - a;
     let denom = dot(b_perp, a_parallel);
     if denom == 0.0 {
-        panic!("trouble")
+        return None;
     }
 
     let t = dot(b_perp, c) / denom;
 
     let intersection = Point::new(a.x + t * (a_parallel.x), a.y + t * (a_parallel.y));
 
-    intersection
+    Some(intersection)
 }
 
 fn is_interior_angle(a: Vector, b: Vector) -> bool {
@@ -256,12 +256,14 @@ fn join_line(
             if 2. <= style.miter_limit * style.miter_limit * (1. - in_dot_out) {
                 let start = pt + s1_normal * offset;
                 let end = pt + s2_normal * offset;
-                let intersection = line_intersection(start, s1_normal, end, s2_normal);
-                dest.move_to(pt.x + s1_normal.x * offset, pt.y + s1_normal.y * offset);
-                dest.line_to(intersection.x, intersection.y);
-                dest.line_to(pt.x + s2_normal.x * offset, pt.y + s2_normal.y * offset);
-                dest.line_to(pt.x, pt.y);
-                dest.close();
+                if let Some(intersection) = line_intersection(start, s1_normal, end, s2_normal) {
+                    // We won't have an intersection if the segments are parallel
+                    dest.move_to(pt.x + s1_normal.x * offset, pt.y + s1_normal.y * offset);
+                    dest.line_to(intersection.x, intersection.y);
+                    dest.line_to(pt.x + s2_normal.x * offset, pt.y + s2_normal.y * offset);
+                    dest.line_to(pt.x, pt.y);
+                    dest.close();
+                }
             } else {
                 bevel(dest, style, pt, s1_normal, s2_normal);
             }
