@@ -343,6 +343,31 @@ mod tests {
         );
     }
 
+    #[cfg(not(miri))]
+    #[test]
+    fn dash_rect() {
+        let mut dt = DrawTarget::new(3, 3);
+        let mut pb = PathBuilder::new();
+        pb.rect(0.5, 0.5, 12., 12.);
+        dt.stroke(
+            &pb.finish(),
+            &Source::Solid(SolidSource {
+                r: 0xff,
+                g: 0xff,
+                b: 0xff,
+                a: 0xff,
+            }),
+            &StrokeStyle {
+                width: 1.,
+                dash_array: vec![1., 1.],
+                dash_offset: 0.5,
+                ..Default::default()
+            },
+            &DrawOptions::new(),
+        );
+        assert_eq!(dt.get_data(), &vec![0x80808080, 0, 0xffffffff, 0, 0, 0, 0xffffffff, 0, 0][..])
+    }
+
     #[test]
     fn draw_options_alpha() {
         let mut dt = DrawTarget::new(2, 2);

@@ -60,14 +60,15 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
                 cur_pt = pt;
             }
             PathOp::Close => {
+                let mut start = cur_pt;
                 let line = LineSegment {
-                    from: cur_pt,
+                    from: start,
                     to: start_point,
                 };
                 let mut len = line.length();
                 let lv = line.to_vector().normalize();
                 while len > remaining_dash_length {
-                    let seg = lv * remaining_dash_length;
+                    let seg = start + lv * remaining_dash_length;
                     if dash_on {
                         dashed.line_to(seg.x, seg.y);
                     } else {
@@ -77,6 +78,7 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
                     current_dash += 1;
                     len -= remaining_dash_length;
                     remaining_dash_length = dash_array[current_dash % dash_array.len()];
+                    start = seg;
                 }
                 if dash_on {
                     dashed.close();
