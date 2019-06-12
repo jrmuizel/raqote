@@ -365,7 +365,8 @@ mod tests {
             },
             &DrawOptions::new(),
         );
-        assert_eq!(dt.get_data(), &vec![0x80808080, 0, 0xffffffff, 0, 0, 0, 0xffffffff, 0, 0][..])
+        let white = 0xffffffff;
+        assert_eq!(dt.get_data(), &vec![white, 0, white, 0, 0, 0, white, 0, 0][..])
     }
 
     #[test]
