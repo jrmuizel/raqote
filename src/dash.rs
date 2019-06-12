@@ -134,6 +134,13 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
                             dashed.line_to(start_point.x, start_point.y);
                         }
                     }
+                } else {
+                    if initial_segment.len() > 0 {
+                        dashed.move_to(initial_segment[0].x, initial_segment[0].y);
+                        for i in 1..initial_segment.len() {
+                            dashed.line_to(initial_segment[i].x, initial_segment[i].y);
+                        }
+                    }
                 }
                 initial_segment = Vec::new();
                 remaining_dash_length -= len;
