@@ -24,9 +24,10 @@
 
 use typed_arena::Arena;
 
-use crate::Point;
+use crate::{IntRect, Point};
 use crate::blitter::Blitter;
 use crate::path_builder::Winding;
+use crate::geom::intrect;
 
 use std::ptr::NonNull;
 
@@ -146,14 +147,17 @@ impl ActiveEdge {
 
 
 pub struct Rasterizer {
-    /*
-        Rasterizer(int width, int height);
-        ~Rasterizer() { delete[] edge_starts; };
-    */
     edge_starts: Vec<Option<NonNull<ActiveEdge>>>,
     width: i32,
     height: i32,
     cur_y: i32,
+
+    // we use this rect to track the bounds of the added edges
+    bounds_top: i32,
+    bounds_bottom: i32,
+    bounds_left: i32,
+    bounds_right: i32,
+
     active_edges: Option<NonNull<ActiveEdge>>,
 
     edge_arena: Arena<ActiveEdge>,
@@ -168,6 +172,10 @@ impl Rasterizer {
         Rasterizer {
             width: width * 4,
             height: height * 4,
+            bounds_right: 0,
+            bounds_left: width,
+            bounds_top: height,
+            bounds_bottom: 0,
             cur_y: 0,
             edge_starts,
             edge_arena: Arena::new(),
@@ -282,7 +290,19 @@ impl Rasterizer {
             return;
         }
 
+        self.bounds_top = self.bounds_top.min(edge.y1 >> SAMPLE_SHIFT);
+        self.bounds_bottom = self.bounds_bottom.max((edge.y2 + 3) >> SAMPLE_SHIFT);
+
+        self.bounds_left = self.bounds_left.min(edge.x1 >> SAMPLE_SHIFT);
+        self.bounds_left = self.bounds_left.min(edge.x2 >> SAMPLE_SHIFT);
+
+        self.bounds_right = self.bounds_right.max((edge.x1 + 3) >> SAMPLE_SHIFT);
+        self.bounds_right = self.bounds_right.max((edge.x2 + 3) >> SAMPLE_SHIFT);
+
         if curve {
+            self.bounds_left = self.bounds_left.min(edge.control_x >> SAMPLE_SHIFT);
+            self.bounds_right = self.bounds_right.max((edge.control_x + 3) >> SAMPLE_SHIFT);
+
             // Based on Skia
             // we'll iterate t from 0..1 (0-256)
             // range of A is 4 times coordinate-range
@@ -553,11 +573,22 @@ impl Rasterizer {
         // printf("comparisons: %d\n", comparisons);
     }
 
+    pub fn get_bounds(&self) -> IntRect {
+        intrect(self.bounds_left.min(0),
+                self.bounds_top.min(0),
+                self.bounds_right.max(self.width >> SAMPLE_SHIFT),
+                self.bounds_bottom.max(self.height >> SAMPLE_SHIFT))
+    }
+
     pub fn reset(&mut self) {
         self.active_edges = None;
         for e in &mut self.edge_starts {
             *e = None;
         }
         self.edge_arena = Arena::new();
+        self.bounds_bottom = 0;
+        self.bounds_right = 0;
+        self.bounds_top = self.height >> SAMPLE_SHIFT;
+        self.bounds_left = self.width >> SAMPLE_SHIFT;
     }
 }

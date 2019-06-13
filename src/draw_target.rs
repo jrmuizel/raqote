@@ -29,10 +29,6 @@ use crate::{IntRect, Point, Transform, Vector};
 
 use euclid::vec2;
 
-pub fn intrect<T: Copy>(x1: T, y1: T, x2: T, y2: T) -> euclid::Box2D<T> {
-    euclid::Box2D::new(euclid::Point2D::new(x1, y1), euclid::Point2D::new(x2, y2))
-}
-
 type IntPoint = euclid::Point2D<i32>;
 
 #[derive(Clone)]
@@ -513,7 +509,7 @@ impl DrawTarget {
                 self.composite(
                     src,
                     &blitter.buf,
-                    intrect(0, 0, self.width, self.height),
+                    self.rasterizer.get_bounds(),
                     options.blend_mode,
                     options.alpha,
                 );
@@ -524,7 +520,7 @@ impl DrawTarget {
                 self.composite(
                     src,
                     &blitter.buf,
-                    intrect(0, 0, self.width, self.height),
+                    self.rasterizer.get_bounds(),
                     options.blend_mode,
                     options.alpha,
                 );

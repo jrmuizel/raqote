@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
 
-    use crate::draw_target::intrect;
+    use crate::geom::intrect;
     use crate::*;
 
     #[test]

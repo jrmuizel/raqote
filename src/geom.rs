@@ -6,6 +6,10 @@
  */
 use crate::Point;
 
+pub fn intrect<T: Copy>(x1: T, y1: T, x2: T, y2: T) -> euclid::Box2D<T> {
+    euclid::Box2D::new(euclid::Point2D::new(x1, y1), euclid::Point2D::new(x2, y2))
+}
+
 pub fn abs(a: f32) -> f32 {
     if a < 0. {
         return -a;
