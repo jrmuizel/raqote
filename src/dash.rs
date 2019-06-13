@@ -10,6 +10,24 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
     let mut cur_pt = Point::zero();
     let mut current_dash = 0;
     let mut start_point = Point::zero();
+
+    let mut total_dash_length = 0.;
+    for dash in dash_array {
+        total_dash_length += *dash;
+    }
+    if dash_array.len() % 2 == 1 {
+        // if the number of items in the dash_array is odd then we need it takes two periods
+        // to return to the beginning.
+        total_dash_length *= 2.;
+    }
+
+    // Handle large positive and negative offsets so that we don't loop for a high number of
+    // iterations below in extreme cases
+    dash_offset = dash_offset % total_dash_length;
+    if dash_offset < 0. {
+        dash_offset += total_dash_length;
+    }
+
     let mut remaining_dash_length = dash_array[current_dash % dash_array.len()];
     let mut dash_on = true;
 
