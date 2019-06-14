@@ -25,11 +25,9 @@ use std::io::BufWriter;
 use png::HasParameters;
 
 use crate::stroke::*;
-use crate::{IntRect, Point, Transform, Vector};
+use crate::{IntRect, IntPoint, Point, Transform, Vector};
 
 use euclid::vec2;
-
-type IntPoint = euclid::Point2D<i32>;
 
 #[derive(Clone)]
 pub struct Mask {
@@ -816,6 +814,16 @@ impl DrawTarget {
 
         for y in rect.min.y..rect.max.y {
             blitter.blit_span(y, rect.min.x, rect.max.x);
+        }
+    }
+
+    pub fn copy_surface(&mut self, src: &DrawTarget, src_rect: IntRect, dst: IntPoint) {
+        for y in src_rect.min.y..src_rect.max.y {
+            let dst_row_start = (dst.x + (dst.y + y - src_rect.min.y) * self.width) as usize;
+            let dst_row_end = dst_row_start + src_rect.size().width as usize;
+            let src_row_start = (src_rect.min.x + y * src.width) as usize;
+            let src_row_end = src_row_start + src_rect.size().width as usize;
+            self.buf[dst_row_start..dst_row_end].copy_from_slice(&src.buf[src_row_start..src_row_end]);
         }
     }
 

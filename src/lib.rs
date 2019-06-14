@@ -112,6 +112,7 @@ pub use crate::stroke::*;
 pub use sw_composite::{Gradient, GradientStop, Image, Spread};
 
 pub type IntRect = euclid::Box2D<i32>;
+pub type IntPoint = euclid::Point2D<i32>;
 pub type Point = euclid::Point2D<f32>;
 pub type Transform = euclid::Transform2D<f32>;
 pub type Vector = euclid::Vector2D<f32>;
