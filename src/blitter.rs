@@ -4,6 +4,7 @@ use crate::Transform;
 use crate::Point;
 
 use euclid::vec2;
+use std::marker::PhantomData;
 
 pub trait Blitter {
     fn blit_span(&mut self, y: i32, x1: i32, x2: i32);
@@ -108,102 +109,55 @@ fn transform_to_fixed(transform: &Transform) -> MatrixFixedPoint {
     }
 }
 
-pub struct ImageShader<'a, 'b> {
+pub struct ImageShader<'a, 'b, Fetch: PixelFetch> {
     image: &'a Image<'b>,
     xfm: MatrixFixedPoint,
+    fetch: std::marker::PhantomData<Fetch>,
 }
 
-impl<'a, 'b> ImageShader<'a, 'b> {
-    pub fn new(image: &'a Image<'b>, transform: &Transform) -> ImageShader<'a, 'b> {
+impl<'a, 'b, Fetch: PixelFetch> ImageShader<'a, 'b, Fetch> {
+    pub fn new(image: &'a Image<'b>, transform: &Transform) -> ImageShader<'a, 'b, Fetch> {
         ImageShader {
             image,
             xfm: transform_to_fixed(transform),
+            fetch: PhantomData,
         }
     }
 }
 
-impl<'a, 'b> Shader for ImageShader<'a, 'b> {
+impl<'a, 'b, Fetch: PixelFetch> Shader for ImageShader<'a, 'b, Fetch> {
     fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
         for i in 0..count {
             let p = self.xfm.transform(x as u16, y as u16);
-            dest[i] = fetch_bilinear::<PadFetch>(self.image, p.x, p.y);
+            dest[i] = fetch_bilinear::<Fetch>(self.image, p.x, p.y);
             x += 1;
         }
     }
 }
 
-pub struct ImageRepeatShader<'a, 'b> {
-    image: &'a Image<'b>,
-    xfm: MatrixFixedPoint,
-}
-
-impl<'a, 'b> ImageRepeatShader<'a, 'b> {
-    pub fn new(image: &'a Image<'b>, transform: &Transform) -> ImageRepeatShader<'a, 'b> {
-        ImageRepeatShader {
-            image,
-            xfm: transform_to_fixed(transform),
-        }
-    }
-}
-
-impl<'a, 'b> Shader for ImageRepeatShader<'a, 'b> {
-    fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
-        for i in 0..count {
-            let p = self.xfm.transform(x as u16, y as u16);
-            dest[i] = fetch_bilinear::<RepeatFetch>(self.image, p.x, p.y);
-            x += 1;
-        }
-    }
-}
-
-
-pub struct ImageAlphaShader<'a, 'b> {
+pub struct ImageAlphaShader<'a, 'b, Fetch: PixelFetch> {
     image: &'a Image<'b>,
     xfm: MatrixFixedPoint,
     alpha: u32,
+    fetch: std::marker::PhantomData<Fetch>,
 }
 
-impl<'a, 'b> ImageAlphaShader<'a, 'b> {
-    pub fn new(image: &'a Image<'b>, transform: &Transform, alpha: u32) -> ImageAlphaShader<'a, 'b> {
+impl<'a, 'b, Fetch: PixelFetch> ImageAlphaShader<'a, 'b, Fetch> {
+    pub fn new(image: &'a Image<'b>, transform: &Transform, alpha: u32) -> ImageAlphaShader<'a, 'b, Fetch> {
         ImageAlphaShader {
             image,
             xfm: transform_to_fixed(transform),
             alpha: alpha_to_alpha256(alpha),
+            fetch: PhantomData,
         }
     }
 }
 
-impl<'a, 'b> Shader for ImageAlphaShader<'a, 'b> {
+impl<'a, 'b, Fetch: PixelFetch> Shader for ImageAlphaShader<'a, 'b, Fetch> {
     fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
         for i in 0..count {
             let p = self.xfm.transform(x as u16, y as u16);
-            dest[i] = fetch_bilinear_alpha::<PadFetch>(self.image, p.x, p.y, self.alpha);
-            x += 1;
-        }
-    }
-}
-
-pub struct ImageAlphaRepeatShader<'a, 'b> {
-    image: &'a Image<'b>,
-    xfm: MatrixFixedPoint,
-    alpha: u32,
-}
-
-impl<'a, 'b> ImageAlphaRepeatShader<'a, 'b> {
-    pub fn new(image: &'a Image<'b>, transform: &Transform, alpha: u32) -> ImageAlphaRepeatShader<'a, 'b> {
-        ImageAlphaRepeatShader {
-            image,
-            xfm: transform_to_fixed(transform),
-            alpha: alpha_to_alpha256(alpha)
-        }
-    }
-}
-
-impl<'a, 'b> Shader for ImageAlphaRepeatShader<'a, 'b> {
-    fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
-        for i in 0..count {
-            let p = self.xfm.transform(x as u16, y as u16);
-            dest[i] = fetch_bilinear_alpha::<RepeatFetch>(self.image, p.x, p.y, self.alpha);
+            dest[i] = fetch_bilinear_alpha::<Fetch>(self.image, p.x, p.y, self.alpha);
             x += 1;
         }
     }

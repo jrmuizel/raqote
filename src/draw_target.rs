@@ -597,19 +597,19 @@ impl DrawTarget {
             }
             Source::Image(ref image, ExtendMode::Pad, transform) => {
                 if alpha != 255 {
-                    ias = ImageAlphaShader::new(image, &ti.post_mul(&transform), alpha);
+                    ias = ImageAlphaShader::<PadFetch>::new(image, &ti.post_mul(&transform), alpha);
                     shader = &ias;
                 } else {
-                    is = ImageShader::new(image, &ti.post_mul(&transform));
+                    is = ImageShader::<PadFetch>::new(image, &ti.post_mul(&transform));
                     shader = &is;
                 }
             }
             Source::Image(ref image, ExtendMode::Repeat, transform) => {
                 if alpha != 255 {
-                    iars = ImageAlphaRepeatShader::new(image, &ti.post_mul(&transform), alpha);
+                    iars = ImageAlphaShader::<RepeatFetch>::new(image, &ti.post_mul(&transform), alpha);
                     shader = &iars;
                 } else {
-                    irs = ImageRepeatShader::new(image, &ti.post_mul(&transform));
+                    irs = ImageShader::<RepeatFetch>::new(image, &ti.post_mul(&transform));
                     shader = &irs;
                 }
             }
