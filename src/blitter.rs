@@ -109,15 +109,15 @@ fn transform_to_fixed(transform: &Transform) -> MatrixFixedPoint {
     }
 }
 
-pub struct ImageShader<'a, 'b, Fetch: PixelFetch> {
+pub struct TransformedImageShader<'a, 'b, Fetch: PixelFetch> {
     image: &'a Image<'b>,
     xfm: MatrixFixedPoint,
     fetch: std::marker::PhantomData<Fetch>,
 }
 
-impl<'a, 'b, Fetch: PixelFetch> ImageShader<'a, 'b, Fetch> {
-    pub fn new(image: &'a Image<'b>, transform: &Transform) -> ImageShader<'a, 'b, Fetch> {
-        ImageShader {
+impl<'a, 'b, Fetch: PixelFetch> TransformedImageShader<'a, 'b, Fetch> {
+    pub fn new(image: &'a Image<'b>, transform: &Transform) -> TransformedImageShader<'a, 'b, Fetch> {
+        TransformedImageShader {
             image,
             xfm: transform_to_fixed(transform),
             fetch: PhantomData,
@@ -125,7 +125,7 @@ impl<'a, 'b, Fetch: PixelFetch> ImageShader<'a, 'b, Fetch> {
     }
 }
 
-impl<'a, 'b, Fetch: PixelFetch> Shader for ImageShader<'a, 'b, Fetch> {
+impl<'a, 'b, Fetch: PixelFetch> Shader for TransformedImageShader<'a, 'b, Fetch> {
     fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
         for i in 0..count {
             let p = self.xfm.transform(x as u16, y as u16);
@@ -135,16 +135,16 @@ impl<'a, 'b, Fetch: PixelFetch> Shader for ImageShader<'a, 'b, Fetch> {
     }
 }
 
-pub struct ImageAlphaShader<'a, 'b, Fetch: PixelFetch> {
+pub struct TransformedImageAlphaShader<'a, 'b, Fetch: PixelFetch> {
     image: &'a Image<'b>,
     xfm: MatrixFixedPoint,
     alpha: u32,
     fetch: std::marker::PhantomData<Fetch>,
 }
 
-impl<'a, 'b, Fetch: PixelFetch> ImageAlphaShader<'a, 'b, Fetch> {
-    pub fn new(image: &'a Image<'b>, transform: &Transform, alpha: u32) -> ImageAlphaShader<'a, 'b, Fetch> {
-        ImageAlphaShader {
+impl<'a, 'b, Fetch: PixelFetch> TransformedImageAlphaShader<'a, 'b, Fetch> {
+    pub fn new(image: &'a Image<'b>, transform: &Transform, alpha: u32) -> TransformedImageAlphaShader<'a, 'b, Fetch> {
+        TransformedImageAlphaShader {
             image,
             xfm: transform_to_fixed(transform),
             alpha: alpha_to_alpha256(alpha),
@@ -153,7 +153,7 @@ impl<'a, 'b, Fetch: PixelFetch> ImageAlphaShader<'a, 'b, Fetch> {
     }
 }
 
-impl<'a, 'b, Fetch: PixelFetch> Shader for ImageAlphaShader<'a, 'b, Fetch> {
+impl<'a, 'b, Fetch: PixelFetch> Shader for TransformedImageAlphaShader<'a, 'b, Fetch> {
     fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
         for i in 0..count {
             let p = self.xfm.transform(x as u16, y as u16);
