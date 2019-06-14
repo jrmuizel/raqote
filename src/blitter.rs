@@ -163,6 +163,43 @@ impl<'a, 'b, Fetch: PixelFetch> Shader for TransformedImageAlphaShader<'a, 'b, F
     }
 }
 
+pub struct ImagePadAlphaShader<'a, 'b> {
+    image: &'a Image<'b>,
+    alpha: u32,
+}
+
+impl<'a, 'b> ImagePadAlphaShader<'a, 'b> {
+    pub fn new(image: &'a Image<'b>, alpha: u32) -> ImagePadAlphaShader<'a, 'b> {
+        ImagePadAlphaShader {
+            image,
+            alpha: alpha_to_alpha256(alpha),
+        }
+    }
+}
+
+impl<'a, 'b> Shader for ImagePadAlphaShader<'a, 'b> {
+    fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], mut count: usize) {
+        let mut dest_x = 0;
+        while x < 0 && count > 0 {
+            dest[dest_x] = alpha_mul(self.image.data[(self.image.width * y) as usize], self.alpha);
+            x += 1;
+            dest_x += 1;
+            count -= 1;
+        }
+        while count > 0 && x < self.image.width {
+            dest[dest_x] = alpha_mul(self.image.data[(self.image.width * y + x) as usize], self.alpha);
+            x += 1;
+            dest_x += 1;
+            count -= 1;
+        }
+        while count > 0 {
+            dest[dest_x] = alpha_mul(self.image.data[(self.image.width * y + x-1) as usize], self.alpha);
+            dest_x += 1;
+            count -= 1;
+        }
+    }
+}
+
 pub struct RadialGradientShader {
     gradient: Box<GradientSource>,
     spread: Spread,

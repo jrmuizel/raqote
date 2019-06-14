@@ -578,6 +578,7 @@ impl DrawTarget {
         let irs;
         let ias;
         let iars;
+        let uias;
         let rgs;
         let tcrgs;
         let lgs;
@@ -597,8 +598,13 @@ impl DrawTarget {
             }
             Source::Image(ref image, ExtendMode::Pad, transform) => {
                 if alpha != 255 {
-                    ias = TransformedImageAlphaShader::<PadFetch>::new(image, &ti.post_mul(&transform), alpha);
-                    shader = &ias;
+                    if transform.approx_eq(&Transform::identity()) {
+                        uias = ImagePadAlphaShader::new(image, alpha);
+                        shader = &uias;
+                    } else {
+                        ias = TransformedImageAlphaShader::<PadFetch>::new(image, &ti.post_mul(&transform), alpha);
+                        shader = &ias;
+                    }
                 } else {
                     is = TransformedImageShader::<PadFetch>::new(image, &ti.post_mul(&transform));
                     shader = &is;
