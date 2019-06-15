@@ -209,6 +209,12 @@ struct Layer {
     rect: IntRect,
 }
 
+fn scaled_tolerance(x: f32, trans: &Transform) -> f32 {
+    // The absolute value of the determinant is the area parallelogram
+    // Take the sqrt of the area to losily convert to one dimension
+    x / trans.determinant().abs().sqrt()
+}
+
 pub struct DrawTarget {
     width: i32,
     height: i32,
@@ -447,7 +453,17 @@ impl DrawTarget {
     }
 
     pub fn stroke(&mut self, path: &Path, src: &Source, style: &StrokeStyle, options: &DrawOptions) {
-        let mut path = path.flatten(0.1);
+        let tolerance = 0.1;
+
+        // Since we're flattening in userspace, we need to compensate for the transform otherwise
+        // we'll flatten too much or not enough depending on the scale. We approximate doing this
+        // correctly by scaling the tolerance value using the same mechanism as Fitz. This
+        // approximation will fail if the scale between axes is drastically different. An
+        // alternative would be to use transform specific flattening but I haven't seen that done
+        // anywhere.
+        let tolerance = scaled_tolerance(tolerance, &self.transform);
+        let mut path = path.flatten(tolerance);
+
         if !style.dash_array.is_empty() {
             path = dash_path(&path, &style.dash_array, style.dash_offset);
         }
