@@ -119,7 +119,7 @@ impl<'a, 'b, Fetch: PixelFetch> TransformedImageShader<'a, 'b, Fetch> {
     pub fn new(image: &'a Image<'b>, transform: &Transform) -> TransformedImageShader<'a, 'b, Fetch> {
         TransformedImageShader {
             image,
-            xfm: transform_to_fixed(transform),
+            xfm: transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5)).post_translate(vec2(-0.5, -0.5))),
             fetch: PhantomData,
         }
     }
@@ -146,7 +146,7 @@ impl<'a, 'b, Fetch: PixelFetch> TransformedImageAlphaShader<'a, 'b, Fetch> {
     pub fn new(image: &'a Image<'b>, transform: &Transform, alpha: u32) -> TransformedImageAlphaShader<'a, 'b, Fetch> {
         TransformedImageAlphaShader {
             image,
-            xfm: transform_to_fixed(transform),
+            xfm: transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5)).post_translate(vec2(-0.5, -0.5))),
             alpha: alpha_to_alpha256(alpha),
             fetch: PhantomData,
         }
