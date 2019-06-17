@@ -293,11 +293,19 @@ impl<'a, 'b> Shader for ImagePadAlphaShader<'a, 'b> {
             dest_x += 1;
             count -= 1;
         }
-        while count > 0 && x < self.image.width {
-            dest[dest_x] = alpha_mul(self.image.data[(self.image.width * y + x) as usize], self.alpha);
-            x += 1;
-            dest_x += 1;
-            count -= 1;
+        {
+            let len = count.min((self.image.width - x) as usize);
+            let d = &mut dest[dest_x..dest_x + len];
+            let src_start = (self.image.width * y + x) as usize;
+            let s = &self.image.data[src_start..src_start + len];
+
+            for (d, s) in d.iter_mut().zip(s) {
+                *d = alpha_mul(*s, self.alpha);
+            }
+
+            x += len as i32;
+            dest_x += len;
+            count -= len;
         }
         while count > 0 {
             dest[dest_x] = alpha_mul(self.image.data[(self.image.width * y + self.image.width - 1) as usize], self.alpha);
