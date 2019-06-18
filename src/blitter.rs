@@ -82,6 +82,46 @@ impl Blitter for MaskSuperBlitter {
     }
 }
 
+pub struct MaskBlitter {
+    pub x: i32,
+    pub y: i32,
+    width: i32,
+    pub buf: Vec<u8>,
+}
+
+impl MaskBlitter {
+    pub fn new(width: i32, height: i32) -> MaskBlitter {
+        MaskBlitter {
+            x: 0,
+            y: 0,
+            width,
+            // we can end up writing one byte past the end of the buffer so allocate that
+            // padding to avoid needing to do an extra check
+            buf: vec![0; (width * height) as usize + 1],
+        }
+    }
+}
+
+impl Blitter for MaskBlitter {
+    fn blit_span(&mut self, mut y: i32, mut x1: i32, mut x2: i32) {
+        y -= self.y;
+        x1 -= self.x;
+        x2 -= self.x;
+        if y % SCALE != 0 {
+            return;
+        }
+
+        x2 = x2.min(self.width * SCALE);
+
+        x1 >>= SHIFT;
+        x2 >>= SHIFT;
+
+        for i in x1..x2 {
+            self.buf[(y / 4 * self.width + i) as usize] = 0xff;
+        }
+    }
+}
+
 pub trait Shader {
     fn shade_span(&self, x: i32, y: i32, dest: &mut [u32], count: usize);
 }

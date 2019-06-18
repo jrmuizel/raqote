@@ -105,6 +105,7 @@ mod tests;
 mod path_builder;
 pub use path_builder::*;
 
+pub use crate::draw_target::{AntialiasMode};
 pub use crate::draw_target::{BlendMode, DrawOptions, DrawTarget, SolidSource, Source, Winding, ExtendMode};
 pub use crate::stroke::*;
 

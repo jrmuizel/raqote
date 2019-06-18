@@ -176,9 +176,16 @@ impl<'a> Source<'a> {
 }
 
 #[derive(PartialEq, Clone, Copy, Debug)]
+pub enum AntialiasMode {
+    None,
+    Gray,
+}
+
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub struct DrawOptions {
     pub blend_mode: BlendMode,
     pub alpha: f32,
+    pub antialias: AntialiasMode,
 }
 
 impl DrawOptions {
@@ -191,7 +198,8 @@ impl Default for DrawOptions {
     fn default() -> Self {
         DrawOptions {
             blend_mode: BlendMode::SrcOver,
-            alpha: 1.
+            alpha: 1.,
+            antialias: AntialiasMode::Gray,
         }
     }
 }
@@ -473,10 +481,30 @@ impl DrawTarget {
 
     pub fn fill(&mut self, path: &Path, src: &Source, options: &DrawOptions) {
         self.apply_path(path);
-        let mut blitter = MaskSuperBlitter::new(self.width, self.height);
-        self.rasterizer.rasterize(&mut blitter, path.winding);
-        self.composite(src, &blitter.buf, intrect(0, 0, self.width, self.height),
-                       options.blend_mode, options.alpha);
+        match options.antialias {
+            AntialiasMode::None => {
+                let mut blitter = MaskBlitter::new(self.width, self.height);
+                self.rasterizer.rasterize(&mut blitter, path.winding);
+                self.composite(
+                    src,
+                    &blitter.buf,
+                    intrect(0, 0, self.width, self.height),
+                    options.blend_mode,
+                    options.alpha,
+                );
+            }
+            AntialiasMode::Gray => {
+                let mut blitter = MaskSuperBlitter::new(self.width, self.height);
+                self.rasterizer.rasterize(&mut blitter, path.winding);
+                self.composite(
+                    src,
+                    &blitter.buf,
+                    intrect(0, 0, self.width, self.height),
+                    options.blend_mode,
+                    options.alpha,
+                );
+            }
+        }
         self.rasterizer.reset();
     }
 
@@ -491,6 +519,7 @@ impl DrawTarget {
             &DrawOptions {
                 blend_mode: BlendMode::Src,
                 alpha: 1.,
+                antialias: AntialiasMode::Gray,
             },
         );
         self.transform = ctm;
