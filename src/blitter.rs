@@ -203,6 +203,60 @@ impl<'a, 'b, Fetch: PixelFetch> Shader for TransformedImageAlphaShader<'a, 'b, F
     }
 }
 
+pub struct TransformedNearestImageShader<'a, 'b, Fetch: PixelFetch> {
+    image: &'a Image<'b>,
+    xfm: MatrixFixedPoint,
+    fetch: std::marker::PhantomData<Fetch>,
+}
+
+impl<'a, 'b, Fetch: PixelFetch> TransformedNearestImageShader<'a, 'b, Fetch> {
+    pub fn new(image: &'a Image<'b>, transform: &Transform) -> TransformedNearestImageShader<'a, 'b, Fetch> {
+        TransformedNearestImageShader {
+            image,
+            xfm: transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5)).post_translate(vec2(-0.5, -0.5))),
+            fetch: PhantomData,
+        }
+    }
+}
+
+impl<'a, 'b, Fetch: PixelFetch> Shader for TransformedNearestImageShader<'a, 'b, Fetch> {
+    fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
+        for i in 0..count {
+            let p = self.xfm.transform(x as u16, y as u16);
+            dest[i] = fetch_nearest::<Fetch>(self.image, p.x, p.y);
+            x += 1;
+        }
+    }
+}
+
+pub struct TransformedNearestImageAlphaShader<'a, 'b, Fetch: PixelFetch> {
+    image: &'a Image<'b>,
+    xfm: MatrixFixedPoint,
+    alpha: u32,
+    fetch: std::marker::PhantomData<Fetch>,
+}
+
+impl<'a, 'b, Fetch: PixelFetch> TransformedNearestImageAlphaShader<'a, 'b, Fetch> {
+    pub fn new(image: &'a Image<'b>, transform: &Transform, alpha: u32) -> TransformedNearestImageAlphaShader<'a, 'b, Fetch> {
+        TransformedNearestImageAlphaShader {
+            image,
+            xfm: transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5)).post_translate(vec2(-0.5, -0.5))),
+            alpha: alpha_to_alpha256(alpha),
+            fetch: PhantomData,
+        }
+    }
+}
+
+impl<'a, 'b, Fetch: PixelFetch> Shader for TransformedNearestImageAlphaShader<'a, 'b, Fetch> {
+    fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
+        for i in 0..count {
+            let p = self.xfm.transform(x as u16, y as u16);
+            dest[i] = fetch_nearest_alpha::<Fetch>(self.image, p.x, p.y, self.alpha);
+            x += 1;
+        }
+    }
+}
+
 pub struct ImagePadAlphaShader<'a, 'b> {
     image: &'a Image<'b>,
     alpha: u32,

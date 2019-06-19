@@ -229,6 +229,7 @@ mod tests {
         let source = Source::Image(
             image,
             ExtendMode::Repeat,
+            FilterMode::Bilinear,
             Transform::create_translation(0., 0.),
         );
 

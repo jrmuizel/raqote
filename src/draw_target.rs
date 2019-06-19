@@ -119,6 +119,12 @@ pub enum ExtendMode {
     Repeat
 }
 
+#[derive(Copy, Clone, PartialEq)]
+pub enum FilterMode {
+    Bilinear,
+    Nearest
+}
+
 /// LinearGradients have an implicit start point at 0,0 and an end point at 256,0. The transform
 /// parameter can be used to adjust them to the desired location.
 /// RadialGradients have an implict center at 0,0 and a radius of 128.
@@ -127,7 +133,7 @@ pub enum ExtendMode {
 /// future to become more ergonomic.
 pub enum Source<'a> {
     Solid(SolidSource),
-    Image(Image<'a>, ExtendMode, Transform),
+    Image(Image<'a>, ExtendMode, FilterMode, Transform),
     RadialGradient(Gradient, Spread, Transform),
     TwoCircleRadialGradient(Gradient, Spread, Point, f32, Point, f32, Transform),
     LinearGradient(Gradient, Spread, Transform),
@@ -436,6 +442,7 @@ impl DrawTarget {
                                           height: size.height,
                                           data: &layer.buf},
                                   ExtendMode::Pad,
+                                  FilterMode::Nearest,
                                   Transform::create_translation(-layer.rect.min.x as f32,
                                                                 -layer.rect.min.y as f32));
         self.composite(&image, &mask, layer.rect, BlendMode::SrcOver, 1.);
@@ -451,6 +458,7 @@ impl DrawTarget {
                                            height: image.height,
                                            data: image.data},
                                    ExtendMode::Pad,
+                                   FilterMode::Bilinear,
                                    Transform::create_translation(-x, -y));
 
         self.fill(&pb.finish(), &source, options);
@@ -623,6 +631,10 @@ impl DrawTarget {
         let irs;
         let ias;
         let iars;
+        let nis;
+        let nirs;
+        let nias;
+        let niars;
         let uias;
         let rgs;
         let tcrgs;
@@ -641,27 +653,46 @@ impl DrawTarget {
                 cs = SolidShader { color };
                 shader = &cs;
             }
-            Source::Image(ref image, ExtendMode::Pad, transform) => {
+            Source::Image(ref image, ExtendMode::Pad, filter, transform) => {
                 if alpha != 255 {
                     if transform.approx_eq(&Transform::identity()) {
                         uias = ImagePadAlphaShader::new(image, alpha);
                         shader = &uias;
                     } else {
-                        ias = TransformedImageAlphaShader::<PadFetch>::new(image, &ti.post_mul(&transform), alpha);
-                        shader = &ias;
+                        if *filter == FilterMode::Bilinear {
+                            ias = TransformedImageAlphaShader::<PadFetch>::new(image, &ti.post_mul(&transform), alpha);
+                            shader = &ias;
+                        } else {
+                            nias = TransformedNearestImageAlphaShader::<PadFetch>::new(image, &ti.post_mul(&transform), alpha);
+                            shader = &nias;
+                        }
                     }
                 } else {
-                    is = TransformedImageShader::<PadFetch>::new(image, &ti.post_mul(&transform));
-                    shader = &is;
+                    if *filter == FilterMode::Bilinear {
+                        is = TransformedImageShader::<PadFetch>::new(image, &ti.post_mul(&transform));
+                        shader = &is;
+                    } else {
+                        nis = TransformedNearestImageShader::<PadFetch>::new(image, &ti.post_mul(&transform));
+                        shader = &nis;
+                    }
                 }
             }
-            Source::Image(ref image, ExtendMode::Repeat, transform) => {
+            Source::Image(ref image, ExtendMode::Repeat, FilterMode::Bilinear, transform) => {
                 if alpha != 255 {
                     iars = TransformedImageAlphaShader::<RepeatFetch>::new(image, &ti.post_mul(&transform), alpha);
                     shader = &iars;
                 } else {
                     irs = TransformedImageShader::<RepeatFetch>::new(image, &ti.post_mul(&transform));
                     shader = &irs;
+                }
+            }
+            Source::Image(ref image, ExtendMode::Repeat, FilterMode::Nearest, transform) => {
+                if alpha != 255 {
+                    niars = TransformedNearestImageAlphaShader::<RepeatFetch>::new(image, &ti.post_mul(&transform), alpha);
+                    shader = &niars;
+                } else {
+                    nirs = TransformedNearestImageShader::<RepeatFetch>::new(image, &ti.post_mul(&transform));
+                    shader = &nirs;
                 }
             }
             Source::RadialGradient(ref gradient, spread, transform) => {
