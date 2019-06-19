@@ -283,7 +283,7 @@ impl<'a, 'b> Shader for ImagePadAlphaShader<'a, 'b> {
 
         if y < 0 {
             y = 0;
-        } else if y > 0 {
+        } else if y >= self.image.height {
             y = self.image.height - 1;
         }
 
