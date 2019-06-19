@@ -33,6 +33,8 @@ pub fn intrect<T: Copy>(x1: T, y1: T, x2: T, y2: T) -> euclid::Box2D<T> {
     euclid::Box2D::new(euclid::Point2D::new(x1, y1), euclid::Point2D::new(x2, y2))
 }
 
+type IntPoint = euclid::Point2D<i32>;
+
 #[derive(Clone)]
 pub struct Mask {
     pub width: i32,
@@ -227,6 +229,21 @@ fn scaled_tolerance(x: f32, trans: &Transform) -> f32 {
     // The absolute value of the determinant is the area parallelogram
     // Take the sqrt of the area to losily convert to one dimension
     x / trans.determinant().abs().sqrt()
+}
+
+fn is_integer_transform(trans: &Transform) -> Option<IntPoint> {
+    if trans.m11 == 1. &&
+        trans.m12 == 0. &&
+        trans.m21 == 0. &&
+        trans.m22 == 1. {
+        let x = trans.m31 as i32;
+        let y = trans.m32 as i32;
+        if x as f32 == trans.m31 &&
+            y as f32 == trans.m32 {
+            return Some(IntPoint::new(x, y))
+        }
+    }
+    None
 }
 
 pub struct DrawTarget {
@@ -654,11 +671,11 @@ impl DrawTarget {
                 shader = &cs;
             }
             Source::Image(ref image, ExtendMode::Pad, filter, transform) => {
-                if alpha != 255 {
-                    if transform.approx_eq(&Transform::identity()) {
-                        uias = ImagePadAlphaShader::new(image, alpha);
-                        shader = &uias;
-                    } else {
+                if let Some(offset) = is_integer_transform(&ti.post_mul(&transform)) {
+                    uias = ImagePadAlphaShader::new(image, offset.x, offset.y, alpha);
+                    shader = &uias;
+                } else {
+                    if alpha != 255 {
                         if *filter == FilterMode::Bilinear {
                             ias = TransformedImageAlphaShader::<PadFetch>::new(image, &ti.post_mul(&transform), alpha);
                             shader = &ias;
@@ -666,14 +683,14 @@ impl DrawTarget {
                             nias = TransformedNearestImageAlphaShader::<PadFetch>::new(image, &ti.post_mul(&transform), alpha);
                             shader = &nias;
                         }
-                    }
-                } else {
-                    if *filter == FilterMode::Bilinear {
-                        is = TransformedImageShader::<PadFetch>::new(image, &ti.post_mul(&transform));
-                        shader = &is;
                     } else {
-                        nis = TransformedNearestImageShader::<PadFetch>::new(image, &ti.post_mul(&transform));
-                        shader = &nis;
+                        if *filter == FilterMode::Bilinear {
+                            is = TransformedImageShader::<PadFetch>::new(image, &ti.post_mul(&transform));
+                            shader = &is;
+                        } else {
+                            nis = TransformedNearestImageShader::<PadFetch>::new(image, &ti.post_mul(&transform));
+                            shader = &nis;
+                        }
                     }
                 }
             }

@@ -259,21 +259,34 @@ impl<'a, 'b, Fetch: PixelFetch> Shader for TransformedNearestImageAlphaShader<'a
 
 pub struct ImagePadAlphaShader<'a, 'b> {
     image: &'a Image<'b>,
+    offset_x: i32,
+    offset_y: i32,
     alpha: u32,
 }
 
 impl<'a, 'b> ImagePadAlphaShader<'a, 'b> {
-    pub fn new(image: &'a Image<'b>, alpha: u32) -> ImagePadAlphaShader<'a, 'b> {
+    pub fn new(image: &'a Image<'b>, x: i32, y: i32, alpha: u32) -> ImagePadAlphaShader<'a, 'b> {
         ImagePadAlphaShader {
             image,
+            offset_x: x,
+            offset_y: y,
             alpha: alpha_to_alpha256(alpha),
         }
     }
 }
 
 impl<'a, 'b> Shader for ImagePadAlphaShader<'a, 'b> {
-    fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], mut count: usize) {
+    fn shade_span(&self, mut x: i32, mut y: i32, dest: &mut [u32], mut count: usize) {
+        x += self.offset_x;
+        y += self.offset_y;
         let mut dest_x = 0;
+
+        if y < 0 {
+            y = 0;
+        } else if y > 0 {
+            y = self.image.height - 1;
+        }
+
         while x < 0 && count > 0 {
             dest[dest_x] = alpha_mul(self.image.data[(self.image.width * y) as usize], self.alpha);
             x += 1;
@@ -287,7 +300,7 @@ impl<'a, 'b> Shader for ImagePadAlphaShader<'a, 'b> {
             count -= 1;
         }
         while count > 0 {
-            dest[dest_x] = alpha_mul(self.image.data[(self.image.width * y + x-1) as usize], self.alpha);
+            dest[dest_x] = alpha_mul(self.image.data[(self.image.width * y + self.image.width - 1) as usize], self.alpha);
             dest_x += 1;
             count -= 1;
         }
