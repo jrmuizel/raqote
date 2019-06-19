@@ -203,6 +203,33 @@ mod tests {
     }
 
     #[test]
+    fn draw_image_subset() {
+        let mut dt = DrawTarget::new(2, 2);
+        let mut dt2 = DrawTarget::new(3, 3);
+
+        let mut pb = PathBuilder::new();
+        pb.rect(1., 1., 1., 1.);
+        dt2.fill(
+            &pb.finish(),
+            &Source::Solid(SolidSource {
+                r: 0xff,
+                g: 0xff,
+                b: 0xff,
+                a: 0xff,
+            }),
+            &DrawOptions::new(),
+        );
+        let image = Image {
+            width: 3,
+            height: 3,
+            data: dt2.get_data(),
+        };
+        dt.draw_image_at(0., 0., &image, &DrawOptions::default());
+        let white = 0xffffffff;
+        assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
+    }
+
+    #[test]
     fn repeating_draw_image() {
         let mut dt = DrawTarget::new(4, 1);
         let mut dt2 = DrawTarget::new(2, 1);
