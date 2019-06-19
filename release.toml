@@ -1,2 +1,2 @@
 pre-release-commit-message = "Release {{version}}"
-pro-release-commit-message = "Bump to {{next-version}}"
+pro-release-commit-message = "Bump version"
