@@ -9,6 +9,16 @@
  * found in the LICENSE.skia file.
  */
 
+
+use typed_arena::Arena;
+
+use crate::{IntRect, Point};
+use crate::blitter::Blitter;
+use crate::path_builder::Winding;
+use crate::geom::intrect;
+
+use std::ptr::NonNull;
+
 // One reason to have separate Edge/ActiveEdge is reduce the
 // memory usage of inactive edges. On the other hand
 // managing the lifetime of ActiveEdges is a lot
@@ -21,15 +31,6 @@
 // in an array instead of as a linked list. This will work
 // well for the bubble sorting, but will cause more problems
 // for insertion.
-
-use typed_arena::Arena;
-
-use crate::{IntRect, Point};
-use crate::blitter::Blitter;
-use crate::path_builder::Winding;
-use crate::geom::intrect;
-
-use std::ptr::NonNull;
 
 struct Edge {
     //XXX: it is probably worth renaming this to top and bottom
@@ -233,10 +234,6 @@ fn compute_curve_steps(e: &Edge) -> i32 {
 const SAMPLE_SIZE: f32 = 4.;
 const SAMPLE_SHIFT: i32 = 2;
 
-const SHIFT: i32 = 2;
-const SCALE: i32 = (1 << SHIFT);
-const MASK: i32 = (SCALE - 1);
-
 /*  We store 1<<shift in a (signed) byte, so its maximum value is 1<<6 == 64.
     Note that this limits the number of lines we use to approximate a curve.
     If we need to increase this, we need to store fCurveCount in something
@@ -248,6 +245,7 @@ const MAX_COEFF_SHIFT: i32 = 6;
 // can go as high as edge count: 374640
 // with curve count: 67680
 impl Rasterizer {
+    #[allow(non_snake_case)]
     pub fn add_edge(&mut self, mut start: Point, mut end: Point, curve: bool, control: Point) {
         if curve {
             //println!("add_edge {}, {} - {}, {} - {}, {}", start.x, start.y, control.x, control.y, end.x, end.y);
@@ -459,9 +457,7 @@ impl Rasterizer {
             prev_ptr = next_prev_ptr;
         }
     }
-}
 
-impl Rasterizer {
     // Skia does stepping and scanning of edges in a single
     // pass over the edge list.
     fn scan_edges(&mut self, blitter: &mut Blitter, winding_mode: Winding) {
@@ -569,8 +565,6 @@ impl Rasterizer {
                 self.cur_y += 1;
             }
         }
-        // edge_arena.reset();
-        // printf("comparisons: %d\n", comparisons);
     }
 
     pub fn get_bounds(&self) -> IntRect {
