@@ -834,6 +834,8 @@ impl DrawTarget {
     pub fn get_data_u8_mut(&mut self) -> &mut [u8] {
         let p = self.buf[..].as_mut_ptr();
         let len = self.buf[..].len();
+        // we want to return an [u8] slice instead of a [u32] slice. This is a safe thing to
+        // do because requirements of a [u32] slice are stricter.
         unsafe { std::slice::from_raw_parts_mut(p as *mut u8, len * std::mem::size_of::<u32>()) }
     }
 
