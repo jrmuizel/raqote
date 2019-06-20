@@ -568,10 +568,10 @@ impl Rasterizer {
     }
 
     pub fn get_bounds(&self) -> IntRect {
-        intrect(self.bounds_left.min(0),
-                self.bounds_top.min(0),
-                self.bounds_right.max(self.width >> SAMPLE_SHIFT),
-                self.bounds_bottom.max(self.height >> SAMPLE_SHIFT))
+        intrect(self.bounds_left.max(0),
+                self.bounds_top.max(0),
+                self.bounds_right.min(self.width >> SAMPLE_SHIFT),
+                self.bounds_bottom.min(self.height >> SAMPLE_SHIFT))
     }
 
     pub fn reset(&mut self) {
