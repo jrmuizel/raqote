@@ -372,7 +372,7 @@ impl Rasterizer {
         // the'll be in this list from right to left
         // this works out later during insertion
         e.next = self.edge_starts[cury as usize];
-        self.edge_starts[cury as usize] = Some(unsafe { NonNull::new_unchecked(e as *mut _) });
+        self.edge_starts[cury as usize] = Some(NonNull::from(e));
     }
 
     fn step_edges(&mut self) {
