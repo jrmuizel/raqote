@@ -466,10 +466,7 @@ impl DrawTarget {
     pub fn draw_image_at(&mut self, x: f32, y: f32, image: &Image, options: &DrawOptions) {
         let mut pb = PathBuilder::new();
         pb.rect(x, y, image.width as f32, image.height as f32);
-        // XXX: Image should be Clone
-        let source = Source::Image(Image { width: image.width,
-                                           height: image.height,
-                                           data: image.data},
+        let source = Source::Image(*image,
                                    ExtendMode::Pad,
                                    FilterMode::Bilinear,
                                    Transform::create_translation(-x, -y));
