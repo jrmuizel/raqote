@@ -303,7 +303,6 @@ impl<'a, 'b> Shader for ImagePadAlphaShader<'a, 'b> {
                 *d = alpha_mul(*s, self.alpha);
             }
 
-            x += len as i32;
             dest_x += len;
             count -= len;
         }
