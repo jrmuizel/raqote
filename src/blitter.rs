@@ -293,7 +293,7 @@ impl<'a, 'b> Shader for ImagePadAlphaShader<'a, 'b> {
             dest_x += 1;
             count -= 1;
         }
-        {
+        if count > 0 {
             let len = count.min((self.image.width - x) as usize);
             let d = &mut dest[dest_x..dest_x + len];
             let src_start = (self.image.width * y + x) as usize;
