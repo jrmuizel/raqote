@@ -819,7 +819,7 @@ impl DrawTarget {
 
     pub fn copy_surface(&mut self, src: &DrawTarget, src_rect: IntRect, dst: IntPoint) {
         let src_rect = intrect(0, 0, self.width, self.height)
-            .intersection(&src_rect.translate(&dst.to_vector()));
+            .intersection(&src_rect.translate(&dst.to_vector())).translate(&-dst.to_vector());
 
         if src_rect.is_negative() {
             return;
