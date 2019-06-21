@@ -818,6 +818,13 @@ impl DrawTarget {
     }
 
     pub fn copy_surface(&mut self, src: &DrawTarget, src_rect: IntRect, dst: IntPoint) {
+        let src_rect = intrect(0, 0, self.width, self.height)
+            .intersection(&src_rect.translate(&dst.to_vector()));
+
+        if src_rect.is_negative() {
+            return;
+        }
+
         for y in src_rect.min.y..src_rect.max.y {
             let dst_row_start = (dst.x + (dst.y + y - src_rect.min.y) * self.width) as usize;
             let dst_row_end = dst_row_start + src_rect.size().width as usize;
