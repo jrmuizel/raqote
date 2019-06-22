@@ -508,4 +508,30 @@ mod tests {
         let white = 0xffffffff;
         assert_eq!(dt.get_data(), &vec![0, 0, white, 0][..])
     }
+
+    #[test]
+    fn copy_surface() {
+        let mut dest = DrawTarget::new(2, 2);
+        let mut src = DrawTarget::new(2, 2);
+
+        let white = 0xffffffff;
+        let red = 0xffff0000;
+        let green = 0xff00ff00;
+        let blue = 0xff0000ff;
+
+        let data = src.get_data_mut();
+        data[0] = white;
+        data[1] = red;
+        data[2] = green;
+        data[3] = blue;
+
+        dest.copy_surface(&src, intrect(0, 0, 2, 2), IntPoint::new(-1, -1));
+        assert_eq!(dest.get_data(), &vec![blue, 0, 0, 0][..]);
+        dest.copy_surface(&src, intrect(0, 0, 2, 2), IntPoint::new(1, -1));
+        assert_eq!(dest.get_data(), &vec![blue, green, 0, 0][..]);
+        dest.copy_surface(&src, intrect(0, 0, 2, 2), IntPoint::new(-1, 1));
+        assert_eq!(dest.get_data(), &vec![blue, green, red, 0][..]);
+        dest.copy_surface(&src, intrect(0, 0, 2, 2), IntPoint::new(1, 1));
+        assert_eq!(dest.get_data(), &vec![blue, green, red, white][..]);
+    }
 }

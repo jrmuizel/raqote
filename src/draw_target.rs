@@ -818,8 +818,13 @@ impl DrawTarget {
     }
 
     pub fn copy_surface(&mut self, src: &DrawTarget, src_rect: IntRect, dst: IntPoint) {
-        let src_rect = intrect(0, 0, self.width, self.height)
+        let dst_rect = intrect(0, 0, self.width, self.height);
+        let src_rect = dst_rect
             .intersection(&src_rect.translate(&dst.to_vector())).translate(&-dst.to_vector());
+
+        // clamp requires Float so open code it
+        let dst = IntPoint::new(dst.x.max(dst_rect.min.x).min(dst_rect.max.x),
+                                dst.y.max(dst_rect.min.y).min(dst_rect.max.y));
 
         if src_rect.is_negative() {
             return;
@@ -836,6 +841,10 @@ impl DrawTarget {
 
     pub fn get_data(&self) -> &[u32] {
         &self.buf
+    }
+
+    pub fn get_data_mut(&mut self) -> &mut [u32] {
+        &mut self.buf
     }
 
     pub fn get_data_u8_mut(&mut self) -> &mut [u8] {
