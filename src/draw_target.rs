@@ -547,7 +547,6 @@ impl DrawTarget {
         self.transform = ctm;
     }
 
-    /// Note: text positioning works very poorly because of limitations and bugs in font-kit
     #[cfg(feature = "text")]
     pub fn draw_text(
         &mut self,
@@ -569,7 +568,6 @@ impl DrawTarget {
         self.draw_glyphs(font, point_size, &ids, &positions, src, options);
     }
 
-    /// Note: text positioning works very poorly because of limitations and bugs in font-kit
     #[cfg(feature = "text")]
     pub fn draw_glyphs(
         &mut self,
