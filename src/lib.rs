@@ -20,6 +20,8 @@ Planned functionality
  - perspective image drawing
  - shadows?
 
+[resvg](https://github.com/RazrFalcon/resvg) supports using raqote as a backend.
+
 Example:
 
 ```rust
