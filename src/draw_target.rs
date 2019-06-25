@@ -240,6 +240,7 @@ fn is_integer_transform(trans: &Transform) -> Option<IntPoint> {
     None
 }
 
+/// The main type used for drawing
 pub struct DrawTarget {
     width: i32,
     height: i32,
@@ -275,6 +276,7 @@ impl DrawTarget {
         self.height
     }
 
+    /// sets a transform that will be applied to all drawing operations
     pub fn set_transform(&mut self, transform: &Transform) {
         self.transform = *transform;
     }
@@ -472,10 +474,12 @@ impl DrawTarget {
         self.fill(&pb.finish(), &source, options);
     }
 
+    /// Draws `src` through an untransformed `mask` positioned at `x`, `y` in device space
     pub fn mask(&mut self, src: &Source, x: i32, y: i32, mask: &Mask) {
         self.composite(src, &mask.data, intrect(x, y, mask.width, mask.height), BlendMode::SrcOver, 1.);
     }
 
+    /// Strokes `path` with `style` and fills the result with `src`
     pub fn stroke(&mut self, path: &Path, src: &Source, style: &StrokeStyle, options: &DrawOptions) {
         let tolerance = 0.1;
 
@@ -495,6 +499,7 @@ impl DrawTarget {
         self.fill(&stroked, src, options);
     }
 
+    /// Fills `path` with `src`
     pub fn fill(&mut self, path: &Path, src: &Source, options: &DrawOptions) {
         self.apply_path(path);
         match options.antialias {
@@ -524,6 +529,7 @@ impl DrawTarget {
         self.rasterizer.reset();
     }
 
+    /// Fills the current clip with the solid color `solid`
     pub fn clear(&mut self, solid: SolidSource) {
         let mut pb = PathBuilder::new();
         let ctm = self.transform;
@@ -817,6 +823,7 @@ impl DrawTarget {
         }
     }
 
+    /// Draws `src_rect` of `src` at `dst`. The current transform and clip are ignored
     pub fn copy_surface(&mut self, src: &DrawTarget, src_rect: IntRect, dst: IntPoint) {
         let dst_rect = intrect(0, 0, self.width, self.height);
         let src_rect = dst_rect
@@ -839,14 +846,17 @@ impl DrawTarget {
         }
     }
 
+    /// Returns a reference to the underlying pixel data
     pub fn get_data(&self) -> &[u32] {
         &self.buf
     }
 
+    /// Returns a mut reference to the underlying pixel data
     pub fn get_data_mut(&mut self) -> &mut [u32] {
         &mut self.buf
     }
 
+    /// Returns a mut reference to the underlying pixel data as individual bytes
     pub fn get_data_u8_mut(&mut self) -> &mut [u8] {
         let p = self.buf[..].as_mut_ptr();
         let len = self.buf[..].len();
@@ -860,6 +870,8 @@ impl DrawTarget {
         self.buf
     }
 
+
+    /// Saves the current pixel to a png file at `path`
     pub fn write_png<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), png::EncodingError> {
         let file = File::create(path)?;
 
