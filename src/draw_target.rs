@@ -590,15 +590,11 @@ impl DrawTarget {
             );
             combined_bounds = match bounds {
                 Ok(bounds) => {
-                    dbg!(position);
-                    dbg!(bounds);
                     combined_bounds.union(&bounds)
                 }
                 _ => panic!(),
             }
         }
-
-        dbg!(combined_bounds);
 
         /*let mut canvas = Canvas::new(&euclid::Size2D::new(combined_bounds.size.width as u32,
         combined_bounds.size.height as u32), Format::A8);*/
