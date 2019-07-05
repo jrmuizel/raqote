@@ -9,6 +9,7 @@ repository = "https://github.com/jrmuizel/raqote"
 documentation = "https://docs.rs/raqote"
 readme = "README.md"
 keywords = ["2d", "graphics"]
+categories = ["graphics"]
 
 [dependencies]
 euclid = "0.20"
