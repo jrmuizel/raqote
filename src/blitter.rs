@@ -529,6 +529,30 @@ impl<'a> Blitter for ShaderBlendBlitter<'a> {
     }
 }
 
+pub enum ShaderStorage<'a, 'b> {
+    None,
+    Solid(SolidShader),
+    ImagePadAlpha(ImagePadAlphaShader<'a, 'b>),
+    TransformedNearestPadImageAlpha(TransformedNearestImageAlphaShader<'a, 'b, PadFetch>),
+    TransformedNearestRepeatImageAlpha(TransformedNearestImageAlphaShader<'a, 'b, RepeatFetch>),
+    TransformedPadImageAlpha(TransformedImageAlphaShader<'a, 'b, PadFetch>),
+    TransformedRepeatImageAlpha(TransformedImageAlphaShader<'a, 'b, RepeatFetch>),
+    TransformedPadImage(TransformedImageShader<'a, 'b, PadFetch>),
+    TransformedRepeatImage(TransformedImageShader<'a, 'b, RepeatFetch>),
+    TransformedNearestPadImage(TransformedNearestImageShader<'a, 'b, PadFetch>),
+    TransformedNearestRepeatImage(TransformedNearestImageShader<'a, 'b, RepeatFetch>),
+    RadialGradient(RadialGradientShader),
+    TwoCircleRadialGradient(TwoCircleRadialGradientShader),
+    LinearGradient(LinearGradientShader),
+}
+
+pub enum ShaderBlitterStorage<'a> {
+    ShaderBlendBlitter(ShaderBlendBlitter<'a>),
+    ShaderClipBlendBlitter(ShaderBlendBlitter<'a>),
+    ShaderBlitter(ShaderBlitter<'a>),
+    ShaderClipBlitter(ShaderBlitter<'a>)
+}
+
 /*
 pub struct SolidBlitter<'a> {
     color: u32,
