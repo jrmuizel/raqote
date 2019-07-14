@@ -547,10 +547,11 @@ pub enum ShaderStorage<'a, 'b> {
 }
 
 pub enum ShaderBlitterStorage<'a> {
+    None,
     ShaderBlendBlitter(ShaderBlendBlitter<'a>),
-    ShaderClipBlendBlitter(ShaderBlendBlitter<'a>),
+    ShaderClipBlendBlitter(ShaderClipBlendBlitter<'a>),
     ShaderBlitter(ShaderBlitter<'a>),
-    ShaderClipBlitter(ShaderBlitter<'a>)
+    ShaderClipBlitter(ShaderClipBlitter<'a>)
 }
 
 /*

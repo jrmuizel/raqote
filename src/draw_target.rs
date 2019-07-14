@@ -740,18 +740,17 @@ impl DrawTarget {
         }
 
 
+        let mut blitter_storage: ShaderBlitterStorage;
+
         let blitter: &mut Blitter;
-        let mut scb;
-        let mut sb;
-        let mut scb_blend;
-        let mut sb_blend;
+
         if blend == BlendMode::SrcOver {
             match self.clip_stack.last() {
                 Some(Clip {
                          rect: _,
                          mask: Some(clip),
                      }) => {
-                    scb = ShaderClipBlitter {
+                    let scb = ShaderClipBlitter {
                         x: dest_bounds.min.x,
                         y: dest_bounds.min.y,
                         shader: shader,
@@ -763,11 +762,11 @@ impl DrawTarget {
                         clip,
                         clip_stride: self.width,
                     };
-
-                    blitter = &mut scb;
+                    blitter_storage = ShaderBlitterStorage::ShaderClipBlitter(scb);
+                    blitter = match &mut blitter_storage { ShaderBlitterStorage::ShaderClipBlitter(s) => s, _ => panic!() };
                 }
                 _ => {
-                    sb = ShaderBlitter {
+                    let sb = ShaderBlitter {
                         x: dest_bounds.min.x,
                         y: dest_bounds.min.y,
                         shader: &*shader,
@@ -777,7 +776,8 @@ impl DrawTarget {
                         mask,
                         mask_stride: self.width,
                     };
-                    blitter = &mut sb;
+                    blitter_storage = ShaderBlitterStorage::ShaderBlitter(sb);
+                    blitter = match &mut blitter_storage { ShaderBlitterStorage::ShaderBlitter(s) => s, _ => panic!() };
                 }
             }
         } else {
@@ -787,7 +787,7 @@ impl DrawTarget {
                          rect: _,
                          mask: Some(clip),
                      }) => {
-                    scb_blend = ShaderClipBlendBlitter {
+                    let scb_blend = ShaderClipBlendBlitter {
                         x: dest_bounds.min.x,
                         y: dest_bounds.min.y,
                         shader: shader,
@@ -801,10 +801,10 @@ impl DrawTarget {
                         blend_fn
                     };
 
-                    blitter = &mut scb_blend;
-                }
+                    blitter_storage = ShaderBlitterStorage::ShaderClipBlendBlitter(scb_blend);
+                    blitter = match &mut blitter_storage { ShaderBlitterStorage::ShaderClipBlendBlitter(s) => s, _ => panic!() };                }
                 _ => {
-                    sb_blend = ShaderBlendBlitter {
+                    let sb_blend = ShaderBlendBlitter {
                         x: dest_bounds.min.x,
                         y: dest_bounds.min.y,
                         shader: &*shader,
@@ -815,8 +815,8 @@ impl DrawTarget {
                         mask_stride: self.width,
                         blend_fn
                     };
-                    blitter = &mut sb_blend;
-                }
+                    blitter_storage = ShaderBlitterStorage::ShaderBlendBlitter(sb_blend);
+                    blitter = match &mut blitter_storage { ShaderBlitterStorage::ShaderBlendBlitter(s) => s, _ => panic!() };                 }
             }
         }
 
