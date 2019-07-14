@@ -628,18 +628,7 @@ impl DrawTarget {
         );
     }
 
-    fn composite(&mut self, src: &Source, mask: &[u8], mut rect: IntRect, blend: BlendMode, alpha: f32) {
-        let shader: &Shader;
-
-        let ti = self.transform.inverse();
-        let ti = if let Some(ti) = ti {
-            ti
-        } else {
-            // the transform is not invertible so we have nothing to draw
-            return;
-        };
-
-        let mut shader_storage: ShaderStorage = ShaderStorage::None;
+    fn choose_shader<'a, 'b, 'c>(&self, ti: &Transform, src: &'b Source<'c>, alpha: f32, shader_storage: &'a mut ShaderStorage<'b, 'c>) -> &'a Shader {
         let shader: &Shader;
 
         // XXX: clamp alpha
@@ -653,33 +642,33 @@ impl DrawTarget {
                     | ((c.b as u32) << 0);
                 let color = alpha_mul(color, alpha_to_alpha256(alpha));
                 let s = SolidShader { color };
-                shader_storage = ShaderStorage::Solid(s);
-                shader = match &shader_storage { ShaderStorage::Solid(s) => s, _ => panic!() }
+                *shader_storage = ShaderStorage::Solid(s);
+                shader = match shader_storage { ShaderStorage::Solid(s) => s, _ => panic!() }
             }
             Source::Image(ref image, ExtendMode::Pad, filter, transform) => {
                 if let Some(offset) = is_integer_transform(&ti.post_transform(&transform)) {
-                    shader_storage = ShaderStorage::ImagePadAlpha(ImagePadAlphaShader::new(image, offset.x, offset.y, alpha));
-                    shader = match &shader_storage { ShaderStorage::ImagePadAlpha(s) => s, _ => panic!() };
+                    *shader_storage = ShaderStorage::ImagePadAlpha(ImagePadAlphaShader::new(image, offset.x, offset.y, alpha));
+                    shader = match shader_storage { ShaderStorage::ImagePadAlpha(s) => s, _ => panic!() };
                 } else {
                     if alpha != 255 {
                         if *filter == FilterMode::Bilinear {
                             let s = TransformedImageAlphaShader::<PadFetch>::new(image, &ti.post_transform(&transform), alpha);
-                            shader_storage = ShaderStorage::TransformedPadImageAlpha(s);
-                            shader = match &shader_storage { ShaderStorage::TransformedPadImageAlpha(s) => s, _ => panic!() };
+                            *shader_storage = ShaderStorage::TransformedPadImageAlpha(s);
+                            shader = match shader_storage { ShaderStorage::TransformedPadImageAlpha(s) => s, _ => panic!() };
                         } else {
                             let s = TransformedNearestImageAlphaShader::<PadFetch>::new(image, &ti.post_transform(&transform), alpha);
-                            shader_storage = ShaderStorage::TransformedNearestPadImageAlpha(s);
-                            shader = match &shader_storage { ShaderStorage::TransformedNearestPadImageAlpha(s) => s, _ => panic!() };
+                            *shader_storage = ShaderStorage::TransformedNearestPadImageAlpha(s);
+                            shader = match shader_storage { ShaderStorage::TransformedNearestPadImageAlpha(s) => s, _ => panic!() };
                         }
                     } else {
                         if *filter == FilterMode::Bilinear {
                             let s = TransformedImageShader::<PadFetch>::new(image, &ti.post_transform(&transform));
-                            shader_storage = ShaderStorage::TransformedPadImage(s);
-                            shader = match &shader_storage { ShaderStorage::TransformedPadImage(s) => s, _ => panic!() };
+                            *shader_storage = ShaderStorage::TransformedPadImage(s);
+                            shader = match shader_storage { ShaderStorage::TransformedPadImage(s) => s, _ => panic!() };
                         } else {
                             let s = TransformedNearestImageShader::<PadFetch>::new(image, &ti.post_transform(&transform));
-                            shader_storage = ShaderStorage::TransformedNearestPadImage(s);
-                            shader = match &shader_storage { ShaderStorage::TransformedNearestPadImage(s) => s, _ => panic!() };
+                            *shader_storage = ShaderStorage::TransformedNearestPadImage(s);
+                            shader = match shader_storage { ShaderStorage::TransformedNearestPadImage(s) => s, _ => panic!() };
                         }
                     }
                 }
@@ -687,40 +676,54 @@ impl DrawTarget {
             Source::Image(ref image, ExtendMode::Repeat, FilterMode::Bilinear, transform) => {
                 if alpha != 255 {
                     let s = TransformedImageAlphaShader::<RepeatFetch>::new(image, &ti.post_transform(&transform), alpha);
-                    shader_storage = ShaderStorage::TransformedRepeatImageAlpha(s);
-                    shader = match &shader_storage { ShaderStorage::TransformedRepeatImageAlpha(s) => s, _ => panic!() };
+                    *shader_storage = ShaderStorage::TransformedRepeatImageAlpha(s);
+                    shader = match shader_storage { ShaderStorage::TransformedRepeatImageAlpha(s) => s, _ => panic!() };
                 } else {
                     let s = TransformedImageShader::<RepeatFetch>::new(image, &ti.post_transform(&transform));
-                    shader_storage = ShaderStorage::TransformedRepeatImage(s);
-                    shader = match &shader_storage { ShaderStorage::TransformedRepeatImage(s) => s, _ => panic!() };                }
+                    *shader_storage = ShaderStorage::TransformedRepeatImage(s);
+                    shader = match shader_storage { ShaderStorage::TransformedRepeatImage(s) => s, _ => panic!() };                }
             }
             Source::Image(ref image, ExtendMode::Repeat, FilterMode::Nearest, transform) => {
                 if alpha != 255 {
                     let s = TransformedNearestImageAlphaShader::<RepeatFetch>::new(image, &ti.post_transform(&transform), alpha);
-                    shader_storage = ShaderStorage::TransformedNearestRepeatImageAlpha(s);
-                    shader = match &shader_storage { ShaderStorage::TransformedNearestRepeatImageAlpha(s) => s, _ => panic!() };
+                    *shader_storage = ShaderStorage::TransformedNearestRepeatImageAlpha(s);
+                    shader = match shader_storage { ShaderStorage::TransformedNearestRepeatImageAlpha(s) => s, _ => panic!() };
                 } else {
                     let s = TransformedNearestImageShader::<RepeatFetch>::new(image, &ti.post_transform(&transform));
-                    shader_storage = ShaderStorage::TransformedNearestRepeatImage(s);
-                    shader = match &shader_storage { ShaderStorage::TransformedNearestRepeatImage(s) => s, _ => panic!() };
+                    *shader_storage = ShaderStorage::TransformedNearestRepeatImage(s);
+                    shader = match shader_storage { ShaderStorage::TransformedNearestRepeatImage(s) => s, _ => panic!() };
                 }
             }
             Source::RadialGradient(ref gradient, spread, transform) => {
                 let s = RadialGradientShader::new(gradient, &ti.post_transform(&transform), *spread, alpha);
-                shader_storage = ShaderStorage::RadialGradient(s);
-                shader = match &shader_storage { ShaderStorage::RadialGradient(s) => s, _ => panic!() };
+                *shader_storage = ShaderStorage::RadialGradient(s);
+                shader = match shader_storage { ShaderStorage::RadialGradient(s) => s, _ => panic!() };
             }
             Source::TwoCircleRadialGradient(ref gradient, spread, c1, r1, c2, r2, transform) => {
                 let s = TwoCircleRadialGradientShader::new(gradient, &ti.post_transform(&transform), *c1, *r1, *c2, *r2, *spread, alpha);
-                shader_storage = ShaderStorage::TwoCircleRadialGradient(s);
-                shader = match &shader_storage { ShaderStorage::TwoCircleRadialGradient(s) => s, _ => panic!() };
+                *shader_storage = ShaderStorage::TwoCircleRadialGradient(s);
+                shader = match shader_storage { ShaderStorage::TwoCircleRadialGradient(s) => s, _ => panic!() };
             }
             Source::LinearGradient(ref gradient, spread, transform) => {
                 let s = LinearGradientShader::new(gradient, &ti.post_transform(&transform), *spread, alpha);
-                shader_storage = ShaderStorage::LinearGradient(s);
-                shader = match &shader_storage { ShaderStorage::LinearGradient(s) => s, _ => panic!() };
+                *shader_storage = ShaderStorage::LinearGradient(s);
+                shader = match shader_storage { ShaderStorage::LinearGradient(s) => s, _ => panic!() };
             }
         };
+        shader
+    }
+
+    fn composite(&mut self, src: &Source, mask: &[u8], mut rect: IntRect, blend: BlendMode, alpha: f32) {
+        let ti = self.transform.inverse();
+        let ti = if let Some(ti) = ti {
+            ti
+        } else {
+            // the transform is not invertible so we have nothing to draw
+            return;
+        };
+
+        let mut shader_storage: ShaderStorage = ShaderStorage::None;
+        let shader = self.choose_shader(&ti, src, alpha, &mut shader_storage);
 
         let clip_bounds = self.clip_bounds();
 
