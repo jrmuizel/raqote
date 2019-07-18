@@ -125,6 +125,7 @@ pub enum FilterMode {
 ///
 /// These locations are an artifact of the blitter implementation and will probably change in the
 /// future to become more ergonomic.
+#[derive(Clone)]
 pub enum Source<'a> {
     Solid(SolidSource),
     Image(Image<'a>, ExtendMode, FilterMode, Transform),
