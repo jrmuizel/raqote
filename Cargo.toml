@@ -18,6 +18,9 @@ png = "0.14.0"
 typed-arena = "1.4.1"
 sw-composite = "0.5.10"
 
+[dev-dependencies]
+minifb = "0.11"
+
 [features]
 default = ["text"]
 text = ["font-kit"]
