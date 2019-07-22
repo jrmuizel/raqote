@@ -6,8 +6,8 @@
  */
 use crate::Point;
 
-pub fn intrect<T: Copy>(x1: T, y1: T, x2: T, y2: T) -> euclid::Box2D<T> {
-    euclid::Box2D::new(euclid::Point2D::new(x1, y1), euclid::Point2D::new(x2, y2))
+pub fn intrect<T: Copy>(x1: T, y1: T, x2: T, y2: T) -> euclid::default::Box2D<T> {
+    euclid::default::Box2D::new(euclid::point2(x1, y1), euclid::point2(x2, y2))
 }
 
 pub fn abs(a: f32) -> f32 {
