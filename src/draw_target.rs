@@ -165,7 +165,7 @@ impl<'a> Source<'a> {
         // Transform gradient to center of gradient
         let translate = Transform::create_translation(center.x, center.y);
         // Compute final transform
-        let transform = translate.pre_mul(&scale).inverse().unwrap();
+        let transform = translate.pre_transform(&scale).inverse().unwrap();
 
         Source::RadialGradient(gradient, spread, transform)
     }
@@ -355,17 +355,17 @@ impl DrawTarget {
             match *op {
                 PathOp::MoveTo(pt) => {
                     self.close();
-                    self.move_to(self.transform.transform_point(&pt));
+                    self.move_to(self.transform.transform_point(pt));
                 },
-                PathOp::LineTo(pt) => self.line_to(self.transform.transform_point(&pt)),
+                PathOp::LineTo(pt) => self.line_to(self.transform.transform_point(pt)),
                 PathOp::QuadTo(cpt, pt) => self.quad_to(
-                    self.transform.transform_point(&cpt),
-                    self.transform.transform_point(&pt),
+                    self.transform.transform_point(cpt),
+                    self.transform.transform_point(pt),
                 ),
                 PathOp::CubicTo(cpt1, cpt2, pt) => self.cubic_to(
-                    self.transform.transform_point(&cpt1),
-                    self.transform.transform_point(&cpt2),
-                    self.transform.transform_point(&pt),
+                    self.transform.transform_point(cpt1),
+                    self.transform.transform_point(cpt2),
+                    self.transform.transform_point(pt),
                 ),
                 PathOp::Close => self.close(),
             }
@@ -608,7 +608,7 @@ impl DrawTarget {
                 *id,
                 point_size,
                 &fk::FontTransform::new(self.transform.m11, self.transform.m12, self.transform.m21, self.transform.m22),
-                &(self.transform.transform_point(position)),
+                &(self.transform.transform_point(*position)),
                 fk::HintingOptions::None,
                 fk::RasterizationOptions::GrayscaleAa,
             ).unwrap();
@@ -662,24 +662,24 @@ impl DrawTarget {
                 shader = &cs;
             }
             Source::Image(ref image, ExtendMode::Pad, filter, transform) => {
-                if let Some(offset) = is_integer_transform(&ti.post_mul(&transform)) {
+                if let Some(offset) = is_integer_transform(&ti.post_transform(&transform)) {
                     uias = ImagePadAlphaShader::new(image, offset.x, offset.y, alpha);
                     shader = &uias;
                 } else {
                     if alpha != 255 {
                         if *filter == FilterMode::Bilinear {
-                            ias = TransformedImageAlphaShader::<PadFetch>::new(image, &ti.post_mul(&transform), alpha);
+                            ias = TransformedImageAlphaShader::<PadFetch>::new(image, &ti.post_transform(&transform), alpha);
                             shader = &ias;
                         } else {
-                            nias = TransformedNearestImageAlphaShader::<PadFetch>::new(image, &ti.post_mul(&transform), alpha);
+                            nias = TransformedNearestImageAlphaShader::<PadFetch>::new(image, &ti.post_transform(&transform), alpha);
                             shader = &nias;
                         }
                     } else {
                         if *filter == FilterMode::Bilinear {
-                            is = TransformedImageShader::<PadFetch>::new(image, &ti.post_mul(&transform));
+                            is = TransformedImageShader::<PadFetch>::new(image, &ti.post_transform(&transform));
                             shader = &is;
                         } else {
-                            nis = TransformedNearestImageShader::<PadFetch>::new(image, &ti.post_mul(&transform));
+                            nis = TransformedNearestImageShader::<PadFetch>::new(image, &ti.post_transform(&transform));
                             shader = &nis;
                         }
                     }
@@ -687,32 +687,32 @@ impl DrawTarget {
             }
             Source::Image(ref image, ExtendMode::Repeat, FilterMode::Bilinear, transform) => {
                 if alpha != 255 {
-                    iars = TransformedImageAlphaShader::<RepeatFetch>::new(image, &ti.post_mul(&transform), alpha);
+                    iars = TransformedImageAlphaShader::<RepeatFetch>::new(image, &ti.post_transform(&transform), alpha);
                     shader = &iars;
                 } else {
-                    irs = TransformedImageShader::<RepeatFetch>::new(image, &ti.post_mul(&transform));
+                    irs = TransformedImageShader::<RepeatFetch>::new(image, &ti.post_transform(&transform));
                     shader = &irs;
                 }
             }
             Source::Image(ref image, ExtendMode::Repeat, FilterMode::Nearest, transform) => {
                 if alpha != 255 {
-                    niars = TransformedNearestImageAlphaShader::<RepeatFetch>::new(image, &ti.post_mul(&transform), alpha);
+                    niars = TransformedNearestImageAlphaShader::<RepeatFetch>::new(image, &ti.post_transform(&transform), alpha);
                     shader = &niars;
                 } else {
-                    nirs = TransformedNearestImageShader::<RepeatFetch>::new(image, &ti.post_mul(&transform));
+                    nirs = TransformedNearestImageShader::<RepeatFetch>::new(image, &ti.post_transform(&transform));
                     shader = &nirs;
                 }
             }
             Source::RadialGradient(ref gradient, spread, transform) => {
-                rgs = RadialGradientShader::new(gradient, &ti.post_mul(&transform), *spread, alpha);
+                rgs = RadialGradientShader::new(gradient, &ti.post_transform(&transform), *spread, alpha);
                 shader = &rgs;
             }
             Source::TwoCircleRadialGradient(ref gradient, spread, c1, r1, c2, r2, transform) => {
-                tcrgs = TwoCircleRadialGradientShader::new(gradient, &ti.post_mul(&transform), *c1, *r1, *c2, *r2, *spread, alpha);
+                tcrgs = TwoCircleRadialGradientShader::new(gradient, &ti.post_transform(&transform), *c1, *r1, *c2, *r2, *spread, alpha);
                 shader = &tcrgs;
             }
             Source::LinearGradient(ref gradient, spread, transform) => {
-                lgs = LinearGradientShader::new(gradient, &ti.post_mul(&transform), *spread, alpha);
+                lgs = LinearGradientShader::new(gradient, &ti.post_transform(&transform), *spread, alpha);
                 shader = &lgs;
             }
         };
@@ -821,7 +821,7 @@ impl DrawTarget {
     pub fn copy_surface(&mut self, src: &DrawTarget, src_rect: IntRect, dst: IntPoint) {
         let dst_rect = intrect(0, 0, self.width, self.height);
         let src_rect = dst_rect
-            .intersection(&src_rect.translate(&dst.to_vector())).translate(&-dst.to_vector());
+            .intersection(&src_rect.translate(dst.to_vector())).translate(-dst.to_vector());
 
         // clamp requires Float so open code it
         let dst = IntPoint::new(dst.x.max(dst_rect.min.x).min(dst_rect.max.x),

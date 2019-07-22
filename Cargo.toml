@@ -11,10 +11,10 @@ readme = "README.md"
 keywords = ["2d", "graphics"]
 
 [dependencies]
-euclid = "0.19.8"
-font-kit = { version = "0.3.0", optional = true }
-lyon_geom = "0.12.6"
-png = "0.14.0"
+euclid = "0.20"
+font-kit = { version = "0.4", optional = true }
+lyon_geom = "0.14"
+png = "0.14"
 typed-arena = "1.4.1"
 sw-composite = "0.5.10"
 
