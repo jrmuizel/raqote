@@ -378,9 +378,9 @@ impl DrawTarget {
         // intersect with current clip
         let clip = match self.clip_stack.last() {
             Some(Clip {
-                rect: current_clip,
-                mask: _,
-            }) => Clip {
+                     rect: current_clip,
+                     mask: _,
+                 }) => Clip {
                 rect: current_clip.intersection(&rect),
                 mask: None,
             },
@@ -450,9 +450,11 @@ impl DrawTarget {
         let size = layer.rect.size();
         let ctm = self.transform;
         self.transform = Transform::identity();
-        let image = Source::Image(Image { width: size.width,
-                                          height: size.height,
-                                          data: &layer.buf},
+        let image = Source::Image(Image {
+            width: size.width,
+            height: size.height,
+            data: &layer.buf
+        },
                                   ExtendMode::Pad,
                                   FilterMode::Nearest,
                                   Transform::create_translation(-layer.rect.min.x as f32,
@@ -643,32 +645,50 @@ impl DrawTarget {
                 let color = alpha_mul(color, alpha_to_alpha256(alpha));
                 let s = SolidShader { color };
                 *shader_storage = ShaderStorage::Solid(s);
-                shader = match shader_storage { ShaderStorage::Solid(s) => s, _ => panic!() }
+                shader = match shader_storage {
+                    ShaderStorage::Solid(s) => s,
+                    _ => panic!()
+                }
             }
             Source::Image(ref image, ExtendMode::Pad, filter, transform) => {
                 if let Some(offset) = is_integer_transform(&ti.post_transform(&transform)) {
                     *shader_storage = ShaderStorage::ImagePadAlpha(ImagePadAlphaShader::new(image, offset.x, offset.y, alpha));
-                    shader = match shader_storage { ShaderStorage::ImagePadAlpha(s) => s, _ => panic!() };
+                    shader = match shader_storage {
+                        ShaderStorage::ImagePadAlpha(s) => s,
+                        _ => panic!()
+                    };
                 } else {
                     if alpha != 255 {
                         if *filter == FilterMode::Bilinear {
                             let s = TransformedImageAlphaShader::<PadFetch>::new(image, &ti.post_transform(&transform), alpha);
                             *shader_storage = ShaderStorage::TransformedPadImageAlpha(s);
-                            shader = match shader_storage { ShaderStorage::TransformedPadImageAlpha(s) => s, _ => panic!() };
+                            shader = match shader_storage {
+                                ShaderStorage::TransformedPadImageAlpha(s) => s,
+                                _ => panic!()
+                            };
                         } else {
                             let s = TransformedNearestImageAlphaShader::<PadFetch>::new(image, &ti.post_transform(&transform), alpha);
                             *shader_storage = ShaderStorage::TransformedNearestPadImageAlpha(s);
-                            shader = match shader_storage { ShaderStorage::TransformedNearestPadImageAlpha(s) => s, _ => panic!() };
+                            shader = match shader_storage {
+                                ShaderStorage::TransformedNearestPadImageAlpha(s) => s,
+                                _ => panic!()
+                            };
                         }
                     } else {
                         if *filter == FilterMode::Bilinear {
                             let s = TransformedImageShader::<PadFetch>::new(image, &ti.post_transform(&transform));
                             *shader_storage = ShaderStorage::TransformedPadImage(s);
-                            shader = match shader_storage { ShaderStorage::TransformedPadImage(s) => s, _ => panic!() };
+                            shader = match shader_storage {
+                                ShaderStorage::TransformedPadImage(s) => s,
+                                _ => panic!()
+                            };
                         } else {
                             let s = TransformedNearestImageShader::<PadFetch>::new(image, &ti.post_transform(&transform));
                             *shader_storage = ShaderStorage::TransformedNearestPadImage(s);
-                            shader = match shader_storage { ShaderStorage::TransformedNearestPadImage(s) => s, _ => panic!() };
+                            shader = match shader_storage {
+                                ShaderStorage::TransformedNearestPadImage(s) => s,
+                                _ => panic!()
+                            };
                         }
                     }
                 }
@@ -677,40 +697,153 @@ impl DrawTarget {
                 if alpha != 255 {
                     let s = TransformedImageAlphaShader::<RepeatFetch>::new(image, &ti.post_transform(&transform), alpha);
                     *shader_storage = ShaderStorage::TransformedRepeatImageAlpha(s);
-                    shader = match shader_storage { ShaderStorage::TransformedRepeatImageAlpha(s) => s, _ => panic!() };
+                    shader = match shader_storage {
+                        ShaderStorage::TransformedRepeatImageAlpha(s) => s,
+                        _ => panic!()
+                    };
                 } else {
                     let s = TransformedImageShader::<RepeatFetch>::new(image, &ti.post_transform(&transform));
                     *shader_storage = ShaderStorage::TransformedRepeatImage(s);
-                    shader = match shader_storage { ShaderStorage::TransformedRepeatImage(s) => s, _ => panic!() };                }
+                    shader = match shader_storage {
+                        ShaderStorage::TransformedRepeatImage(s) => s,
+                        _ => panic!()
+                    };
+                }
             }
             Source::Image(ref image, ExtendMode::Repeat, FilterMode::Nearest, transform) => {
                 if alpha != 255 {
                     let s = TransformedNearestImageAlphaShader::<RepeatFetch>::new(image, &ti.post_transform(&transform), alpha);
                     *shader_storage = ShaderStorage::TransformedNearestRepeatImageAlpha(s);
-                    shader = match shader_storage { ShaderStorage::TransformedNearestRepeatImageAlpha(s) => s, _ => panic!() };
+                    shader = match shader_storage {
+                        ShaderStorage::TransformedNearestRepeatImageAlpha(s) => s,
+                        _ => panic!()
+                    };
                 } else {
                     let s = TransformedNearestImageShader::<RepeatFetch>::new(image, &ti.post_transform(&transform));
                     *shader_storage = ShaderStorage::TransformedNearestRepeatImage(s);
-                    shader = match shader_storage { ShaderStorage::TransformedNearestRepeatImage(s) => s, _ => panic!() };
+                    shader = match shader_storage {
+                        ShaderStorage::TransformedNearestRepeatImage(s) => s,
+                        _ => panic!()
+                    };
                 }
             }
             Source::RadialGradient(ref gradient, spread, transform) => {
                 let s = RadialGradientShader::new(gradient, &ti.post_transform(&transform), *spread, alpha);
                 *shader_storage = ShaderStorage::RadialGradient(s);
-                shader = match shader_storage { ShaderStorage::RadialGradient(s) => s, _ => panic!() };
+                shader = match shader_storage {
+                    ShaderStorage::RadialGradient(s) => s,
+                    _ => panic!()
+                };
             }
             Source::TwoCircleRadialGradient(ref gradient, spread, c1, r1, c2, r2, transform) => {
                 let s = TwoCircleRadialGradientShader::new(gradient, &ti.post_transform(&transform), *c1, *r1, *c2, *r2, *spread, alpha);
                 *shader_storage = ShaderStorage::TwoCircleRadialGradient(s);
-                shader = match shader_storage { ShaderStorage::TwoCircleRadialGradient(s) => s, _ => panic!() };
+                shader = match shader_storage {
+                    ShaderStorage::TwoCircleRadialGradient(s) => s,
+                    _ => panic!()
+                };
             }
             Source::LinearGradient(ref gradient, spread, transform) => {
                 let s = LinearGradientShader::new(gradient, &ti.post_transform(&transform), *spread, alpha);
                 *shader_storage = ShaderStorage::LinearGradient(s);
-                shader = match shader_storage { ShaderStorage::LinearGradient(s) => s, _ => panic!() };
+                shader = match shader_storage {
+                    ShaderStorage::LinearGradient(s) => s,
+                    _ => panic!()
+                };
             }
         };
         shader
+    }
+
+
+    fn choose_blitter<'a, 'b, 'c>(clip_stack: &'a Vec<Clip>, blitter_storage: &'b mut ShaderBlitterStorage<'a>, shader: &'a Shader, blend: BlendMode, dest: &'a mut [u32], dest_bounds: IntRect, mask: &'a [u8], width: i32) -> &'b mut Blitter {
+        let blitter: &mut Blitter;
+
+        if blend == BlendMode::SrcOver {
+            match clip_stack.last() {
+                Some(Clip {
+                         rect: _,
+                         mask: Some(clip),
+                     }) => {
+                    let scb = ShaderClipBlitter {
+                        x: dest_bounds.min.x,
+                        y: dest_bounds.min.y,
+                        shader: shader,
+                        tmp: vec![0; width as usize],
+                        dest,
+                        dest_stride: dest_bounds.size().width,
+                        mask,
+                        mask_stride: width,
+                        clip,
+                        clip_stride: width,
+                    };
+                    *blitter_storage = ShaderBlitterStorage::ShaderClipBlitter(scb);
+                    blitter = match blitter_storage { ShaderBlitterStorage::ShaderClipBlitter(s) => s, _ => panic!() };
+                }
+                _ => {
+                    let sb = ShaderBlitter {
+                        x: dest_bounds.min.x,
+                        y: dest_bounds.min.y,
+                        shader: &*shader,
+                        tmp: vec![0; width as usize],
+                        dest,
+                        dest_stride: dest_bounds.size().width,
+                        mask,
+                        mask_stride: width,
+                    };
+                    *blitter_storage = ShaderBlitterStorage::ShaderBlitter(sb);
+                    blitter = match blitter_storage { ShaderBlitterStorage::ShaderBlitter(s) => s, _ => panic!() };
+                }
+            }
+        } else {
+
+            let blend_fn = blend_proc(blend);
+            match clip_stack.last() {
+                Some(Clip {
+                         rect: _,
+                         mask: Some(clip),
+                     }) => {
+                    let scb_blend = ShaderClipBlendBlitter {
+                        x: dest_bounds.min.x,
+                        y: dest_bounds.min.y,
+                        shader: shader,
+                        tmp: vec![0; width as usize],
+                        dest,
+                        dest_stride: dest_bounds.size().width,
+                        mask,
+                        mask_stride: width,
+                        clip,
+                        clip_stride: width,
+                        blend_fn
+                    };
+
+                    *blitter_storage = ShaderBlitterStorage::ShaderClipBlendBlitter(scb_blend);
+                    blitter = match blitter_storage {
+                        ShaderBlitterStorage::ShaderClipBlendBlitter(s) => s,
+                        _ => panic!()
+                    };
+                }
+                _ => {
+                    let sb_blend = ShaderBlendBlitter {
+                        x: dest_bounds.min.x,
+                        y: dest_bounds.min.y,
+                        shader: &*shader,
+                        tmp: vec![0; width as usize],
+                        dest,
+                        dest_stride: dest_bounds.size().width,
+                        mask,
+                        mask_stride: width,
+                        blend_fn
+                    };
+                    *blitter_storage = ShaderBlitterStorage::ShaderBlendBlitter(sb_blend);
+                    blitter = match blitter_storage {
+                        ShaderBlitterStorage::ShaderBlendBlitter(s) => s,
+                        _ => panic!()
+                    };
+                }
+            }
+        }
+        blitter
     }
 
     fn composite(&mut self, src: &Source, mask: &[u8], mut rect: IntRect, blend: BlendMode, alpha: f32) {
@@ -739,86 +872,8 @@ impl DrawTarget {
             return;
         }
 
-
-        let mut blitter_storage: ShaderBlitterStorage;
-
-        let blitter: &mut Blitter;
-
-        if blend == BlendMode::SrcOver {
-            match self.clip_stack.last() {
-                Some(Clip {
-                         rect: _,
-                         mask: Some(clip),
-                     }) => {
-                    let scb = ShaderClipBlitter {
-                        x: dest_bounds.min.x,
-                        y: dest_bounds.min.y,
-                        shader: shader,
-                        tmp: vec![0; self.width as usize],
-                        dest,
-                        dest_stride: dest_bounds.size().width,
-                        mask,
-                        mask_stride: self.width,
-                        clip,
-                        clip_stride: self.width,
-                    };
-                    blitter_storage = ShaderBlitterStorage::ShaderClipBlitter(scb);
-                    blitter = match &mut blitter_storage { ShaderBlitterStorage::ShaderClipBlitter(s) => s, _ => panic!() };
-                }
-                _ => {
-                    let sb = ShaderBlitter {
-                        x: dest_bounds.min.x,
-                        y: dest_bounds.min.y,
-                        shader: &*shader,
-                        tmp: vec![0; self.width as usize],
-                        dest,
-                        dest_stride: dest_bounds.size().width,
-                        mask,
-                        mask_stride: self.width,
-                    };
-                    blitter_storage = ShaderBlitterStorage::ShaderBlitter(sb);
-                    blitter = match &mut blitter_storage { ShaderBlitterStorage::ShaderBlitter(s) => s, _ => panic!() };
-                }
-            }
-        } else {
-            let blend_fn = blend_proc(blend);
-            match self.clip_stack.last() {
-                Some(Clip {
-                         rect: _,
-                         mask: Some(clip),
-                     }) => {
-                    let scb_blend = ShaderClipBlendBlitter {
-                        x: dest_bounds.min.x,
-                        y: dest_bounds.min.y,
-                        shader: shader,
-                        tmp: vec![0; self.width as usize],
-                        dest,
-                        dest_stride: dest_bounds.size().width,
-                        mask,
-                        mask_stride: self.width,
-                        clip,
-                        clip_stride: self.width,
-                        blend_fn
-                    };
-
-                    blitter_storage = ShaderBlitterStorage::ShaderClipBlendBlitter(scb_blend);
-                    blitter = match &mut blitter_storage { ShaderBlitterStorage::ShaderClipBlendBlitter(s) => s, _ => panic!() };                }
-                _ => {
-                    let sb_blend = ShaderBlendBlitter {
-                        x: dest_bounds.min.x,
-                        y: dest_bounds.min.y,
-                        shader: &*shader,
-                        tmp: vec![0; self.width as usize],
-                        dest,
-                        dest_stride: dest_bounds.size().width,
-                        mask,
-                        mask_stride: self.width,
-                        blend_fn
-                    };
-                    blitter_storage = ShaderBlitterStorage::ShaderBlendBlitter(sb_blend);
-                    blitter = match &mut blitter_storage { ShaderBlitterStorage::ShaderBlendBlitter(s) => s, _ => panic!() };                 }
-            }
-        }
+        let mut blitter_storage: ShaderBlitterStorage = ShaderBlitterStorage::None;
+        let blitter = DrawTarget::choose_blitter(&self.clip_stack, &mut blitter_storage, shader, blend, dest, dest_bounds, mask, self.width);
 
         for y in rect.min.y..rect.max.y {
             blitter.blit_span(y, rect.min.x, rect.max.x);
