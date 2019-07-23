@@ -10,6 +10,10 @@ pub trait Blitter {
     fn blit_span(&mut self, y: i32, x1: i32, x2: i32);
 }
 
+pub trait RasterBlitter {
+    fn blit_span(&mut self, y: i32, x1: i32, x2: i32);
+}
+
 pub struct MaskSuperBlitter {
     pub x: i32,
     pub y: i32,
@@ -49,7 +53,7 @@ fn saturated_add(a: u8, b: u8) -> u8 {
     result as u8
 }
 
-impl Blitter for MaskSuperBlitter {
+impl RasterBlitter for MaskSuperBlitter {
     fn blit_span(&mut self, mut y: i32, mut x1: i32, mut x2: i32) {
         y -= self.y;
         x1 -= self.x;
@@ -102,7 +106,7 @@ impl MaskBlitter {
     }
 }
 
-impl Blitter for MaskBlitter {
+impl RasterBlitter for MaskBlitter {
     fn blit_span(&mut self, mut y: i32, mut x1: i32, mut x2: i32) {
         y -= self.y;
         x1 -= self.x;
