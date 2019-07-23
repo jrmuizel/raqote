@@ -630,7 +630,7 @@ impl DrawTarget {
         );
     }
 
-    fn choose_shader<'a, 'b, 'c>(&self, ti: &Transform, src: &'b Source<'c>, alpha: f32, shader_storage: &'a mut ShaderStorage<'b, 'c>) -> &'a Shader {
+    fn choose_shader<'a, 'b, 'c>(ti: &Transform, src: &'b Source<'c>, alpha: f32, shader_storage: &'a mut ShaderStorage<'b, 'c>) -> &'a Shader {
         let shader: &Shader;
 
         // XXX: clamp alpha
@@ -855,9 +855,6 @@ impl DrawTarget {
             return;
         };
 
-        let mut shader_storage: ShaderStorage = ShaderStorage::None;
-        let shader = self.choose_shader(&ti, src, alpha, &mut shader_storage);
-
         let clip_bounds = self.clip_bounds();
 
         let (dest, dest_bounds) = match self.layer_stack.last_mut() {
@@ -871,6 +868,9 @@ impl DrawTarget {
         if rect.is_negative() {
             return;
         }
+
+        let mut shader_storage: ShaderStorage = ShaderStorage::None;
+        let shader = DrawTarget::choose_shader(&ti, src, alpha, &mut shader_storage);
 
         let mut blitter_storage: ShaderBlitterStorage = ShaderBlitterStorage::None;
         let blitter = DrawTarget::choose_blitter(&self.clip_stack, &mut blitter_storage, shader, blend, dest, dest_bounds, mask, self.width);
