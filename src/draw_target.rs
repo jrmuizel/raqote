@@ -22,8 +22,6 @@ mod fk {
 use std::fs::*;
 use std::io::BufWriter;
 
-use png::HasParameters;
-
 use crate::stroke::*;
 use crate::{IntRect, IntPoint, Point, Transform, Vector};
 
@@ -872,7 +870,8 @@ impl DrawTarget {
         let ref mut w = BufWriter::new(file);
 
         let mut encoder = png::Encoder::new(w, self.width as u32, self.height as u32);
-        encoder.set(png::ColorType::RGBA).set(png::BitDepth::Eight);
+        encoder.set_color(png::ColorType::RGBA);
+        encoder.set_depth(png::BitDepth::Eight);
         let mut writer = encoder.write_header()?;
         let mut output = Vec::with_capacity(self.buf.len() * 4);
 
