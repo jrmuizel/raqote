@@ -17,10 +17,6 @@ pub fn abs(a: f32) -> f32 {
     return a;
 }
 
-pub fn is_nan(a: f32) -> bool {
-    return a != a;
-}
-
 // we can do this
 pub fn valid_unit_divide(mut numer: f32, mut denom: f32, ratio: &mut f32) -> bool {
     if numer < 0. {
@@ -33,7 +29,7 @@ pub fn valid_unit_divide(mut numer: f32, mut denom: f32, ratio: &mut f32) -> boo
     }
 
     let r = numer / denom;
-    if is_nan(r) {
+    if r.is_nan() {
         return false;
     }
     debug_assert!(r >= 0. && r < 1.);
