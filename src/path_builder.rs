@@ -70,6 +70,14 @@ pub struct PathBuilder {
     path: Path,
 }
 
+impl From<Path> for PathBuilder {
+    fn from(path: Path) -> Self {
+        PathBuilder {
+            path
+        }
+    }
+}
+
 impl PathBuilder {
     pub fn new() -> PathBuilder {
         PathBuilder {
