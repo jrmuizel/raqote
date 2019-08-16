@@ -461,16 +461,22 @@ impl DrawTarget {
         self.transform = ctm;
     }
 
-    /// Draws an image at x, y
-    pub fn draw_image_at(&mut self, x: f32, y: f32, image: &Image, options: &DrawOptions) {
+    /// Draws an image at (x, y) with the size (width, height). This will rescale the image to the
+    /// destination size.
+    pub fn draw_image_with_size_at(&mut self, width: f32, height: f32, x: f32, y: f32, image: &Image, options: &DrawOptions) {
         let mut pb = PathBuilder::new();
-        pb.rect(x, y, image.width as f32, image.height as f32);
+        pb.rect(x, y, width, height);
         let source = Source::Image(*image,
                                    ExtendMode::Pad,
                                    FilterMode::Bilinear,
-                                   Transform::create_translation(-x, -y));
+                                   Transform::create_translation(-x, -y).post_scale(image.width as f32 / width, image.height as f32 / height));
 
         self.fill(&pb.finish(), &source, options);
+    }
+
+    /// Draws an image at x, y
+    pub fn draw_image_at(&mut self, x: f32, y: f32, image: &Image, options: &DrawOptions) {
+        self.draw_image_with_size_at(image.width as f32, image.height as f32, x, y, image, options);
     }
 
     /// Draws `src` through an untransformed `mask` positioned at `x`, `y` in device space
