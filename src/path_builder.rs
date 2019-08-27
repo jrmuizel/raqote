@@ -64,6 +64,107 @@ impl Path {
         }
         flattened
     }
+
+    // this function likely has bugs
+    pub fn contains_point(&self, tolerance: f32, fill_rule: Winding, x: f32, y: f32) -> bool {
+        //XXX Instead of making a new path we should just use flattening callbacks
+        let flat_path = self.flatten(tolerance);
+
+        struct WindState {
+            count: i32,
+            first_point: Option<Point>,
+            current_point: Point,
+            on_edge: bool,
+            x: f32,
+            y: f32,
+        }
+
+        impl WindState {
+            fn close(&mut self) {
+                if let Some(first_point) = self.first_point {
+                    self.add_edge(
+                        self.current_point,
+                        first_point,
+                    );
+                }
+                self.first_point = None;
+            }
+
+            // to determine containment we just need to count crossing of ray from (x, y) going to infinity
+            fn add_edge(&mut self, p1: Point, p2: Point) {
+                let (x1, y1) = (p1.x, p1.y);
+                let (x2, y2) = (p2.x, p2.y);
+
+                let dir = if y1 < y2 { -1 } else { 1 };
+
+                // entirely to the right
+                if x1 > self.x && x2 > self.x {
+                    return
+                }
+
+                // entirely above
+                if y1 > self.y && y2 > self.y {
+                    return
+                }
+
+                // entirely below
+                if y1 < self.y && y2 < self.x {
+                    return
+                }
+
+                // entirely to the left
+                if x1 < self.x && x2 < self.x {
+                    if y1 > self.y && y2 < self.y {
+                        self.count += 1;
+                        return;
+                    }
+                    if y2 > self.y && y1 < self.y {
+                        self.count -= 1;
+                        return;
+                    }
+                }
+
+                let dx = x2 - x1;
+                let dy = y2 - y1;
+
+                // cross product/perp dot product lets us know which side of the line we're on
+                let cross = dx * (self.y - y1) - dy * (self.x - x1);
+
+                if cross == 0. {
+                    self.on_edge = true;
+                } else if (cross > 0. && dir > 0) || (cross < 0. && dir < 0) {
+                    self.count += dir;
+                }
+            }
+        }
+
+        let mut ws = WindState { count: 0, first_point: None, current_point: Point::new(0., 0.),x , y, on_edge: false};
+
+        for op in &flat_path.ops {
+            match *op {
+                PathOp::MoveTo(pt) => {
+                    ws.close();
+                    ws.current_point = pt;
+                    ws.first_point = Some(pt);
+                },
+                PathOp::LineTo(pt) => {
+                    ws.add_edge(ws.current_point, pt);
+                    ws.current_point = pt;
+                },
+                PathOp::QuadTo(..) |
+                PathOp::CubicTo(..) => panic!(),
+                PathOp::Close => ws.close(),
+            }
+        }
+        // make sure the path is closed
+        ws.close();
+
+        let inside = match fill_rule {
+            Winding::EvenOdd => ws.count & 1 != 0,
+            Winding::NonZero => ws.count != 0,
+        };
+        inside || ws.on_edge
+    }
 }
 
 pub struct PathBuilder {

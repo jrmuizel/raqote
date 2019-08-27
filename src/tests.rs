@@ -534,4 +534,27 @@ mod tests {
         dest.copy_surface(&src, intrect(0, 0, 2, 2), IntPoint::new(1, 1));
         assert_eq!(dest.get_data(), &vec![blue, green, red, white][..]);
     }
+
+    #[test]
+    fn path_contains_point() {
+
+        let mut pb = PathBuilder::new();
+        pb.rect(0., 0., 2., 2.);
+        let rect = pb.finish();
+
+        assert!(rect.contains_point(0.1, Winding::EvenOdd, 1., 1.));
+        assert!(!rect.contains_point(0.1, Winding::EvenOdd, 4., 4.));
+        assert!(rect.contains_point(0.1, Winding::EvenOdd, 0., 1.));
+
+        let mut pb = PathBuilder::new();
+        pb.move_to(0., 0.);
+        pb.line_to(0., 1.);
+        pb.line_to(1., 1.);
+        pb.close();
+        let tri = pb.finish();
+
+        assert!(tri.contains_point(0.1, Winding::EvenOdd, 0.5, 0.5));
+        assert!(!tri.contains_point(0.1, Winding::EvenOdd, 0.6, 0.5));
+        assert!(tri.contains_point(0.1, Winding::EvenOdd, 0.4, 0.5));
+    }
 }
