@@ -772,8 +772,6 @@ impl DrawTarget {
                         tmp: vec![0; width as usize],
                         dest,
                         dest_stride: dest_bounds.size().width,
-                        mask,
-                        mask_stride: width,
                         clip,
                         clip_stride: width,
                     };
@@ -788,8 +786,6 @@ impl DrawTarget {
                         tmp: vec![0; width as usize],
                         dest,
                         dest_stride: dest_bounds.size().width,
-                        mask,
-                        mask_stride: width,
                     };
                     *blitter_storage = ShaderBlitterStorage::ShaderBlitter(sb);
                     blitter = match blitter_storage { ShaderBlitterStorage::ShaderBlitter(s) => s, _ => panic!() };
@@ -810,8 +806,6 @@ impl DrawTarget {
                         tmp: vec![0; width as usize],
                         dest,
                         dest_stride: dest_bounds.size().width,
-                        mask,
-                        mask_stride: width,
                         clip,
                         clip_stride: width,
                         blend_fn
@@ -875,8 +869,12 @@ impl DrawTarget {
         let mut blitter_storage: ShaderBlitterStorage = ShaderBlitterStorage::None;
         let blitter = DrawTarget::choose_blitter(&self.clip_stack, &mut blitter_storage, shader, blend, dest, dest_bounds, mask, self.width);
 
+        let mask_stride = self.width;
         for y in rect.min.y..rect.max.y {
-            blitter.blit_span(y, rect.min.x, rect.max.x);
+            let mask_row = y * mask_stride;
+            let mask_start = (mask_row + rect.min.x) as usize;
+            let mask_end = (mask_row + rect.max.x) as usize;
+            blitter.blit_span(y, rect.min.x, rect.max.x, &mask[mask_start..mask_end]);
         }
     }
 

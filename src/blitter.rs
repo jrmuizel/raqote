@@ -7,7 +7,7 @@ use euclid::vec2;
 use std::marker::PhantomData;
 
 pub trait Blitter {
-    fn blit_span(&mut self, y: i32, x1: i32, x2: i32);
+    fn blit_span(&mut self, y: i32, x1: i32, x2: i32, mask: &[u8]);
 }
 
 pub trait RasterBlitter {
@@ -413,18 +413,15 @@ pub struct ShaderBlitter<'a> {
     pub tmp: Vec<u32>,
     pub dest: &'a mut [u32],
     pub dest_stride: i32,
-    pub mask: &'a [u8],
-    pub mask_stride: i32,
 }
 
 impl<'a> Blitter for ShaderBlitter<'a> {
-    fn blit_span(&mut self, y: i32, x1: i32, x2: i32) {
+    fn blit_span(&mut self, y: i32, x1: i32, x2: i32, mask: &[u8]) {
         let dest_row = (y - self.y) * self.dest_stride;
-        let mask_row = y * self.mask_stride;
         let count = (x2 - x1) as usize;
         self.shader.shade_span(x1, y, &mut self.tmp[..], count);
         for i in 0..count {
-            let mask = self.mask[(mask_row + x1) as usize + i] as u32;
+            let mask = mask[i] as u32;
             if mask != 0 {
                 self.dest[(dest_row + x1 - self.x) as usize + i] = over_in(
                     self.tmp[i],
@@ -443,21 +440,18 @@ pub struct ShaderClipBlitter<'a> {
     pub tmp: Vec<u32>,
     pub dest: &'a mut [u32],
     pub dest_stride: i32,
-    pub mask: &'a [u8],
-    pub mask_stride: i32,
     pub clip: &'a [u8],
     pub clip_stride: i32,
 }
 
 impl<'a> Blitter for ShaderClipBlitter<'a> {
-    fn blit_span(&mut self, y: i32, x1: i32, x2: i32) {
+    fn blit_span(&mut self, y: i32, x1: i32, x2: i32, mask: &[u8]) {
         let dest_row = (y - self.y) * self.dest_stride;
-        let mask_row = y * self.mask_stride;
         let clip_row = y * self.clip_stride;
         let count = (x2 - x1) as usize;
         self.shader.shade_span(x1, y, &mut self.tmp[..], count);
         for i in 0..count {
-            let mask = self.mask[(mask_row + x1) as usize + i] as u32;
+            let mask = mask[i] as u32;
             let clip = self.clip[(clip_row + x1) as usize + i] as u32;
             if mask != 0 && clip != 0 {
                 self.dest[(dest_row + x1 - self.x) as usize + i] = over_in_in(
@@ -478,17 +472,14 @@ pub struct ShaderClipBlendBlitter<'a> {
     pub tmp: Vec<u32>,
     pub dest: &'a mut [u32],
     pub dest_stride: i32,
-    pub mask: &'a [u8],
-    pub mask_stride: i32,
     pub clip: &'a [u8],
     pub clip_stride: i32,
     pub blend_fn: fn (u32, u32) -> u32,
 }
 
 impl<'a> Blitter for ShaderClipBlendBlitter<'a> {
-    fn blit_span(&mut self, y: i32, x1: i32, x2: i32) {
+    fn blit_span(&mut self, y: i32, x1: i32, x2: i32, mask: &[u8]) {
         let dest_row = (y - self.y) * self.dest_stride;
-        let mask_row = y * self.mask_stride;
         let clip_row = y * self.clip_stride;
         let count = (x2 - x1) as usize;
         self.shader.shade_span(x1, y, &mut self.tmp[..], count);
@@ -497,7 +488,7 @@ impl<'a> Blitter for ShaderClipBlendBlitter<'a> {
             self.dest[(dest_row + x1 - self.x) as usize + i] = alpha_lerp(
                 dest,
                 (self.blend_fn)(self.tmp[i],dest),
-                self.mask[(mask_row + x1) as usize + i] as u32,
+                mask[i] as u32,
                 self.clip[(clip_row + x1) as usize + i] as u32,
             );
         }
@@ -517,9 +508,8 @@ pub struct ShaderBlendBlitter<'a> {
 }
 
 impl<'a> Blitter for ShaderBlendBlitter<'a> {
-    fn blit_span(&mut self, y: i32, x1: i32, x2: i32) {
+    fn blit_span(&mut self, y: i32, x1: i32, x2: i32, mask: &[u8]) {
         let dest_row = (y - self.y) * self.dest_stride;
-        let mask_row = y * self.mask_stride;
         let count = (x2 - x1) as usize;
         self.shader.shade_span(x1, y, &mut self.tmp[..], count);
         for i in 0..count {
@@ -527,7 +517,7 @@ impl<'a> Blitter for ShaderBlendBlitter<'a> {
             self.dest[(dest_row + x1 - self.x) as usize + i] = lerp(
                 dest,
                 (self.blend_fn)(self.tmp[i],dest),
-                alpha_to_alpha256(self.mask[(mask_row + x1) as usize + i] as u32),
+                alpha_to_alpha256(mask[i] as u32),
             );
         }
     }
