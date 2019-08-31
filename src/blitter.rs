@@ -502,8 +502,6 @@ pub struct ShaderBlendBlitter<'a> {
     pub tmp: Vec<u32>,
     pub dest: &'a mut [u32],
     pub dest_stride: i32,
-    pub mask: &'a [u8],
-    pub mask_stride: i32,
     pub blend_fn: fn (u32, u32) -> u32,
 }
 
