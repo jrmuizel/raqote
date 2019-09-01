@@ -634,8 +634,8 @@ impl DrawTarget {
         );
     }
 
-    fn choose_shader<'a, 'b, 'c>(ti: &Transform, src: &'b Source<'c>, alpha: f32, shader_storage: &'a mut ShaderStorage<'b, 'c>) -> &'a Shader {
-        let shader: &Shader;
+    fn choose_shader<'a, 'b, 'c>(ti: &Transform, src: &'b Source<'c>, alpha: f32, shader_storage: &'a mut ShaderStorage<'b, 'c>) -> &'a dyn Shader {
+        let shader: &dyn Shader;
 
         // XXX: clamp alpha
         let alpha = (alpha * 255. + 0.5) as u32;
@@ -760,8 +760,8 @@ impl DrawTarget {
     }
 
 
-    fn choose_blitter<'a, 'b, 'c>(clip_stack: &'a Vec<Clip>, blitter_storage: &'b mut ShaderBlitterStorage<'a>, shader: &'a Shader, blend: BlendMode, dest: &'a mut [u32], dest_bounds: IntRect, width: i32) -> &'b mut Blitter {
-        let blitter: &mut Blitter;
+    fn choose_blitter<'a, 'b, 'c>(clip_stack: &'a Vec<Clip>, blitter_storage: &'b mut ShaderBlitterStorage<'a>, shader: &'a dyn Shader, blend: BlendMode, dest: &'a mut [u32], dest_bounds: IntRect, width: i32) -> &'b mut dyn Blitter {
+        let blitter: &mut dyn Blitter;
 
         if blend == BlendMode::SrcOver {
             match clip_stack.last() {

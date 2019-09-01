@@ -460,7 +460,7 @@ impl Rasterizer {
 
     // Skia does stepping and scanning of edges in a single
     // pass over the edge list.
-    fn scan_edges(&mut self, blitter: &mut RasterBlitter, winding_mode: Winding) {
+    fn scan_edges(&mut self, blitter: &mut dyn RasterBlitter, winding_mode: Winding) {
         let mut edge = self.active_edges;
         let mut winding = 0;
 
@@ -547,7 +547,7 @@ impl Rasterizer {
         }
     }
 
-    pub fn rasterize(&mut self, blitter: &mut RasterBlitter, winding_mode: Winding) {
+    pub fn rasterize(&mut self, blitter: &mut dyn RasterBlitter, winding_mode: Winding) {
         self.cur_y = 0;
         while self.cur_y < self.height {
             // we do 4x4 super-sampling so we need

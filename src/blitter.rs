@@ -409,7 +409,7 @@ impl Shader for LinearGradientShader {
 pub struct ShaderBlitter<'a> {
     pub x: i32,
     pub y: i32,
-    pub shader: &'a Shader,
+    pub shader: &'a dyn Shader,
     pub tmp: Vec<u32>,
     pub dest: &'a mut [u32],
     pub dest_stride: i32,
@@ -436,7 +436,7 @@ impl<'a> Blitter for ShaderBlitter<'a> {
 pub struct ShaderClipBlitter<'a> {
     pub x: i32,
     pub y: i32,
-    pub shader: &'a Shader,
+    pub shader: &'a dyn Shader,
     pub tmp: Vec<u32>,
     pub dest: &'a mut [u32],
     pub dest_stride: i32,
@@ -468,7 +468,7 @@ impl<'a> Blitter for ShaderClipBlitter<'a> {
 pub struct ShaderClipBlendBlitter<'a> {
     pub x: i32,
     pub y: i32,
-    pub shader: &'a Shader,
+    pub shader: &'a dyn Shader,
     pub tmp: Vec<u32>,
     pub dest: &'a mut [u32],
     pub dest_stride: i32,
@@ -498,7 +498,7 @@ impl<'a> Blitter for ShaderClipBlendBlitter<'a> {
 pub struct ShaderBlendBlitter<'a> {
     pub x: i32,
     pub y: i32,
-    pub shader: &'a Shader,
+    pub shader: &'a dyn Shader,
     pub tmp: Vec<u32>,
     pub dest: &'a mut [u32],
     pub dest_stride: i32,
