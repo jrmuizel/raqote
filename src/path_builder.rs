@@ -66,7 +66,7 @@ impl Path {
     }
 
     // this function likely has bugs
-    pub fn contains_point(&self, tolerance: f32, fill_rule: Winding, x: f32, y: f32) -> bool {
+    pub fn contains_point(&self, tolerance: f32, x: f32, y: f32) -> bool {
         //XXX Instead of making a new path we should just use flattening callbacks
         let flat_path = self.flatten(tolerance);
 
@@ -159,7 +159,7 @@ impl Path {
         // make sure the path is closed
         ws.close();
 
-        let inside = match fill_rule {
+        let inside = match self.winding {
             Winding::EvenOdd => ws.count & 1 != 0,
             Winding::NonZero => ws.count != 0,
         };

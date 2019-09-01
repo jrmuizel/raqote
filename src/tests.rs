@@ -542,9 +542,9 @@ mod tests {
         pb.rect(0., 0., 2., 2.);
         let rect = pb.finish();
 
-        assert!(rect.contains_point(0.1, Winding::EvenOdd, 1., 1.));
-        assert!(!rect.contains_point(0.1, Winding::EvenOdd, 4., 4.));
-        assert!(rect.contains_point(0.1, Winding::EvenOdd, 0., 1.));
+        assert!(rect.contains_point(0.1, 1., 1.));
+        assert!(!rect.contains_point(0.1, 4., 4.));
+        assert!(rect.contains_point(0.1, 0., 1.));
 
         let mut pb = PathBuilder::new();
         pb.move_to(0., 0.);
@@ -553,8 +553,8 @@ mod tests {
         pb.close();
         let tri = pb.finish();
 
-        assert!(tri.contains_point(0.1, Winding::EvenOdd, 0.5, 0.5));
-        assert!(!tri.contains_point(0.1, Winding::EvenOdd, 0.6, 0.5));
-        assert!(tri.contains_point(0.1, Winding::EvenOdd, 0.4, 0.5));
+        assert!(tri.contains_point(0.1, 0.5, 0.5));
+        assert!(!tri.contains_point(0.1, 0.6, 0.5));
+        assert!(tri.contains_point(0.1, 0.4, 0.5));
     }
 }
