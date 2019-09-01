@@ -400,7 +400,7 @@ impl DrawTarget {
         self.apply_path(path);
 
         // XXX: restrict to clipped area
-        let mut blitter = MaskSuperBlitter::new(self.width, self.height);
+        let mut blitter = MaskSuperBlitter::new(0, 0, self.width, self.height);
         self.rasterizer.rasterize(&mut blitter, path.winding);
 
         if let Some(last) = self.clip_stack.last() {
@@ -509,27 +509,28 @@ impl DrawTarget {
     /// Fills `path` with `src`
     pub fn fill(&mut self, path: &Path, src: &Source, options: &DrawOptions) {
         self.apply_path(path);
+        let bounds = self.rasterizer.get_bounds();
         match options.antialias {
             AntialiasMode::None => {
-                let mut blitter = MaskBlitter::new(self.width, self.height);
+                let mut blitter = MaskBlitter::new(bounds.min.x, bounds.min.y, bounds.size().width, bounds.size().height);
                 self.rasterizer.rasterize(&mut blitter, path.winding);
                 self.composite(
                     src,
                     &blitter.buf,
-                    intrect(0, 0, self.width, self.height),
-                    self.rasterizer.get_bounds(),
+                    bounds,
+                    bounds,
                     options.blend_mode,
                     options.alpha,
                 );
             }
             AntialiasMode::Gray => {
-                let mut blitter = MaskSuperBlitter::new(self.width, self.height);
+                let mut blitter = MaskSuperBlitter::new(bounds.min.x, bounds.min.y, bounds.size().width, bounds.size().height);
                 self.rasterizer.rasterize(&mut blitter, path.winding);
                 self.composite(
                     src,
                     &blitter.buf,
-                    intrect(0, 0, self.width, self.height),
-                    self.rasterizer.get_bounds(),
+                    bounds,
+                    bounds,
                     options.blend_mode,
                     options.alpha,
                 );
