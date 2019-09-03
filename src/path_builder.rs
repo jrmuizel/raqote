@@ -20,6 +20,7 @@ pub enum PathOp {
     Close,
 }
 
+/// Represents a complete path usable for filling or stroking.
 #[derive(Clone, Debug)]
 pub struct Path {
     pub ops: Vec<PathOp>,
@@ -27,6 +28,9 @@ pub struct Path {
 }
 
 impl Path {
+    /// Flattens `self` by replacing all QuadTo and CurveTo
+    /// commands with an appropriate number of LineTo commands
+    /// so that the error is not greater than `tolerance`.
     pub fn flatten(&self, tolerance: f32) -> Path {
         let mut cur_pt = Point::zero();
         let mut flattened = Path { ops: Vec::new(), winding: Winding::NonZero };
@@ -65,6 +69,8 @@ impl Path {
         flattened
     }
 
+    /// Returns true if the point `x`, `y` is within the filled
+    /// area of of `self`. The path will be flattened using `tolerance`
     // this function likely has bugs
     pub fn contains_point(&self, tolerance: f32, x: f32, y: f32) -> bool {
         //XXX Instead of making a new path we should just use flattening callbacks
@@ -167,6 +173,7 @@ impl Path {
     }
 }
 
+/// A helper struct used for constructing a `Path`.
 pub struct PathBuilder {
     path: Path,
 }
@@ -189,20 +196,25 @@ impl PathBuilder {
         }
     }
 
+    /// Moves the current point to `x`, `y`
     pub fn move_to(&mut self, x: f32, y: f32) {
         self.path.ops.push(PathOp::MoveTo(Point::new(x, y)))
     }
 
+    /// Adds a line segment from the current point to `x`, `y`
     pub fn line_to(&mut self, x: f32, y: f32) {
         self.path.ops.push(PathOp::LineTo(Point::new(x, y)))
     }
 
+    /// Adds a quadratic bezier from the current point to `x`, `y`,
+    /// using a control point of `cx`, `cy`
     pub fn quad_to(&mut self, cx: f32, cy: f32, x: f32, y: f32) {
         self.path
             .ops
             .push(PathOp::QuadTo(Point::new(cx, cy), Point::new(x, y)))
     }
 
+    /// Adds a rect to the path
     pub fn rect(&mut self, x: f32, y: f32, width: f32, height: f32) {
         self.move_to(x, y);
         self.line_to(x + width, y);
@@ -211,6 +223,8 @@ impl PathBuilder {
         self.close();
     }
 
+    /// Adds a cubic bezier from the current point to `x`, `y`,
+    /// using control points `cx1`, `cy1` and `cx2`, `cy2`
     pub fn cubic_to(&mut self, cx1: f32, cy1: f32, cx2: f32, cy2: f32, x: f32, y: f32) {
         self.path.ops.push(PathOp::CubicTo(
             Point::new(cx1, cy1),
@@ -219,10 +233,14 @@ impl PathBuilder {
         ))
     }
 
+    /// Closes the current subpath
     pub fn close(&mut self) {
         self.path.ops.push(PathOp::Close)
     }
 
+
+    /// Adds an arc approximated by quadratic beziers with center `x`, `y`
+    /// and radius `r` from `angle1` and to `angle2`
     pub fn arc(&mut self, x: f32, y: f32, r: f32, angle1: f32, angle2: f32) {
         //XXX: handle the current point being the wrong spot
         let a: Arc<f32> = Arc {
@@ -237,6 +255,7 @@ impl PathBuilder {
         });
     }
 
+    /// Completes the current path
     pub fn finish(self) -> Path {
         self.path
     }
