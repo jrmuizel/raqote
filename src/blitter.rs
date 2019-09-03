@@ -1,7 +1,7 @@
 use sw_composite::*;
 
-use crate::Transform;
-use crate::Point;
+use crate::{IntPoint, Point, Transform};
+use crate::draw_target::{ExtendMode, Source, FilterMode};
 
 use euclid::vec2;
 use std::marker::PhantomData;
@@ -521,6 +521,23 @@ impl<'a> Blitter for ShaderBlendBlitter<'a> {
     }
 }
 
+
+
+fn is_integer_transform(trans: &Transform) -> Option<IntPoint> {
+    if trans.m11 == 1. &&
+        trans.m12 == 0. &&
+        trans.m21 == 0. &&
+        trans.m22 == 1. {
+        let x = trans.m31 as i32;
+        let y = trans.m32 as i32;
+        if x as f32 == trans.m31 &&
+            y as f32 == trans.m32 {
+            return Some(IntPoint::new(x, y))
+        }
+    }
+    None
+}
+
 pub enum ShaderStorage<'a, 'b> {
     None,
     Solid(SolidShader),
@@ -536,6 +553,131 @@ pub enum ShaderStorage<'a, 'b> {
     RadialGradient(RadialGradientShader),
     TwoCircleRadialGradient(TwoCircleRadialGradientShader),
     LinearGradient(LinearGradientShader),
+}
+
+pub fn choose_shader<'a, 'b, 'c>(ti: &Transform, src: &'b Source<'c>, alpha: f32, shader_storage: &'a mut ShaderStorage<'b, 'c>) -> &'a dyn Shader {
+    let shader: &dyn Shader;
+
+    // XXX: clamp alpha
+    let alpha = (alpha * 255. + 0.5) as u32;
+
+    match src {
+        Source::Solid(c) => {
+            let color = ((c.a as u32) << 24)
+                | ((c.r as u32) << 16)
+                | ((c.g as u32) << 8)
+                | ((c.b as u32) << 0);
+            let color = alpha_mul(color, alpha_to_alpha256(alpha));
+            let s = SolidShader { color };
+            *shader_storage = ShaderStorage::Solid(s);
+            shader = match shader_storage {
+                ShaderStorage::Solid(s) => s,
+                _ => panic!()
+            }
+        }
+        Source::Image(ref image, ExtendMode::Pad, filter, transform) => {
+            if let Some(offset) = is_integer_transform(&ti.post_transform(&transform)) {
+                *shader_storage = ShaderStorage::ImagePadAlpha(ImagePadAlphaShader::new(image, offset.x, offset.y, alpha));
+                shader = match shader_storage {
+                    ShaderStorage::ImagePadAlpha(s) => s,
+                    _ => panic!()
+                };
+            } else {
+                if alpha != 255 {
+                    if *filter == FilterMode::Bilinear {
+                        let s = TransformedImageAlphaShader::<PadFetch>::new(image, &ti.post_transform(&transform), alpha);
+                        *shader_storage = ShaderStorage::TransformedPadImageAlpha(s);
+                        shader = match shader_storage {
+                            ShaderStorage::TransformedPadImageAlpha(s) => s,
+                            _ => panic!()
+                        };
+                    } else {
+                        let s = TransformedNearestImageAlphaShader::<PadFetch>::new(image, &ti.post_transform(&transform), alpha);
+                        *shader_storage = ShaderStorage::TransformedNearestPadImageAlpha(s);
+                        shader = match shader_storage {
+                            ShaderStorage::TransformedNearestPadImageAlpha(s) => s,
+                            _ => panic!()
+                        };
+                    }
+                } else {
+                    if *filter == FilterMode::Bilinear {
+                        let s = TransformedImageShader::<PadFetch>::new(image, &ti.post_transform(&transform));
+                        *shader_storage = ShaderStorage::TransformedPadImage(s);
+                        shader = match shader_storage {
+                            ShaderStorage::TransformedPadImage(s) => s,
+                            _ => panic!()
+                        };
+                    } else {
+                        let s = TransformedNearestImageShader::<PadFetch>::new(image, &ti.post_transform(&transform));
+                        *shader_storage = ShaderStorage::TransformedNearestPadImage(s);
+                        shader = match shader_storage {
+                            ShaderStorage::TransformedNearestPadImage(s) => s,
+                            _ => panic!()
+                        };
+                    }
+                }
+            }
+        }
+        Source::Image(ref image, ExtendMode::Repeat, FilterMode::Bilinear, transform) => {
+            if alpha != 255 {
+                let s = TransformedImageAlphaShader::<RepeatFetch>::new(image, &ti.post_transform(&transform), alpha);
+                *shader_storage = ShaderStorage::TransformedRepeatImageAlpha(s);
+                shader = match shader_storage {
+                    ShaderStorage::TransformedRepeatImageAlpha(s) => s,
+                    _ => panic!()
+                };
+            } else {
+                let s = TransformedImageShader::<RepeatFetch>::new(image, &ti.post_transform(&transform));
+                *shader_storage = ShaderStorage::TransformedRepeatImage(s);
+                shader = match shader_storage {
+                    ShaderStorage::TransformedRepeatImage(s) => s,
+                    _ => panic!()
+                };
+            }
+        }
+        Source::Image(ref image, ExtendMode::Repeat, FilterMode::Nearest, transform) => {
+            if alpha != 255 {
+                let s = TransformedNearestImageAlphaShader::<RepeatFetch>::new(image, &ti.post_transform(&transform), alpha);
+                *shader_storage = ShaderStorage::TransformedNearestRepeatImageAlpha(s);
+                shader = match shader_storage {
+                    ShaderStorage::TransformedNearestRepeatImageAlpha(s) => s,
+                    _ => panic!()
+                };
+            } else {
+                let s = TransformedNearestImageShader::<RepeatFetch>::new(image, &ti.post_transform(&transform));
+                *shader_storage = ShaderStorage::TransformedNearestRepeatImage(s);
+                shader = match shader_storage {
+                    ShaderStorage::TransformedNearestRepeatImage(s) => s,
+                    _ => panic!()
+                };
+            }
+        }
+        Source::RadialGradient(ref gradient, spread, transform) => {
+            let s = RadialGradientShader::new(gradient, &ti.post_transform(&transform), *spread, alpha);
+            *shader_storage = ShaderStorage::RadialGradient(s);
+            shader = match shader_storage {
+                ShaderStorage::RadialGradient(s) => s,
+                _ => panic!()
+            };
+        }
+        Source::TwoCircleRadialGradient(ref gradient, spread, c1, r1, c2, r2, transform) => {
+            let s = TwoCircleRadialGradientShader::new(gradient, &ti.post_transform(&transform), *c1, *r1, *c2, *r2, *spread, alpha);
+            *shader_storage = ShaderStorage::TwoCircleRadialGradient(s);
+            shader = match shader_storage {
+                ShaderStorage::TwoCircleRadialGradient(s) => s,
+                _ => panic!()
+            };
+        }
+        Source::LinearGradient(ref gradient, spread, transform) => {
+            let s = LinearGradientShader::new(gradient, &ti.post_transform(&transform), *spread, alpha);
+            *shader_storage = ShaderStorage::LinearGradient(s);
+            shader = match shader_storage {
+                ShaderStorage::LinearGradient(s) => s,
+                _ => panic!()
+            };
+        }
+    };
+    shader
 }
 
 pub enum ShaderBlitterStorage<'a> {
