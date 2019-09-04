@@ -2,7 +2,7 @@
 authors = ["Jeff Muizelaar <jrmuizel@gmail.com>"]
 edition = "2018"
 name = "raqote"
-version = "0.6.4-alpha.0"
+version = "0.6.4"
 description = "2D graphics library"
 license = "BSD-3-Clause"
 repository = "https://github.com/jrmuizel/raqote"
