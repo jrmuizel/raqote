@@ -555,6 +555,9 @@ pub enum ShaderStorage<'a, 'b> {
     LinearGradient(LinearGradientShader),
 }
 
+// The idea here is to store a shader in shader_storage and then return
+// a refrence to it. The goal is to avoid a heap allocation but the end
+// result is pretty ugly.
 pub fn choose_shader<'a, 'b, 'c>(ti: &Transform, src: &'b Source<'c>, alpha: f32, shader_storage: &'a mut ShaderStorage<'b, 'c>) -> &'a dyn Shader {
     let shader: &dyn Shader;
 

@@ -773,12 +773,14 @@ impl DrawTarget {
         &self.buf
     }
 
-    /// Returns a mut reference to the underlying pixel data
+    /// Returns a mut reference to the underlying pixel data as ARGB with a representation
+    /// like: (A << 24) | (R << 16) | (G << 8) | B
     pub fn get_data_mut(&mut self) -> &mut [u32] {
         &mut self.buf
     }
 
-    /// Returns a mut reference to the underlying pixel data as individual bytes
+    /// Returns a mut reference to the underlying pixel data as individual bytes with the order BGRA
+    /// on little endian.
     pub fn get_data_u8_mut(&mut self) -> &mut [u8] {
         let p = self.buf[..].as_mut_ptr();
         let len = self.buf[..].len();
