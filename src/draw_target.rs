@@ -34,7 +34,7 @@ pub struct Mask {
     pub data: Vec<u8>,
 }
 
-/// A premultiplied colored. i.e. r,b,g <= a
+/// A premultiplied color. i.e. r,b,g <= a
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct SolidSource {
     pub r: u8,

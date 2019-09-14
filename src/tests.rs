@@ -448,11 +448,11 @@ mod tests {
                 stops: vec![
                     GradientStop {
                         position: 0.0,
-                        color: 0xff000000,
+                        color: Color::new(0xff, 00, 00, 00),
                     },
                     GradientStop {
                         position: 1.0,
-                        color: 0xffffffff,
+                        color: Color::new(0xff, 0xff, 0xff, 0xff),
                     },
                 ],
             },

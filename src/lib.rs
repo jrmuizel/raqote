@@ -42,15 +42,15 @@ let gradient = Source::new_radial_gradient(
         stops: vec![
             GradientStop {
                 position: 0.2,
-                color: 0xff00ff00,
+                color: Color::new(0xff, 0, 0xff, 0),
             },
             GradientStop {
                 position: 0.8,
-                color: 0xffffffff,
+                color: Color::new(0xff, 0xff, 0xff, 0xff),
             },
             GradientStop {
                 position: 1.,
-                color: 0xffff00ff,
+                color: Color::new(0xff, 0xff, 0, 0xff),
             },
         ],
     },
@@ -111,7 +111,7 @@ pub use crate::draw_target::{AntialiasMode, FilterMode};
 pub use crate::draw_target::{BlendMode, DrawOptions, DrawTarget, SolidSource, Source, Winding, ExtendMode};
 pub use crate::stroke::*;
 
-pub use sw_composite::{Gradient, GradientStop, Image, Spread};
+pub use sw_composite::{Color, Gradient, GradientStop, Image, Spread};
 
 pub type IntRect = euclid::default::Box2D<i32>;
 pub type IntPoint = euclid::default::Point2D<i32>;
