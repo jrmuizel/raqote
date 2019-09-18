@@ -24,7 +24,9 @@ Planned functionality
  - perspective image drawing
  - shadows?
 
-[resvg](https://github.com/RazrFalcon/resvg) supports using raqote as a backend.
+#### Notable users
+- [resvg](https://github.com/RazrFalcon/resvg) supports using raqote as a backend.
+- [Servo](https://github.com/servo/servo) can use raqote as a canvas backend.
 
 Example:
 
@@ -46,15 +48,15 @@ let gradient = Source::new_radial_gradient(
         stops: vec![
             GradientStop {
                 position: 0.2,
-                color: 0xff00ff00,
+                color: Color::new(0xff, 0, 0xff, 0),
             },
             GradientStop {
                 position: 0.8,
-                color: 0xffffffff,
+                color: Color::new(0xff, 0xff, 0xff, 0xff),
             },
             GradientStop {
                 position: 1.,
-                color: 0xffff00ff,
+                color: Color::new(0xff, 0xff, 0, 0xff),
             },
         ],
     },

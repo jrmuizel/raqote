@@ -20,7 +20,9 @@ Planned functionality
  - perspective image drawing
  - shadows?
 
-[resvg](https://github.com/RazrFalcon/resvg) supports using raqote as a backend.
+### Notable users
+- [resvg](https://github.com/RazrFalcon/resvg) supports using raqote as a backend.
+- [Servo](https://github.com/servo/servo) can use raqote as a canvas backend.
 
 Example:
 
