@@ -63,7 +63,7 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
                     }
                 }
                 is_first_segment = true;
-                initial_segment = Vec::new();;
+                initial_segment = Vec::new();
                 first_dash = true;
             }
             PathOp::LineTo(pt) => {
