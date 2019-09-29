@@ -474,7 +474,7 @@ pub struct ShaderClipBlendBlitter<'a> {
     pub dest_stride: i32,
     pub clip: &'a [u8],
     pub clip_stride: i32,
-    pub blend_fn: fn (u32, u32) -> u32,
+    pub blend_fn: fn (&[u32], &[u8], &[u8], &mut [u32]),
 }
 
 impl<'a> Blitter for ShaderClipBlendBlitter<'a> {
@@ -483,15 +483,10 @@ impl<'a> Blitter for ShaderClipBlendBlitter<'a> {
         let clip_row = y * self.clip_stride;
         let count = (x2 - x1) as usize;
         self.shader.shade_span(x1, y, &mut self.tmp[..], count);
-        for i in 0..count {
-            let dest = self.dest[(dest_row + x1 - self.x) as usize + i];
-            self.dest[(dest_row + x1 - self.x) as usize + i] = alpha_lerp(
-                dest,
-                (self.blend_fn)(self.tmp[i],dest),
-                mask[i] as u32,
-                self.clip[(clip_row + x1) as usize + i] as u32,
-            );
-        }
+        (self.blend_fn)(&self.tmp[..],
+                      mask,
+                      &self.clip[(clip_row + x1) as usize..],
+                      &mut self.dest[(dest_row + x1 - self.x) as usize..])
     }
 }
 
@@ -502,7 +497,7 @@ pub struct ShaderBlendBlitter<'a> {
     pub tmp: Vec<u32>,
     pub dest: &'a mut [u32],
     pub dest_stride: i32,
-    pub blend_fn: fn (u32, u32) -> u32,
+    pub blend_fn: fn (&[u32], &[u8], &mut [u32]),
 }
 
 impl<'a> Blitter for ShaderBlendBlitter<'a> {
@@ -510,14 +505,9 @@ impl<'a> Blitter for ShaderBlendBlitter<'a> {
         let dest_row = (y - self.y) * self.dest_stride;
         let count = (x2 - x1) as usize;
         self.shader.shade_span(x1, y, &mut self.tmp[..], count);
-        for i in 0..count {
-            let dest = self.dest[(dest_row + x1 - self.x) as usize + i];
-            self.dest[(dest_row + x1 - self.x) as usize + i] = lerp(
-                dest,
-                (self.blend_fn)(self.tmp[i],dest),
-                alpha_to_alpha256(mask[i] as u32),
-            );
-        }
+        (self.blend_fn)(&self.tmp[..],
+                        mask,
+                        &mut self.dest[(dest_row + x1 - self.x) as usize..])
     }
 }
 

@@ -76,36 +76,81 @@ pub enum BlendMode {
     Luminosity
 }
 
-fn blend_proc(mode: BlendMode) -> fn(u32, u32) -> u32 {
+trait Blender {
+    type Output;
+    fn build<T: blend::Blend>() -> Self::Output;
+}
+
+struct BlendRowMask;
+
+fn blend_row_mask<T: blend::Blend>(src: &[u32], mask: &[u8], dst: &mut [u32]) {
+    for ((dst, src), mask) in dst.iter_mut().zip(src).zip(mask) {
+        *dst = lerp(
+            *dst,
+            T::blend(*src, *dst),
+            alpha_to_alpha256(*mask as u32),
+        );
+    }
+}
+
+impl Blender for BlendRowMask {
+    type Output = fn(&[u32], &[u8], &mut [u32]);
+    fn build<T: blend::Blend>() -> Self::Output {
+        blend_row_mask::<T>
+    }
+}
+
+struct BlendRowMaskClip;
+
+fn blend_row_mask_clip<T: blend::Blend>(src: &[u32], mask: &[u8], clip: &[u8], dst: &mut [u32]) {
+    for (((dst, src), mask), clip) in dst.iter_mut().zip(src).zip(mask).zip(clip) {
+        *dst = alpha_lerp(
+            *dst,
+            T::blend(*src, *dst),
+            *mask as u32,
+            *clip as u32
+        );
+    }
+}
+
+impl Blender for BlendRowMaskClip {
+    type Output = fn(&[u32], &[u8], &[u8], &mut [u32]);
+    fn build<T: blend::Blend>() -> Self::Output {
+        blend_row_mask_clip::<T>
+    }
+}
+
+fn build_blend_proc<T: Blender>(mode: BlendMode) -> T::Output {
+    use sw_composite::blend::*;
     match mode {
-        BlendMode::Dst => dst,
-        BlendMode::Src => src,
-        BlendMode::Clear => clear,
-        BlendMode::SrcOver => src_over,
-        BlendMode::DstOver => dst_over,
-        BlendMode::SrcIn => src_in,
-        BlendMode::DstIn => dst_in,
-        BlendMode::SrcOut => src_out,
-        BlendMode::DstOut => dst_out,
-        BlendMode::SrcAtop => src_atop,
-        BlendMode::DstAtop => dst_atop,
-        BlendMode::Xor => xor,
-        BlendMode::Add => add,
-        BlendMode::Screen => screen,
-        BlendMode::Overlay => overlay,
-        BlendMode::Darken => darken,
-        BlendMode::Lighten => lighten,
-        BlendMode::ColorDodge => colordodge,
-        BlendMode::ColorBurn => colorburn,
-        BlendMode::HardLight => hardlight,
-        BlendMode::SoftLight => softlight,
-        BlendMode::Difference => difference,
-        BlendMode::Exclusion => exclusion,
-        BlendMode::Multiply => multiply,
-        BlendMode::Hue => hue,
-        BlendMode::Saturation => saturation,
-        BlendMode::Color => color,
-        BlendMode::Luminosity => luminosity,
+        BlendMode::Dst => T::build::<Dst>(),
+        BlendMode::Src => T::build::<Src>(),
+        BlendMode::Clear => T::build::<Clear>(),
+        BlendMode::SrcOver => T::build::<SrcOver>(),
+        BlendMode::DstOver => T::build::<DstOver>(),
+        BlendMode::SrcIn => T::build::<SrcIn>(),
+        BlendMode::DstIn => T::build::<DstIn>(),
+        BlendMode::SrcOut => T::build::<SrcOut>(),
+        BlendMode::DstOut => T::build::<DstOut>(),
+        BlendMode::SrcAtop => T::build::<SrcAtop>(),
+        BlendMode::DstAtop => T::build::<DstAtop>(),
+        BlendMode::Xor => T::build::<Xor>(),
+        BlendMode::Add => T::build::<Add>(),
+        BlendMode::Screen => T::build::<Screen>(),
+        BlendMode::Overlay => T::build::<Overlay>(),
+        BlendMode::Darken => T::build::<Darken>(),
+        BlendMode::Lighten => T::build::<Lighten>(),
+        BlendMode::ColorDodge => T::build::<ColorDodge>(),
+        BlendMode::ColorBurn => T::build::<ColorBurn>(),
+        BlendMode::HardLight => T::build::<HardLight>(),
+        BlendMode::SoftLight => T::build::<SoftLight>(),
+        BlendMode::Difference => T::build::<Difference>(),
+        BlendMode::Exclusion => T::build::<Exclusion>(),
+        BlendMode::Multiply => T::build::<Multiply>(),
+        BlendMode::Hue => T::build::<Hue>(),
+        BlendMode::Saturation => T::build::<Saturation>(),
+        BlendMode::Color => T::build::<Color>(),
+        BlendMode::Luminosity => T::build::<Luminosity>(),
     }
 }
 
@@ -457,6 +502,7 @@ impl DrawTarget {
     /// Draws an image at (x, y) with the size (width, height). This will rescale the image to the
     /// destination size.
     pub fn draw_image_with_size_at(&mut self, width: f32, height: f32, x: f32, y: f32, image: &Image, options: &DrawOptions) {
+
         let mut pb = PathBuilder::new();
         pb.rect(x, y, width, height);
         let source = Source::Image(*image,
@@ -665,12 +711,12 @@ impl DrawTarget {
             }
         } else {
 
-            let blend_fn = blend_proc(blend);
             match clip_stack.last() {
                 Some(Clip {
                          rect: _,
                          mask: Some(clip),
                      }) => {
+                    let blend_fn = build_blend_proc::<BlendRowMaskClip>(blend);
                     let scb_blend = ShaderClipBlendBlitter {
                         x: dest_bounds.min.x,
                         y: dest_bounds.min.y,
@@ -690,6 +736,7 @@ impl DrawTarget {
                     };
                 }
                 _ => {
+                    let blend_fn = build_blend_proc::<BlendRowMask>(blend);
                     let sb_blend = ShaderBlendBlitter {
                         x: dest_bounds.min.x,
                         y: dest_bounds.min.y,
@@ -697,7 +744,7 @@ impl DrawTarget {
                         tmp: vec![0; width as usize],
                         dest,
                         dest_stride: dest_bounds.size().width,
-                        blend_fn
+                        blend_fn,
                     };
                     *blitter_storage = ShaderBlitterStorage::ShaderBlendBlitter(sb_blend);
                     blitter = match blitter_storage {
