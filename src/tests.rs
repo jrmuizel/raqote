@@ -557,4 +557,22 @@ mod tests {
         assert!(!tri.contains_point(0.1, 0.6, 0.5));
         assert!(tri.contains_point(0.1, 0.4, 0.5));
     }
+
+    #[test]
+    fn push_clip() {
+
+        let mut dest = DrawTarget::new(2, 2);
+
+        let mut pb = PathBuilder::new();
+        pb.rect(1., 1., 1., 1.);
+        let rect = pb.finish();
+
+        dest.push_clip(&rect);
+
+        let mut pb = PathBuilder::new();
+        pb.rect(0., 0., 1., 1.);
+        let rect = pb.finish();
+
+        dest.push_clip(&rect);
+    }
 }

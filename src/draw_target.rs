@@ -448,10 +448,9 @@ impl DrawTarget {
 
     pub fn push_clip(&mut self, path: &Path) {
         self.apply_path(path);
-        let bounds = self.rasterizer.get_bounds();
 
         // XXX: restrict to clipped area
-        let mut blitter = MaskSuperBlitter::new(bounds.min.x, bounds.min.y, bounds.size().width, bounds.size().height);
+        let mut blitter = MaskSuperBlitter::new(0, 0, self.width, self.height);
         self.rasterizer.rasterize(&mut blitter, path.winding);
 
         if let Some(last) = self.clip_stack.last() {
