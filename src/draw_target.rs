@@ -81,6 +81,21 @@ trait Blender {
     fn build<T: blend::Blend>() -> Self::Output;
 }
 
+struct BlendRow;
+
+fn blend_row<T: blend::Blend>(src: &[u32], dst: &mut [u32]) {
+    for (dst, src) in dst.iter_mut().zip(src) {
+        *dst = T::blend(*src, *dst);
+    }
+}
+
+impl Blender for BlendRow {
+    type Output = fn(&[u32], &mut [u32]);
+    fn build<T: blend::Blend>() -> Self::Output {
+        blend_row::<T>
+    }
+}
+
 struct BlendRowMask;
 
 fn blend_row_mask<T: blend::Blend>(src: &[u32], mask: &[u8], dst: &mut [u32]) {
@@ -796,7 +811,7 @@ impl DrawTarget {
     }
 
     /// Draws `src_rect` of `src` at `dst`. The current transform and clip are ignored
-    pub fn copy_surface(&mut self, src: &DrawTarget, src_rect: IntRect, dst: IntPoint) {
+    pub fn composite_surface<F: Fn(&[u32], &mut [u32])>(&mut self, src: &DrawTarget, src_rect: IntRect, dst: IntPoint, f: F) {
         let dst_rect = intrect(0, 0, self.width, self.height);
         let src_rect = dst_rect
             .intersection(&src_rect.translate(dst.to_vector())).translate(-dst.to_vector());
@@ -814,8 +829,35 @@ impl DrawTarget {
             let dst_row_end = dst_row_start + src_rect.size().width as usize;
             let src_row_start = (src_rect.min.x + y * src.width) as usize;
             let src_row_end = src_row_start + src_rect.size().width as usize;
-            self.buf[dst_row_start..dst_row_end].copy_from_slice(&src.buf[src_row_start..src_row_end]);
+            f(&src.buf[src_row_start..src_row_end], &mut self.buf[dst_row_start..dst_row_end]);
         }
+    }
+
+    /// Draws `src_rect` of `src` at `dst`. The current transform and clip are ignored
+    pub fn copy_surface(&mut self, src: &DrawTarget, src_rect: IntRect, dst: IntPoint) {
+        self.composite_surface(src, src_rect, dst, |src, dst| {
+            dst.copy_from_slice(src)
+        })
+    }
+
+    /// Blends `src_rect` of `src` at `dst`. The current transform and clip are ignored using
+    /// `blend` mode.
+    pub fn blend_surface(&mut self, src: &DrawTarget, src_rect: IntRect, dst: IntPoint, blend: BlendMode) {
+        let blend_fn = build_blend_proc::<BlendRow>(blend);
+        self.composite_surface(src, src_rect, dst, |src, dst| {
+            blend_fn(src, dst);
+        });
+    }
+
+    /// Blends `src_rect` of `src` at `dst` using `alpha`. The current transform and clip are ignored
+    pub fn blend_surface_with_alpha(&mut self, src: &DrawTarget, src_rect: IntRect, dst: IntPoint, alpha: f32) {
+        let alpha = (alpha * 255. + 0.5) as u8;
+
+        self.composite_surface(src, src_rect, dst, |src, dst| {
+            for (dst, src) in dst.iter_mut().zip(src) {
+                *dst = over_in(*src, *dst, alpha as u32);
+            }
+        });
     }
 
     /// Returns a reference to the underlying pixel data
