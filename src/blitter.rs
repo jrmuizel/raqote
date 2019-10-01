@@ -96,8 +96,8 @@ pub struct MaskBlitter {
 impl MaskBlitter {
     pub fn new(x: i32, y: i32, width: i32, height: i32) -> MaskBlitter {
         MaskBlitter {
-            x,
-            y,
+            x: x * SCALE,
+            y: y * SCALE,
             width,
             // we can end up writing one byte past the end of the buffer so allocate that
             // padding to avoid needing to do an extra check

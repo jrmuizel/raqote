@@ -510,6 +510,26 @@ mod tests {
     }
 
     #[test]
+    fn draw_options_aliased_bounds() {
+        let mut dt = DrawTarget::new(2, 4);
+        let mut pb = PathBuilder::new();
+        pb.rect(1., 3., 1., 1.);
+        dt.fill(
+            &pb.finish(),
+            &Source::Solid(SolidSource {
+                r: 0xff,
+                g: 0xff,
+                b: 0xff,
+                a: 0xff,
+            }),
+            &DrawOptions {
+                antialias: AntialiasMode::None,
+                ..Default::default()
+            },
+        );
+    }
+
+    #[test]
     fn copy_surface() {
         let mut dest = DrawTarget::new(2, 2);
         let mut src = DrawTarget::new(2, 2);
