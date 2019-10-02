@@ -43,6 +43,16 @@ pub struct SolidSource {
     pub a: u8,
 }
 
+impl SolidSource {
+    pub fn to_u32(&self) -> u32 {
+        let color = ((self.a as u32) << 24)
+            | ((self.r as u32) << 16)
+            | ((self.g as u32) << 8)
+            | ((self.b as u32) << 0);
+        color
+    }
+}
+
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum BlendMode {
     Dst,
@@ -593,19 +603,26 @@ impl DrawTarget {
     /// Fills the current clip with the solid color `solid`
     pub fn clear(&mut self, solid: SolidSource) {
         let mut pb = PathBuilder::new();
-        let ctm = self.transform;
-        self.transform = Transform::identity();
-        pb.rect(0., 0., self.width as f32, self.height as f32);
-        self.fill(
-            &pb.finish(),
-            &Source::Solid(solid),
-            &DrawOptions {
-                blend_mode: BlendMode::Src,
-                alpha: 1.,
-                antialias: AntialiasMode::Gray,
-            },
-        );
-        self.transform = ctm;
+        if self.clip_stack.is_empty() {
+            let color = solid.to_u32();
+            for pixel in &mut self.buf[..] {
+                *pixel = color;
+            }
+        } else {
+            let ctm = self.transform;
+            self.transform = Transform::identity();
+            pb.rect(0., 0., self.width as f32, self.height as f32);
+            self.fill(
+                &pb.finish(),
+                &Source::Solid(solid),
+                &DrawOptions {
+                    blend_mode: BlendMode::Src,
+                    alpha: 1.,
+                    antialias: AntialiasMode::Gray,
+                },
+            );
+            self.transform = ctm;
+        }
     }
 
     #[cfg(feature = "text")]

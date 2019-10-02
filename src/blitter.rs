@@ -556,11 +556,7 @@ pub fn choose_shader<'a, 'b, 'c>(ti: &Transform, src: &'b Source<'c>, alpha: f32
 
     match src {
         Source::Solid(c) => {
-            let color = ((c.a as u32) << 24)
-                | ((c.r as u32) << 16)
-                | ((c.g as u32) << 8)
-                | ((c.b as u32) << 0);
-            let color = alpha_mul(color, alpha_to_alpha256(alpha));
+            let color = alpha_mul(c.to_u32(), alpha_to_alpha256(alpha));
             let s = SolidShader { color };
             *shader_storage = ShaderStorage::Solid(s);
             shader = match shader_storage {
