@@ -3,7 +3,7 @@ use lyon_geom::Arc;
 use lyon_geom::CubicBezierSegment;
 use lyon_geom::QuadraticBezierSegment;
 
-use crate::{Point, Vector};
+use crate::{Point, Transform, Vector};
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Winding {
@@ -18,6 +18,25 @@ pub enum PathOp {
     QuadTo(Point, Point),
     CubicTo(Point, Point, Point),
     Close,
+}
+
+impl PathOp {
+    fn transform(self, xform: &Transform) -> PathOp {
+        match self {
+            PathOp::MoveTo(p) => PathOp::MoveTo(xform.transform_point(p)),
+            PathOp::LineTo(p) => PathOp::LineTo(xform.transform_point(p)),
+            PathOp::QuadTo(p1, p2) => PathOp::QuadTo(
+                xform.transform_point(p1),
+                xform.transform_point(p2)
+            ),
+            PathOp::CubicTo(p1, p2, p3) => PathOp::CubicTo(
+                xform.transform_point(p1),
+                xform.transform_point(p2),
+                xform.transform_point(p3),
+            ),
+            PathOp::Close => PathOp::Close,
+        }
+    }
 }
 
 /// Represents a complete path usable for filling or stroking.
@@ -170,6 +189,12 @@ impl Path {
             Winding::NonZero => ws.count != 0,
         };
         inside || ws.on_edge
+    }
+
+    pub fn transform(self, transform: &Transform) -> Path {
+        let Path { ops, winding } = self;
+        let ops = ops.into_iter().map(|op| op.transform(transform)).collect();
+        Path { ops, winding }
     }
 }
 
