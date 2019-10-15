@@ -42,6 +42,10 @@ struct Edge {
     control_y: i32,
 }
 
+fn div_fixed16_fixed16(a: i32, b: i32) -> i32 {
+    (((a as i64) << 16) / (b as i64)) as i32
+}
+
 // it is possible to fit this into 64 bytes on x86-64
 // with the following layout:
 //
@@ -60,9 +64,9 @@ pub struct ActiveEdge {
     y2: i32,
     next: Option<NonNull<ActiveEdge>>,
     slope_x: i32,
-    fullx: i32,
-    next_x: i32,
-    next_y: i32,
+    fullx: i32, // 16.16
+    next_x: i32, // 16.16
+    next_y: i32, // 16.16
 
     dx: i32,
     ddx: i32,
@@ -107,12 +111,12 @@ impl ActiveEdge {
         // if we have a shift that means we have a curve
         if self.shift != 0 {
             //printf("inner cur %d,%d next %d %d %f\n", curx, cury, next_x>>16, next_y>>16, fnext_y);
-            if cury >= (self.next_y >> 16) {
+            if cury >= (self.next_y >> (16 - SAMPLE_SHIFT)) {
                 self.old_y = self.next_y;
                 self.old_x = self.next_x;
                 self.fullx = self.next_x;
                 // increment until we have a next_y that's greater
-                while self.count > 0 && (cury >= (self.next_y >> 16)) {
+                while self.count > 0 && (cury >= (self.next_y >> (16 - SAMPLE_SHIFT))) {
                     self.next_x += self.dx >> self.shift;
                     self.dx += self.ddx;
                     self.next_y += self.dy >> self.shift;
@@ -122,17 +126,13 @@ impl ActiveEdge {
                 if self.count == 0 {
                     // for the last line sgement we can
                     // just set next_y,x to the end point
-                    self.next_y = self.y2 << 16;
-                    self.next_x = self.x2 << 16;
+                    self.next_y = self.y2 << (16 - SAMPLE_SHIFT);
+                    self.next_x = self.x2 << (16 - SAMPLE_SHIFT);
                 }
                 // update slope if we're going to be using it
                 // we want to avoid dividing by 0 which can happen if we exited the loop above early
                 if (cury + 1) < self.y2 {
-                    // the maximum our x value can be is 4095 (which is 12 bits).
-                    // 12 + 3 + 16 = 31 which gives us an extra bit of room
-                    // to handle overflow.
-                    self.slope_x =
-                        ((self.next_x - self.old_x) << 3) / ((self.next_y - self.old_y) >> 13);
+                    self.slope_x = div_fixed16_fixed16(self.next_x - self.old_x, self.next_y - self.old_y) >> 2;
                 }
             }
             self.fullx += self.slope_x;
@@ -276,7 +276,7 @@ impl Rasterizer {
         e.next = None;
         //e.curx = e.edge.x1;
         let mut cury = edge.y1;
-        e.fullx = edge.x1 << 16;
+        e.fullx = edge.x1 << (16 - SAMPLE_SHIFT);
 
         // if the edge is completely above or completely below we can drop it
         if edge.y2 < 0 || edge.y1 >= self.height {
@@ -305,7 +305,7 @@ impl Rasterizer {
             // we'll iterate t from 0..1 (0-256)
             // range of A is 4 times coordinate-range
             // we can get more accuracy here by using the input points instead of the rounded versions
-            let mut A = (edge.x1 - edge.control_x - edge.control_x + edge.x2) << 15;
+            let mut A = (edge.x1 - edge.control_x - edge.control_x + edge.x2) << (15 - SAMPLE_SHIFT);
             let mut B = edge.control_x - edge.x1;
             //let mut C = edge.x1;
             let mut shift = compute_curve_steps(&edge);
@@ -317,24 +317,24 @@ impl Rasterizer {
             }
             e.shift = shift;
             e.count = 1 << shift;
-            e.dx = 2 * (A >> shift) + 2 * B * 65536;
+            e.dx = 2 * (A >> shift) + 2 * B * (1 << (16 - SAMPLE_SHIFT));
             e.ddx = 2 * (A >> (shift - 1));
 
-            A = (edge.y1 - edge.control_y - edge.control_y + edge.y2) << 15;
+            A = (edge.y1 - edge.control_y - edge.control_y + edge.y2) << (15 - SAMPLE_SHIFT);
             B = edge.control_y - edge.y1;
             //C = edge.y1;
-            e.dy = 2 * (A >> shift) + 2 * B * 65536;
+            e.dy = 2 * (A >> shift) + 2 * B * (1 << (16 - SAMPLE_SHIFT));
             e.ddy = 2 * (A >> (shift - 1));
 
             // compute the first next_x,y
             e.count -= 1;
             e.next_x = (e.fullx) + (e.dx >> e.shift);
-            e.next_y = (cury * 65536) + (e.dy >> e.shift);
+            e.next_y = (cury * (1 << (16 - SAMPLE_SHIFT))) + (e.dy >> e.shift);
             e.dx += e.ddx;
             e.dy += e.ddy;
 
             // skia does this part in UpdateQuad. unfortunately we duplicate it
-            while e.count > 0 && cury >= (e.next_y >> 16) {
+            while e.count > 0 && cury >= (e.next_y >> (16 - SAMPLE_SHIFT)) {
                 e.next_x += e.dx >> shift;
                 e.dx += e.ddx;
                 e.next_y += e.dy >> shift;
@@ -342,13 +342,13 @@ impl Rasterizer {
                 e.count -= 1;
             }
             if e.count == 0 {
-                e.next_y = edge.y2 << 16;
-                e.next_x = edge.x2 << 16;
+                e.next_y = edge.y2 << (16 - SAMPLE_SHIFT);
+                e.next_x = edge.x2 << (16 - SAMPLE_SHIFT);
             }
-            e.slope_x = ((e.next_x - (e.fullx)) << 2) / ((e.next_y - (cury << 16)) >> 14);
+            e.slope_x = ((e.next_x - (e.fullx)) << 0) / ((e.next_y - (cury << (16 - SAMPLE_SHIFT))) >> 14);
         } else {
             e.shift = 0;
-            e.slope_x = ((edge.x2 - edge.x1) * (1 << 16)) / (edge.y2 - edge.y1);
+            e.slope_x = ((edge.x2 - edge.x1) * (1 << (16 - SAMPLE_SHIFT))) / (edge.y2 - edge.y1);
         }
 
         if cury < 0 {
@@ -486,12 +486,12 @@ impl Rasterizer {
             if inside {
                 blitter.blit_span(
                     self.cur_y,
-                    (prevx + (1 << 15)) >> 16,
-                    (e.fullx + (1 << 15)) >> 16,
+                    (prevx + (1 << (15 - SAMPLE_SHIFT))) >> (16 - SAMPLE_SHIFT),
+                    (e.fullx + (1 << (15 - SAMPLE_SHIFT))) >> (16 - SAMPLE_SHIFT),
                 );
             }
 
-            if (e.fullx >> 16) >= self.width {
+            if (e.fullx >> (16 - SAMPLE_SHIFT)) >= self.width {
                 break;
             }
             winding += e.winding as i32;
