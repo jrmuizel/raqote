@@ -595,4 +595,25 @@ mod tests {
 
         dest.push_clip(&rect);
     }
+
+    #[test]
+    fn get_current_point() {
+        let mut pb = PathBuilder::new();
+        pb.line_to(2., 2.);
+
+        let mut point = pb.get_current_point();
+        assert!(point.x == 2. && point.y == 2.);
+
+        pb.move_to(4., 4.);
+        point = pb.get_current_point();
+        assert!(point.x == 4. && point.y == 4.);
+
+        pb.quad_to(1., 1., 8., 8.);
+        point = pb.get_current_point();
+        assert!(point.x == 8. && point.y == 8.);
+
+        pb.cubic_to(1., 1., 1., 1., 16., 16.);
+        point = pb.get_current_point();
+        assert!(point.x == 16. && point.y == 16.);
+    }
 }

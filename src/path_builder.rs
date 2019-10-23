@@ -280,6 +280,21 @@ impl PathBuilder {
         });
     }
 
+    /// Returns the current last point of the current path.
+    pub fn get_current_point(&self) -> Point {
+        for op in self.path.ops.iter().rev() {
+            match op {
+                PathOp::MoveTo(point) | PathOp::LineTo(point) => {
+                    return Point::new(point.x, point.y)
+                },
+                PathOp::CubicTo(_, _, point) => return Point::new(point.x, point.y),
+                PathOp::QuadTo(_, point) => return Point::new(point.x, point.y),
+                PathOp::Close => {},
+            };
+        }
+        panic!("dead end");
+    }
+
     /// Completes the current path
     pub fn finish(self) -> Path {
         self.path
