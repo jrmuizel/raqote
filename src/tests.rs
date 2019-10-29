@@ -595,4 +595,48 @@ mod tests {
 
         dest.push_clip(&rect);
     }
+
+    #[test]
+    fn clip_rect_composite() {
+
+        let mut dest = DrawTarget::new(2, 2);
+
+        let mut pb = PathBuilder::new();
+        pb.rect(0., 0., 2., 2.);
+        let rect = pb.finish();
+
+        let fill = Source::Solid(SolidSource {
+            r: 255,
+            g: 0,
+            b: 0,
+            a: 255,
+        });
+        dest.fill(&rect, &fill, &DrawOptions::new());
+        dest.push_clip(&rect);
+
+        let pixels = dest.get_data();
+        // expected a red pixel
+        let expected =
+            255 << 24 |
+                255 << 16 |
+                0 << 8 |
+                0;
+        assert_eq!(pixels[0], expected);
+
+        let fill = Source::Solid(SolidSource {
+            r: 0,
+            g: 255,
+            b: 0,
+            a: 255,
+        });
+        dest.fill(&rect, &fill, &DrawOptions::new());
+        let pixels = dest.get_data();
+        // expected a green pixel
+        let expected =
+            255 << 24 |
+                0 << 16 |
+                255 << 8 |
+                0;
+        assert_eq!(pixels[0], expected);
+    }
 }
