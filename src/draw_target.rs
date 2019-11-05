@@ -51,6 +51,15 @@ impl SolidSource {
             | ((self.b as u32) << 0);
         color
     }
+
+    pub fn from_unpremultiplied_argb(a: u8, r: u8, g: u8, b: u8) -> Self {
+        SolidSource {
+            a: a,
+            r: muldiv255(a as u32, r as u32) as u8,
+            g: muldiv255(a as u32, g as u32) as u8,
+            b: muldiv255(a as u32, b as u32) as u8
+        }
+    }
 }
 
 #[derive(PartialEq, Clone, Copy, Debug)]
