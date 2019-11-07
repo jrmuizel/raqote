@@ -639,4 +639,28 @@ mod tests {
                 0;
         assert_eq!(pixels[0], expected);
     }
+
+    #[test]
+    fn draw_image_xor() {
+        let mut target = DrawTarget::new(1, 1);
+        let mut pb = PathBuilder::new();
+        pb.rect(0., 0., 1., 1.);
+        let rect = pb.finish();
+        let mut options = DrawOptions::new();
+        options.blend_mode = BlendMode::Src;
+        target.fill(
+            &rect,
+            &Source::Solid(SolidSource::from_unpremultiplied_argb(128, 0, 255, 255)),
+
+            &options,
+        );
+
+        options.blend_mode = BlendMode::Xor;
+        target.fill(
+            &rect,
+            &Source::Solid(SolidSource::from_unpremultiplied_argb(0xbf, 255, 255, 0)),
+
+            &options,
+        );
+    }
 }
