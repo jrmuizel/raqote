@@ -89,17 +89,19 @@ impl Path {
     }
 
     /// Returns true if the point `x`, `y` is within the filled
-    /// area of of `self`. The path will be flattened using `tolerance`
+    /// area of of `self`. The path will be flattened using `tolerance`.
+    /// The point is considered contained if it's on the path.
     // this function likely has bugs
     pub fn contains_point(&self, tolerance: f32, x: f32, y: f32) -> bool {
         //XXX Instead of making a new path we should just use flattening callbacks
         let flat_path = self.flatten(tolerance);
 
         struct WindState {
-            count: i32,
             first_point: Option<Point>,
             current_point: Point,
+            count: i32,
             on_edge: bool,
+
             x: f32,
             y: f32,
         }
@@ -163,7 +165,7 @@ impl Path {
             }
         }
 
-        let mut ws = WindState { count: 0, first_point: None, current_point: Point::new(0., 0.),x , y, on_edge: false};
+        let mut ws = WindState { count: 0, first_point: None, current_point: Point::new(0., 0.), x, y, on_edge: false};
 
         for op in &flat_path.ops {
             match *op {
