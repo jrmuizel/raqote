@@ -135,7 +135,7 @@ impl Path {
                 }
 
                 // entirely below
-                if y1 < self.y && y2 < self.x {
+                if y1 < self.y && y2 < self.y {
                     return
                 }
 
