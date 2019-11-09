@@ -275,7 +275,7 @@ fn join_line(
 }
 
 pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
-    let mut cur_pt = Point::zero();
+    let mut cur_pt = None;
     let mut stroked_path = PathBuilder::new();
     let mut last_normal = Vector::zero();
     let half_width = style.width / 2.;
@@ -283,48 +283,53 @@ pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
     for op in &path.ops {
         match *op {
             PathOp::MoveTo(pt) => {
-                if let Some((point, normal)) = start_point {
+                if let (Some(cur_pt), Some((point, normal))) = (cur_pt, start_point) {
                     // cap end
                     cap_line(&mut stroked_path, style, cur_pt, last_normal);
                     // cap beginning
                     cap_line(&mut stroked_path, style, point, flip(normal));
                 }
                 start_point = None;
-                cur_pt = pt;
+                cur_pt = Some(pt);
             }
             PathOp::LineTo(pt) => {
-                if let Some(normal) = compute_normal(cur_pt, pt) {
-                    if start_point.is_none() {
-                        start_point = Some((cur_pt, normal));
-                    } else {
-                        join_line(&mut stroked_path, style, cur_pt, last_normal, normal);
+                if cur_pt.is_none() {
+                    start_point = None;
+                } else if let Some(cur_pt) = cur_pt {
+                    if let Some(normal) = compute_normal(cur_pt, pt) {
+                        if start_point.is_none() {
+                            start_point = Some((cur_pt, normal));
+                        } else {
+                            join_line(&mut stroked_path, style, cur_pt, last_normal, normal);
+                        }
+
+                        stroked_path.move_to(
+                            cur_pt.x + normal.x * half_width,
+                            cur_pt.y + normal.y * half_width,
+                        );
+                        stroked_path.line_to(pt.x + normal.x * half_width, pt.y + normal.y * half_width);
+                        // we add a point at the midpoint of the line so that our edge has matching
+                        // end points with the edges used for joining. This avoids seams during
+                        // rasterization caused by precision differences in the slope and endpoints
+                        stroked_path.line_to(pt.x, pt.y);
+                        stroked_path.line_to(pt.x + -normal.x * half_width, pt.y + -normal.y * half_width);
+                        stroked_path.line_to(
+                            cur_pt.x - normal.x * half_width,
+                            cur_pt.y - normal.y * half_width,
+                        );
+                        stroked_path.line_to(cur_pt.x, cur_pt.y);
+
+                        stroked_path.close();
+
+                        last_normal = normal;
+
                     }
-
-                    stroked_path.move_to(
-                        cur_pt.x + normal.x * half_width,
-                        cur_pt.y + normal.y * half_width,
-                    );
-                    stroked_path.line_to(pt.x + normal.x * half_width, pt.y + normal.y * half_width);
-                    // we add a point at the midpoint of the line so that our edge has matching
-                    // end points with the edges used for joining. This avoids seams during
-                    // rasterization caused by precision differences in the slope and endpoints
-                    stroked_path.line_to(pt.x, pt.y);
-                    stroked_path.line_to(pt.x + -normal.x * half_width, pt.y + -normal.y * half_width);
-                    stroked_path.line_to(
-                        cur_pt.x - normal.x * half_width,
-                        cur_pt.y - normal.y * half_width,
-                    );
-                    stroked_path.line_to(cur_pt.x, cur_pt.y);
-
-                    stroked_path.close();
-
-                    last_normal = normal;
-
-                    cur_pt = pt;
                 }
+                cur_pt = Some(pt);
+
             }
             PathOp::Close => {
-                if let Some((end_point, start_normal)) = start_point {
+                if let (Some(cur_pt), Some((end_point, start_normal))) = (cur_pt, start_point) {
                     if let Some(normal) = compute_normal(cur_pt, end_point) {
                         join_line(&mut stroked_path, style, cur_pt, last_normal, normal);
 
@@ -363,7 +368,7 @@ pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
             PathOp::CubicTo(..) => panic!("Only flat paths handled"),
         }
     }
-    if let Some((point, normal)) = start_point {
+    if let (Some(cur_pt), Some((point, normal))) = (cur_pt, start_point) {
         // cap end
         cap_line(&mut stroked_path, style, cur_pt, last_normal);
         // cap beginning
