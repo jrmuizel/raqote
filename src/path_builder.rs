@@ -95,10 +95,9 @@ impl Path {
     pub fn contains_point(&self, tolerance: f32, x: f32, y: f32) -> bool {
         //XXX Instead of making a new path we should just use flattening callbacks
         let flat_path = self.flatten(tolerance);
-
         struct WindState {
             first_point: Option<Point>,
-            current_point: Point,
+            current_point: Option<Point>,
             count: i32,
             on_edge: bool,
 
@@ -108,9 +107,9 @@ impl Path {
 
         impl WindState {
             fn close(&mut self) {
-                if let Some(first_point) = self.first_point {
+                if let (Some(first_point), Some(current_point)) = (self.first_point, self.current_point) {
                     self.add_edge(
-                        self.current_point,
+                        current_point,
                         first_point,
                     );
                 }
@@ -165,18 +164,22 @@ impl Path {
             }
         }
 
-        let mut ws = WindState { count: 0, first_point: None, current_point: Point::new(0., 0.), x, y, on_edge: false};
+        let mut ws = WindState { count: 0, first_point: None, current_point: None, x, y, on_edge: false};
 
         for op in &flat_path.ops {
             match *op {
                 PathOp::MoveTo(pt) => {
                     ws.close();
-                    ws.current_point = pt;
+                    ws.current_point = Some(pt);
                     ws.first_point = Some(pt);
                 },
                 PathOp::LineTo(pt) => {
-                    ws.add_edge(ws.current_point, pt);
-                    ws.current_point = pt;
+                    if let Some(current_point) = ws.current_point {
+                        ws.add_edge(current_point, pt);
+                    } else {
+                        ws.first_point = Some(pt);
+                    }
+                    ws.current_point = Some(pt);
                 },
                 PathOp::QuadTo(..) |
                 PathOp::CubicTo(..) => panic!(),

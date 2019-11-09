@@ -663,4 +663,19 @@ mod tests {
             &options,
         );
     }
+
+    #[test]
+    fn arc_contains() {
+        let mut pb = PathBuilder::new();
+        pb.arc(50., 25., 10., 0., std::f32::consts::PI);
+        let path = pb.finish();
+        assert!(!path.contains_point(0.1, 50., 10.));
+        assert!(!path.contains_point(0.1, 50., 20.));
+        assert!(path.contains_point(0.1, 50., 30.));
+        assert!(!path.contains_point(0.1, 50., 40.));
+        assert!(!path.contains_point(0.1, 30., 20.));
+        assert!(!path.contains_point(0.1, 70., 20.));
+        assert!(!path.contains_point(0.1, 30., 30.));
+        assert!(!path.contains_point(0.1, 70., 30.));
+    }
 }
