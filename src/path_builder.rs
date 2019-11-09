@@ -277,6 +277,8 @@ impl PathBuilder {
             sweep_angle: Angle::radians(angle2),
             x_rotation: Angle::zero(),
         };
+        let start = a.from();
+        self.line_to(start.x, start.y);
         a.for_each_quadratic_bezier(&mut |q| {
             self.quad_to(q.ctrl.x, q.ctrl.y, q.to.x, q.to.y);
         });
