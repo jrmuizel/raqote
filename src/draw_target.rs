@@ -312,7 +312,7 @@ pub struct DrawTarget {
     width: i32,
     height: i32,
     rasterizer: Rasterizer,
-    current_point: Point,
+    current_point: Option<Point>,
     first_point: Option<Point>,
     buf: Vec<u32>,
     clip_stack: Vec<Clip>,
@@ -325,7 +325,7 @@ impl DrawTarget {
         DrawTarget {
             width,
             height,
-            current_point: Point::new(0., 0.),
+            current_point: None,
             first_point: None,
             rasterizer: Rasterizer::new(width, height),
             buf: vec![0; (width * height) as usize],
@@ -354,20 +354,32 @@ impl DrawTarget {
     }
 
     fn move_to(&mut self, pt: Point) {
-        self.current_point = pt;
+        self.current_point = Some(pt);
         self.first_point = Some(pt);
     }
 
     fn line_to(&mut self, pt: Point) {
-        self.rasterizer
-            .add_edge(self.current_point, pt, false, Point::new(0., 0.));
-        self.current_point = pt;
+        if self.current_point.is_none() {
+            self.current_point = Some(pt);
+            self.first_point = Some(pt);
+        }
+        if let Some(current_point) = self.current_point {
+            self.rasterizer
+                .add_edge(current_point, pt, false, Point::new(0., 0.));
+            self.current_point = Some(pt);
+        }
     }
 
     fn quad_to(&mut self, cpt: Point, pt: Point) {
-        let curve = [self.current_point, cpt, pt];
-        self.current_point = curve[2];
-        self.add_quad(curve);
+        if self.current_point.is_none() {
+            self.current_point = Some(cpt);
+            self.first_point = Some(cpt);
+        }
+        if let Some(current_point) = self.current_point {
+            let curve = [current_point, cpt, pt];
+            self.current_point = Some(curve[2]);
+            self.add_quad(curve);
+        }
     }
 
     fn add_quad(&mut self, mut curve: [Point; 3]) {
@@ -393,23 +405,29 @@ impl DrawTarget {
     }
 
     fn cubic_to(&mut self, cpt1: Point, cpt2: Point, pt: Point) {
-        let c = CubicBezierSegment {
-            from: self.current_point,
-            ctrl1: cpt1,
-            ctrl2: cpt2,
-            to: pt,
-        };
-        cubic_to_quadratics(&c, 0.01, &mut |q| {
-            let curve = [q.from, q.ctrl, q.to];
-            self.add_quad(curve);
-        });
-        self.current_point = pt;
+        if self.current_point.is_none() {
+            self.current_point = Some(cpt1);
+            self.first_point = Some(cpt1);
+        }
+        if let Some(current_point) = self.current_point {
+            let c = CubicBezierSegment {
+                from: current_point,
+                ctrl1: cpt1,
+                ctrl2: cpt2,
+                to: pt,
+            };
+            cubic_to_quadratics(&c, 0.01, &mut |q| {
+                let curve = [q.from, q.ctrl, q.to];
+                self.add_quad(curve);
+            });
+            self.current_point = Some(pt);
+        }
     }
 
     fn close(&mut self) {
-        if let Some(first_point) = self.first_point {
+        if let (Some(first_point), Some(current_point)) = (self.first_point, self.current_point) {
             self.rasterizer.add_edge(
-                self.current_point,
+                current_point,
                 first_point,
                 false,
                 Point::new(0., 0.),

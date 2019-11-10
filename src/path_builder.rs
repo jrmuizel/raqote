@@ -51,29 +51,34 @@ impl Path {
     /// commands with an appropriate number of LineTo commands
     /// so that the error is not greater than `tolerance`.
     pub fn flatten(&self, tolerance: f32) -> Path {
-        let mut cur_pt = Point::zero();
+        let mut cur_pt = None;
         let mut flattened = Path { ops: Vec::new(), winding: Winding::NonZero };
         for op in &self.ops {
             match *op {
                 PathOp::MoveTo(pt) | PathOp::LineTo(pt) => {
-                    cur_pt = pt;
+                    cur_pt = Some(pt);
                     flattened.ops.push(op.clone())
                 }
-                PathOp::Close => flattened.ops.push(op.clone()),
+                PathOp::Close => {
+                    cur_pt = None;
+                    flattened.ops.push(op.clone())
+                }
                 PathOp::QuadTo(cpt, pt) => {
+                    let start = cur_pt.unwrap_or(cpt);
                     let c = QuadraticBezierSegment {
-                        from: cur_pt,
+                        from: start,
                         ctrl: cpt,
                         to: pt,
                     };
                     for l in c.flattened(tolerance) {
                         flattened.ops.push(PathOp::LineTo(l));
                     }
-                    cur_pt = pt;
+                    cur_pt = Some(pt);
                 }
                 PathOp::CubicTo(cpt1, cpt2, pt) => {
+                    let start = cur_pt.unwrap_or(cpt1);
                     let c = CubicBezierSegment {
-                        from: cur_pt,
+                        from: start,
                         ctrl1: cpt1,
                         ctrl2: cpt2,
                         to: pt,
@@ -81,7 +86,7 @@ impl Path {
                     for l in c.flattened(tolerance) {
                         flattened.ops.push(PathOp::LineTo(l));
                     }
-                    cur_pt = pt;
+                    cur_pt = Some(pt);
                 }
             }
         }

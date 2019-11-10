@@ -7,9 +7,9 @@ use lyon_geom::LineSegment;
 pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path {
     let mut dashed = PathBuilder::new();
 
-    let mut cur_pt = Point::zero();
+    let mut cur_pt = None;
     let mut current_dash = 0;
-    let mut start_point = Point::zero();
+    let mut start_point = None;
 
     let mut total_dash_length = 0.;
     for dash in dash_array {
@@ -51,8 +51,8 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
     for op in &path.ops {
         match *op {
             PathOp::MoveTo(pt) => {
-                cur_pt = pt;
-                start_point = pt;
+                cur_pt = Some(pt);
+                start_point = Some(pt);
                 dashed.move_to(pt.x, pt.y);
 
                 // flush the previous initial segment
@@ -67,101 +67,106 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
                 first_dash = true;
             }
             PathOp::LineTo(pt) => {
-                let mut start = cur_pt;
-                let line = LineSegment {
-                    from: start,
-                    to: pt,
-                };
-                let mut len = line.length();
-                let lv = line.to_vector().normalize();
-                while len > remaining_dash_length {
-                    let seg = start + lv * remaining_dash_length;
-                    if dash_on {
-                        if is_first_segment {
-                            initial_segment.push(start);
-                            initial_segment.push(seg);
-                        } else {
-                            dashed.line_to(seg.x, seg.y);
-                        }
-                    } else {
-                        first_dash = false;
-                        dashed.move_to(seg.x, seg.y);
-                    }
-                    is_first_segment = false;
-                    dash_on = !dash_on;
-                    current_dash += 1;
-                    len -= remaining_dash_length;
-                    remaining_dash_length = dash_array[current_dash % dash_array.len()];
-                    start = seg;
-                }
-                if dash_on {
-                    if is_first_segment {
-                        initial_segment.push(start);
-                        initial_segment.push(pt);
-                    } else {
-                        dashed.line_to(pt.x, pt.y);
-                    }
-                } else {
-                    first_dash = false;
-                    dashed.move_to(pt.x, pt.y);
-                }
-                remaining_dash_length -= len;
-
-                cur_pt = pt;
-            }
-            PathOp::Close => {
-                let mut start = cur_pt;
-                let line = LineSegment {
-                    from: start,
-                    to: start_point,
-                };
-                let mut len = line.length();
-                let lv = line.to_vector().normalize();
-
-                while len > remaining_dash_length {
-                    let seg = start + lv * remaining_dash_length;
-                    if dash_on {
-                        if is_first_segment {
-                            initial_segment.push(start);
-                            initial_segment.push(seg);
-                        } else {
-                            dashed.line_to(seg.x, seg.y);
-                        }
-                    } else {
-                        first_dash = false;
-                        dashed.move_to(seg.x, seg.y);
-                    }
-                    dash_on = !dash_on;
-                    current_dash += 1;
-                    len -= remaining_dash_length;
-                    remaining_dash_length = dash_array[current_dash % dash_array.len()];
-                    start = seg;
-                }
-
-                if dash_on {
-                    if first_dash {
-                        // If we're still on the first dash we can just close
-                        dashed.close();
-                    } else {
-                        if initial_segment.len() > 0 {
-                            // If have an initial segment we'll need to connect with it
-                            for pt in initial_segment {
-                                dashed.line_to(pt.x, pt.y);
+                if let Some(cur_pt) = cur_pt {
+                    let mut start = cur_pt;
+                    let line = LineSegment {
+                        from: start,
+                        to: pt,
+                    };
+                    let mut len = line.length();
+                    let lv = line.to_vector().normalize();
+                    while len > remaining_dash_length {
+                        let seg = start + lv * remaining_dash_length;
+                        if dash_on {
+                            if is_first_segment {
+                                initial_segment.push(start);
+                                initial_segment.push(seg);
+                            } else {
+                                dashed.line_to(seg.x, seg.y);
                             }
                         } else {
-                            dashed.line_to(start_point.x, start_point.y);
+                            first_dash = false;
+                            dashed.move_to(seg.x, seg.y);
                         }
+                        is_first_segment = false;
+                        dash_on = !dash_on;
+                        current_dash += 1;
+                        len -= remaining_dash_length;
+                        remaining_dash_length = dash_array[current_dash % dash_array.len()];
+                        start = seg;
                     }
-                } else {
-                    if initial_segment.len() > 0 {
-                        dashed.move_to(initial_segment[0].x, initial_segment[0].y);
-                        for i in 1..initial_segment.len() {
-                            dashed.line_to(initial_segment[i].x, initial_segment[i].y);
+                    if dash_on {
+                        if is_first_segment {
+                            initial_segment.push(start);
+                            initial_segment.push(pt);
+                        } else {
+                            dashed.line_to(pt.x, pt.y);
                         }
+                    } else {
+                        first_dash = false;
+                        dashed.move_to(pt.x, pt.y);
                     }
+                    remaining_dash_length -= len;
                 }
-                initial_segment = Vec::new();
-                remaining_dash_length -= len;
+                cur_pt = Some(pt);
+            }
+            PathOp::Close => {
+                if let (Some(cur_pt), Some(start_point)) = (cur_pt, start_point) {
+                    let mut start = cur_pt;
+                    let line = LineSegment {
+                        from: start,
+                        to: start_point,
+                    };
+                    let mut len = line.length();
+                    let lv = line.to_vector().normalize();
+
+                    while len > remaining_dash_length {
+                        let seg = start + lv * remaining_dash_length;
+                        if dash_on {
+                            if is_first_segment {
+                                initial_segment.push(start);
+                                initial_segment.push(seg);
+                            } else {
+                                dashed.line_to(seg.x, seg.y);
+                            }
+                        } else {
+                            first_dash = false;
+                            dashed.move_to(seg.x, seg.y);
+                        }
+                        dash_on = !dash_on;
+                        current_dash += 1;
+                        len -= remaining_dash_length;
+                        remaining_dash_length = dash_array[current_dash % dash_array.len()];
+                        start = seg;
+                    }
+
+                    if dash_on {
+                        if first_dash {
+                            // If we're still on the first dash we can just close
+                            dashed.close();
+                        } else {
+                            if initial_segment.len() > 0 {
+                                // If have an initial segment we'll need to connect with it
+                                for pt in initial_segment {
+                                    dashed.line_to(pt.x, pt.y);
+                                }
+                            } else {
+                                dashed.line_to(start_point.x, start_point.y);
+                            }
+                        }
+                    } else {
+                        if initial_segment.len() > 0 {
+                            dashed.move_to(initial_segment[0].x, initial_segment[0].y);
+                            for i in 1..initial_segment.len() {
+                                dashed.line_to(initial_segment[i].x, initial_segment[i].y);
+                            }
+                        }
+                    }
+                    initial_segment = Vec::new();
+                    remaining_dash_length -= len;
+                } else {
+                    cur_pt = None;
+                }
             }
             PathOp::QuadTo(..) => panic!("Only flat paths handled"),
             PathOp::CubicTo(..) => panic!("Only flat paths handled"),
