@@ -217,25 +217,29 @@ pub enum Source<'a> {
 
 impl<'a> Source<'a> {
     /// Creates a new linear gradient source where the start point corresponds to the gradient
-    /// stop at position = 0 and the end point corresponds to the graident stop at position = 1.
+    /// stop at position = 0 and the end point corresponds to the gradient stop at position = 1.
     pub fn new_linear_gradient(gradient: Gradient, start: Point, end: Point, spread: Spread) -> Source<'a> {
         let gradient_vector = Vector::new(end.x - start.x, end.y - start.y);
         // Get length of desired gradient vector
         let length = gradient_vector.length();
-        let gradient_vector = gradient_vector.normalize();
+        if length != 0. {
+            let gradient_vector = gradient_vector.normalize();
 
-        let sin = gradient_vector.y;
-        let cos = gradient_vector.x;
-        // Build up a rotation matrix from our vector
-        let mat = Transform::row_major(cos, -sin, sin, cos, 0., 0.);
+            let sin = gradient_vector.y;
+            let cos = gradient_vector.x;
+            // Build up a rotation matrix from our vector
+            let mat = Transform::row_major(cos, -sin, sin, cos, 0., 0.);
 
-        // Adjust for the start point
-        let mat = mat.pre_translate(vec2(-start.x, -start.y));
+            // Adjust for the start point
+            let mat = mat.pre_translate(vec2(-start.x, -start.y));
 
-        // Scale gradient to desired length
-        let mat = mat.post_scale(1./length, 1./length);
-
-        Source::LinearGradient(gradient, spread, mat)
+            // Scale gradient to desired length
+            let mat = mat.post_scale(1. / length, 1. / length);
+            Source::LinearGradient(gradient, spread, mat)
+        } else {
+            // use some degenerate matrix
+            Source::LinearGradient(gradient, spread, Transform::create_scale(0., 0.))
+        }
     }
 
     /// Creates a new radial gradient that is centered at the given point and has the given radius.

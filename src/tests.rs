@@ -744,4 +744,26 @@ mod tests {
         assert!(!path.contains_point(0.1, 30., 30.));
         assert!(!path.contains_point(0.1, 70., 30.));
     }
+
+    #[test]
+    fn new_linear_gradient_zerosize() {
+        let source = Source::new_linear_gradient(
+            Gradient { stops: Vec::new() },
+            Point::new(42., 42.),
+            Point::new(42., 42.),
+            Spread::Pad,
+        );
+
+        match source {
+            Source::LinearGradient(_, _, transform) => {
+                assert_eq!(transform.m11, 0.);
+                assert_eq!(transform.m12, 0.);
+                assert_eq!(transform.m21, 0.);
+                assert_eq!(transform.m22, 0.);
+                assert_eq!(transform.m31, 0.);
+                assert_eq!(transform.m32, 0.);
+            },
+            _ => panic!("dead end"),
+        };
+    }
 }
