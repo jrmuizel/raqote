@@ -4,8 +4,8 @@ matrix:
     - name: "miri"
       rust: nightly
       script:
-        - rustup toolchain install nightly-2019-06-20
-        - rustup default nightly-2019-06-20
+        - rustup toolchain install nightly-2019-11-23
+        - rustup default nightly-2019-11-23
         - rustup component add miri
         - cargo miri setup
         - cargo miri test
