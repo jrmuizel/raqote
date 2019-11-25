@@ -700,8 +700,8 @@ impl DrawTarget {
             let bounds = font.raster_bounds(
                 *id,
                 point_size,
-                &fk::FontTransform::identity(),
-                position,
+                &fk::FontTransform::new(self.transform.m11, self.transform.m12, self.transform.m21, self.transform.m22),
+                &(self.transform.transform_point(*position)),
                 fk::HintingOptions::None,
                 fk::RasterizationOptions::GrayscaleAa,
             );
@@ -716,16 +716,19 @@ impl DrawTarget {
         /*let mut canvas = Canvas::new(&euclid::Size2D::new(combined_bounds.size.width as u32,
         combined_bounds.size.height as u32), Format::A8);*/
         let mut canvas = fk::Canvas::new(
-            &euclid::Size2D::new(self.width as u32, self.height as u32),
+            &euclid::Size2D::new(combined_bounds.size.width as u32, combined_bounds.size.height as u32),
             fk::Format::A8,
         );
         for (id, position) in ids.iter().zip(positions.iter()) {
+            let mut position = self.transform.transform_point(*position);
+            position.x -= combined_bounds.origin.x as f32;
+            position.y -= combined_bounds.origin.y as f32;
             font.rasterize_glyph(
                 &mut canvas,
                 *id,
                 point_size,
                 &fk::FontTransform::new(self.transform.m11, self.transform.m12, self.transform.m21, self.transform.m22),
-                &(self.transform.transform_point(*position)),
+                &position,
                 fk::HintingOptions::None,
                 fk::RasterizationOptions::GrayscaleAa,
             ).unwrap();
@@ -734,8 +737,8 @@ impl DrawTarget {
         self.composite(
             src,
             &canvas.pixels,
-            intrect(0, 0, self.width, self.height),
-            intrect(0, 0, canvas.size.width as i32, canvas.size.height as i32),
+            combined_bounds.to_box2d(),
+            combined_bounds.to_box2d(),
             options.blend_mode,
             1.,
         );
@@ -827,6 +830,8 @@ impl DrawTarget {
         blitter
     }
 
+    /// `mask_rect` is in DrawTarget space. i.e size is the size of the mask and origin is the position.
+    /// you can not render a part of the mask
     fn composite(&mut self, src: &Source, mask: &[u8], mask_rect: IntRect, mut rect: IntRect, blend: BlendMode, alpha: f32) {
         let ti = self.transform.inverse();
         let ti = if let Some(ti) = ti {
