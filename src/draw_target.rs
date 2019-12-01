@@ -301,6 +301,7 @@ struct Layer {
     buf: Vec<u32>,
     opacity: f32,
     rect: IntRect,
+    blend: BlendMode,
 }
 
 fn scaled_tolerance(x: f32, trans: &Transform) -> f32 {
@@ -522,11 +523,18 @@ impl DrawTarget {
     /// Pushes a new layer as the drawing target. This is used for implementing
     /// group opacity effects.
     pub fn push_layer(&mut self, opacity: f32) {
+        self.push_layer_with_blend(opacity, BlendMode::SrcOver)
+    }
+
+    /// Pushes a new layer as the drawing target. This is used for implementing
+    /// group opacity or blend effects.
+    pub fn push_layer_with_blend(&mut self, opacity: f32, blend: BlendMode) {
         let rect = self.clip_bounds();
         self.layer_stack.push(Layer {
             rect,
             buf: vec![0; (rect.size().width * rect.size().height) as usize],
             opacity,
+            blend
         });
     }
 
@@ -550,7 +558,7 @@ impl DrawTarget {
                                   FilterMode::Nearest,
                                   Transform::create_translation(-layer.rect.min.x as f32,
                                                                 -layer.rect.min.y as f32));
-        self.composite(&image, &mask, intrect(0, 0, self.width, self.height), layer.rect, BlendMode::SrcOver, 1.);
+        self.composite(&image, &mask, intrect(0, 0, self.width, self.height), layer.rect, layer.blend, 1.);
         self.transform = ctm;
     }
 
