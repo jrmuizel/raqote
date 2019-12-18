@@ -60,7 +60,7 @@ impl RasterBlitter for MaskSuperBlitter {
         x2 -= self.x;
         x2 = x2.min(self.width * SCALE);
         let max: u8 = ((1 << (8 - SHIFT)) - (((y & MASK) + 1) >> SHIFT)) as u8;
-        let mut b: *mut u8 = &mut self.buf[(y / 4 * self.width + (x1 >> SHIFT)) as usize];
+        let mut b = &mut self.buf[(y / 4 * self.width + (x1 >> SHIFT)) as usize..];
 
         let mut fb = x1 & SUPER_MASK;
         let fe = x2 & SUPER_MASK;
@@ -68,20 +68,18 @@ impl RasterBlitter for MaskSuperBlitter {
 
         // invert the alpha on the left side
         if n < 0 {
-            unsafe { *b = saturated_add(*b, coverage_to_partial_alpha(fe - fb)) };
+            b[0] = saturated_add(b[0], coverage_to_partial_alpha(fe - fb));
         } else {
             fb = (1 << SHIFT) - fb;
-            unsafe { *b = saturated_add(*b, coverage_to_partial_alpha(fb)) };
-            unsafe {
-                b = b.offset(1);
-            };
+            b[0] = saturated_add(b[0], coverage_to_partial_alpha(fb));
+            b = &mut b[1..];
             while n != 0 {
-                unsafe { *b += max };
-                unsafe { b = b.offset(1) };
+                b[0] += max;
+                b = &mut b[1..];
 
                 n -= 1;
             }
-            unsafe { *b = saturated_add(*b, coverage_to_partial_alpha(fe)) };
+            b[0] = saturated_add(b[0], coverage_to_partial_alpha(fe));
         }
     }
 }
