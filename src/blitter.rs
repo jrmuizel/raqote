@@ -60,28 +60,26 @@ impl RasterBlitter for MaskSuperBlitter {
         x2 -= self.x;
         x2 = x2.min(self.width * SCALE);
         let max: u8 = ((1 << (8 - SHIFT)) - (((y & MASK) + 1) >> SHIFT)) as u8;
-        let mut b: *mut u8 = &mut self.buf[(y / 4 * self.width + (x1 >> SHIFT)) as usize];
+        let start = (y / 4 * self.width) as usize;
 
         let mut fb = x1 & SUPER_MASK;
         let fe = x2 & SUPER_MASK;
-        let mut n = (x2 >> SHIFT) - (x1 >> SHIFT) - 1;
+        let b = &mut self.buf[start + (x1 >> SHIFT) as usize..start + (x2 >> SHIFT) as usize + 1];
+        let len = b.len();
 
         // invert the alpha on the left side
-        if n < 0 {
-            unsafe { *b = saturated_add(*b, coverage_to_partial_alpha(fe - fb)) };
+        if len == 0 {
+        } else if len == 1 {
+            b[0] = saturated_add(b[0], coverage_to_partial_alpha(fe - fb));
         } else {
             fb = (1 << SHIFT) - fb;
-            unsafe { *b = saturated_add(*b, coverage_to_partial_alpha(fb)) };
-            unsafe {
-                b = b.offset(1);
-            };
-            while n != 0 {
-                unsafe { *b += max };
-                unsafe { b = b.offset(1) };
+            b[0] = saturated_add(b[0], coverage_to_partial_alpha(fb));
 
-                n -= 1;
+            // Rust seems to emit bounds checks here when it should be able to avoid them
+            for i in &mut b[1..len-1] {
+                *i += max;
             }
-            unsafe { *b = saturated_add(*b, coverage_to_partial_alpha(fe)) };
+            b[len-1] = saturated_add(b[len-1], coverage_to_partial_alpha(fe));
         }
     }
 }
