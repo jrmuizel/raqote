@@ -22,7 +22,7 @@ Planned functionality
 
 ### Notable users
 - [resvg](https://github.com/RazrFalcon/resvg) supports using raqote as a backend.
-- [Servo](https://github.com/servo/servo) can use raqote as a canvas backend.
+- [Servo](https://github.com/servo/servo) uses raqote as its canvas backend.
 - [orbtk](https://gitlab.redox-os.org/redox-os/orbtk/tree/master/crates/render) uses raqote.
 
 Example:
