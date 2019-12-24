@@ -582,10 +582,12 @@ impl Rasterizer {
 		self.height = height*4;
 
 		let height_u = self.height as usize;
+		//cut off the exceed elements as the height decreased
 		if height_u < self.edge_starts.len(){
 			self.edge_starts.truncate(height_u);
 		}
 		else if height_u > self.edge_starts.len(){
+			//get the number of elements which need to be added to reach the new length
 			let rem = height_u - self.edge_starts.len();
 			for _ in 0..rem{
 				self.edge_starts.push(None);
