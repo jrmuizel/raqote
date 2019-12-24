@@ -574,6 +574,25 @@ impl Rasterizer {
                 self.bounds_bottom.min(self.height >> SAMPLE_SHIFT))
     }
 
+	pub(crate) fn resize(&mut self, width: i32, height: i32){
+		self.reset();
+		self.bounds_top = height;
+		self.bounds_left = width;
+		self.width = width*4;
+		self.height = height*4;
+
+		let height_u = self.height as usize;
+		if height_u < self.edge_starts.len(){
+			self.edge_starts.truncate(height_u);
+		}
+		else if height_u > self.edge_starts.len(){
+			let rem = height_u - self.edge_starts.len();
+			for _ in 0..rem{
+				self.edge_starts.push(None);
+			}
+		}
+	}
+
     pub fn reset(&mut self) {
         self.active_edges = None;
         for e in &mut self.edge_starts {
