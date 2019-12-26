@@ -340,14 +340,6 @@ impl DrawTarget {
         }
     }
 
-	pub fn resize(&mut self, width: i32, height: i32){
-		self.width = width;
-		self.height = height;
-		self.buf.resize((width * height) as usize, 0u32);
-		self.rasterizer.resize(width, height);
-		self.close();
-	}
-
     pub fn width(&self) -> i32 {
         self.width
     }

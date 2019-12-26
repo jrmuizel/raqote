@@ -574,6 +574,7 @@ impl Rasterizer {
                 self.bounds_bottom.min(self.height >> SAMPLE_SHIFT))
     }
 
+<<<<<<< HEAD
 	pub(crate) fn resize(&mut self, width: i32, height: i32){
 		self.reset();
 		self.bounds_top = height;
@@ -595,6 +596,8 @@ impl Rasterizer {
 		}
 	}
 
+=======
+>>>>>>> parent of 224f420... Added resize fn to DrawTarget to continue using the canvas dropping the previous memory
     pub fn reset(&mut self) {
         self.active_edges = None;
         for e in &mut self.edge_starts {
