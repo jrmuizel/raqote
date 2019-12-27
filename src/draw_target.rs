@@ -947,6 +947,16 @@ impl DrawTarget {
         &mut self.buf
     }
 
+    /// Returns a reference to the underlying pixel data as individual bytes with the order BGRA
+    /// on little endian.
+    pub fn get_data_u8(&self) -> &[u8] {
+        let p = self.buf[..].as_ptr();
+        let len = self.buf[..].len();
+        // we want to return an [u8] slice instead of a [u32] slice. This is a safe thing to
+        // do because requirements of a [u32] slice are stricter.
+        unsafe { std::slice::from_raw_parts(p as *const u8, len * std::mem::size_of::<u32>()) }
+    }
+
     /// Returns a mut reference to the underlying pixel data as individual bytes with the order BGRA
     /// on little endian.
     pub fn get_data_u8_mut(&mut self) -> &mut [u8] {
