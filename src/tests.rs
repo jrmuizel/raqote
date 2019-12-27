@@ -763,4 +763,16 @@ mod tests {
             _ => panic!("dead end"),
         };
     }
+
+    #[test]
+    fn blend_surface_with_negative_offset() {
+            let mut dt1 = crate::DrawTarget::new(3, 3);
+            let dt2 = crate::DrawTarget::new(3, 3);
+            dt1.blend_surface_with_alpha(
+                &dt2,
+                crate::IntRect::new(crate::IntPoint::new(-1, -1), crate::IntPoint::new(2, 2)),
+                crate::IntPoint::new(2, 2),
+                1.0,
+            );
+    }
 }

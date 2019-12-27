@@ -889,6 +889,10 @@ impl DrawTarget {
     /// Draws `src_rect` of `src` at `dst`. The current transform and clip are ignored
     pub fn composite_surface<F: Fn(&[u32], &mut [u32])>(&mut self, src: &DrawTarget, src_rect: IntRect, dst: IntPoint, f: F) {
         let dst_rect = intrect(0, 0, self.width, self.height);
+
+        // intersect the src_rect with the source size so that we don't go out of bounds
+        let src_rect = src_rect.intersection(&intrect(0, 0, src.width, src.height));
+
         let src_rect = dst_rect
             .intersection(&src_rect.translate(dst.to_vector())).translate(-dst.to_vector());
 
@@ -909,15 +913,17 @@ impl DrawTarget {
         }
     }
 
-    /// Draws `src_rect` of `src` at `dst`. The current transform and clip are ignored
+    /// Draws `src_rect` of `src` at `dst`. The current transform and clip are ignored.
+    /// `src_rect` is clamped to (0, 0, src.width, src.height).
     pub fn copy_surface(&mut self, src: &DrawTarget, src_rect: IntRect, dst: IntPoint) {
         self.composite_surface(src, src_rect, dst, |src, dst| {
             dst.copy_from_slice(src)
         })
     }
 
-    /// Blends `src_rect` of `src` at `dst`. The current transform and clip are ignored using
-    /// `blend` mode.
+    /// Blends `src_rect` of `src` at `dst`using `blend` mode.
+    /// The current transform and clip are ignored.
+    /// `src_rect` is clamped to (0, 0, `src.width`, `src.height`).
     pub fn blend_surface(&mut self, src: &DrawTarget, src_rect: IntRect, dst: IntPoint, blend: BlendMode) {
         let blend_fn = build_blend_proc::<BlendRow>(blend);
         self.composite_surface(src, src_rect, dst, |src, dst| {
@@ -925,7 +931,8 @@ impl DrawTarget {
         });
     }
 
-    /// Blends `src_rect` of `src` at `dst` using `alpha`. The current transform and clip are ignored
+    /// Blends `src_rect` of `src` at `dst` using `alpha`. The current transform and clip are ignored.
+    /// `src_rect` is clamped to (0, 0, `src.width`, `src.height`).
     pub fn blend_surface_with_alpha(&mut self, src: &DrawTarget, src_rect: IntRect, dst: IntPoint, alpha: f32) {
         let alpha = (alpha * 255. + 0.5) as u8;
 
