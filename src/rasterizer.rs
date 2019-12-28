@@ -46,6 +46,24 @@ fn div_fixed16_fixed16(a: i32, b: i32) -> i32 {
     (((a as i64) << 16) / (b as i64)) as i32
 }
 
+// Fixed point representation:
+// We use 30.2 for the end points and 16.16 for the intermediate
+// results. I believe this essentially limits us to a 16.16 space.
+//
+// Prior Work:
+// - Cairo used to be 16.16 but switched to 24.8. Cairo converts paths
+//   early to this fixed representation
+// - Fitz uses different precision depending on the AA settings
+//   and uses the following Bresenham style adjustment in its step function
+//   to avoid having to worry about intermediate precision
+//       edge->x += edge->xmove;
+//       edge->e += edge->adj_up;
+//       if (edge->e > 0) {
+//           edge->x += edge->xdir;
+//           edge->e -= edge->adj_down;
+//       }
+
+
 // it is possible to fit this into 64 bytes on x86-64
 // with the following layout:
 //
@@ -60,8 +78,8 @@ fn div_fixed16_fixed16(a: i32, b: i32) -> i32 {
 //
 // some example counts 5704 curves, 1720 lines 7422 edges
 pub struct ActiveEdge {
-    x2: i32,
-    y2: i32,
+    x2: i32, // 30.2
+    y2: i32, // 30.2
     next: Option<NonNull<ActiveEdge>>,
     slope_x: i32,
     fullx: i32, // 16.16
