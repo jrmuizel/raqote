@@ -348,20 +348,20 @@ impl DrawTarget {
         self.height
     }
 
-	/// Use a previously used vector for the bitmap and extend it to the given size(if needed)
-	pub fn from_vec(width: i32, height: i32, mut vec: Vec<u32>) -> DrawTarget{
-		vec.resize((width*height) as usize, 0);
-		DrawTarget {
-			width,
-			height,
-			current_point: None,
-			first_point: None,
-			rasterizer: Rasterizer::new(width, height),
-			buf: vec,
-			clip_stack: Vec::new(),
-			layer_stack: Vec::new(),
-			transform: Transform::identity()
-	}
+    /// Use a previously used vector for the bitmap and extend it to the given size(if needed)
+    pub fn from_vec(width: i32, height: i32, mut vec: Vec<u32>) -> DrawTarget{
+        vec.resize((width*height) as usize, 0);
+        DrawTarget {
+            width,
+            height,
+            current_point: None,
+            first_point: None,
+            rasterizer: Rasterizer::new(width, height),
+            buf: vec,
+            clip_stack: Vec::new(),
+            layer_stack: Vec::new(),
+            transform: Transform::identity()
+    }
 }
 
     /// sets a transform that will be applied to all drawing operations
