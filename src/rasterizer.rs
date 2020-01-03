@@ -249,7 +249,7 @@ fn compute_curve_steps(e: &Edge) -> i32 {
     return shift;
 }
 
-const SAMPLE_SIZE: f32 = 4.;
+const SAMPLE_SIZE: f32 = (1 << SAMPLE_SHIFT) as f32;
 const SAMPLE_SHIFT: i32 = 2;
 
 /*  We store 1<<shift in a (signed) byte, so its maximum value is 1<<6 == 64.
