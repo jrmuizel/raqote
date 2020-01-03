@@ -21,7 +21,7 @@ pub struct MaskSuperBlitter {
     pub buf: Vec<u8>,
 }
 
-const SHIFT: i32 = 2;
+const SHIFT: i32 = crate::rasterizer::SAMPLE_SHIFT;
 const SCALE: i32 = (1 << SHIFT);
 const MASK: i32 = (SCALE - 1);
 const SUPER_MASK: i32 = ((1 << SHIFT) - 1);
