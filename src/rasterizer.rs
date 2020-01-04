@@ -135,9 +135,9 @@ impl ActiveEdge {
                 self.fullx = self.next_x;
                 // increment until we have a next_y that's greater
                 while self.count > 0 && (cury >= (self.next_y >> (16 - SAMPLE_SHIFT))) {
-                    self.next_x += self.dx >> self.shift;
+                    self.next_x = self.next_x.saturating_add(self.dx >> self.shift);
                     self.dx += self.ddx;
-                    self.next_y += self.dy >> self.shift;
+                    self.next_y = self.next_y.saturating_add(self.dy >> self.shift);
                     self.dy += self.ddy;
                     self.count -= 1;
                 }
@@ -150,14 +150,15 @@ impl ActiveEdge {
                 // update slope if we're going to be using it
                 // we want to avoid dividing by 0 which can happen if we exited the loop above early
                 if (cury + 1) < self.y2 {
-                    self.slope_x = div_fixed16_fixed16(self.next_x - self.old_x, self.next_y - self.old_y) >> 2;
+                    self.slope_x = div_fixed16_fixed16(self.next_x.saturating_sub(self.old_x),
+                                                       self.next_y.saturating_sub(self.old_y)) >> 2;
                 }
             }
-            self.fullx += self.slope_x;
+            self.fullx = self.fullx.saturating_add(self.slope_x);
         } else {
             // XXX: look into bresenham to control error here
 
-            self.fullx += self.slope_x;
+            self.fullx = self.fullx.saturating_add(self.slope_x);
         }
         //cury += 1;
     }
