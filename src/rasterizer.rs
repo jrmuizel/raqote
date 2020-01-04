@@ -224,16 +224,13 @@ fn cheap_distance(mut dx: i32, mut dy: i32) -> i32 {
 }
 
 fn diff_to_shift(dx: i32, dy: i32) -> i32 {
-    //printf("diff_to_shift: %d %d\n", dx, dy);
     // cheap calc of distance from center of p0-p2 to the center of the curve
     let mut dist = cheap_distance(dx, dy);
 
-    //printf("dist: %d\n", dist);
     // shift down dist (it is currently in dot6)
     // down by 5 should give us 1/2 pixel accuracy (assuming our dist is accurate...)
     // this is chosen by heuristic: make it as big as possible (to minimize segments)
     // ... but small enough so that our curves still look smooth
-    //printf("%d dist\n", dist);
     dist = (dist + (1 << 4)) >> 5;
 
     // each subdivision (shift value) cuts this dist (error) by 1/4
