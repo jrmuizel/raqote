@@ -14,9 +14,9 @@ categories = ["graphics"]
 [dependencies]
 euclid = "0.20"
 font-kit = { version = "0.5", optional = true }
-lyon_geom = "0.14"
+lyon_geom = "0.15"
 png = "0.15"
-typed-arena = "1.4.1"
+typed-arena = "2.0"
 sw-composite = "0.7.2"
 
 [features]
