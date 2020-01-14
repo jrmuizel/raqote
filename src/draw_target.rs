@@ -454,7 +454,7 @@ impl DrawTarget {
                 Point::new(0., 0.),
             );
         }
-        self.first_point = None;
+        self.current_point = self.first_point;
     }
 
     fn apply_path(&mut self, path: &Path) {

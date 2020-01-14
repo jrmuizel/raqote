@@ -775,4 +775,55 @@ mod tests {
                 1.0,
             );
     }
+
+    #[test]
+    fn close_sets_current_point() {
+        let mut dt = crate::DrawTarget::new(3, 3);
+        let mut pb = PathBuilder::new();
+        pb.rect(10., 10., 100., 100.);
+        pb.line_to(-10., -10.);
+        let path = pb.finish();
+        dt.stroke(
+            &path,
+            &Source::Solid(SolidSource {
+                r: 0xff,
+                g: 0xff,
+                b: 0xff,
+                a: 0xff,
+            }),
+            &StrokeStyle {
+                width: 5.,
+                ..Default::default()
+            },
+            &DrawOptions::new(),
+        );
+        let white = 0xffffffff;
+        assert_eq!(
+            dt.get_data(),
+            &vec![white, white, white, white, white, white, white, white, white][..]
+        );
+
+        // make sure we get the same behaviour when dashing
+        let mut dt = crate::DrawTarget::new(3, 3);
+        dt.stroke(
+            &path,
+            &Source::Solid(SolidSource {
+                r: 0xff,
+                g: 0xff,
+                b: 0xff,
+                a: 0xff,
+            }),
+            &StrokeStyle {
+                width: 5.,
+                dash_array: vec![1000., 10.],
+                ..Default::default()
+            },
+            &DrawOptions::new(),
+        );
+        let white = 0xffffffff;
+        assert_eq!(
+            dt.get_data(),
+            &vec![white, white, white, white, white, white, white, white, white][..]
+        );
+    }
 }

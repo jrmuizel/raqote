@@ -363,6 +363,7 @@ pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
                         join_line(&mut stroked_path, style, end_point, last_normal, start_normal);
                     }
                 }
+                cur_pt = start_point.map(|x| x.0);
             }
             PathOp::QuadTo(..) => panic!("Only flat paths handled"),
             PathOp::CubicTo(..) => panic!("Only flat paths handled"),

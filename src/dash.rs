@@ -111,8 +111,8 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
                 cur_pt = Some(pt);
             }
             PathOp::Close => {
-                if let (Some(cur_pt), Some(start_point)) = (cur_pt, start_point) {
-                    let mut start = cur_pt;
+                if let (Some(current), Some(start_point)) = (cur_pt, start_point) {
+                    let mut start = current;
                     let line = LineSegment {
                         from: start,
                         to: start_point,
@@ -164,6 +164,7 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
                     }
                     initial_segment = Vec::new();
                     remaining_dash_length -= len;
+                    cur_pt = Some(start_point);
                 } else {
                     cur_pt = None;
                 }
