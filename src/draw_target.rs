@@ -696,7 +696,7 @@ impl DrawTarget {
             let id = font.glyph_for_char(c).unwrap();
             ids.push(id);
             positions.push(start);
-            start += font.advance(id).unwrap() / 96.;
+            start += font.advance(id).unwrap() * point_size / 24. / 96.;
         }
         self.draw_glyphs(font, point_size, &ids, &positions, src, options);
     }
