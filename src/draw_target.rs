@@ -937,9 +937,7 @@ impl DrawTarget {
         let alpha = (alpha * 255. + 0.5) as u8;
 
         self.composite_surface(src, src_rect, dst, |src, dst| {
-            for (dst, src) in dst.iter_mut().zip(src) {
-                *dst = over_in(*src, *dst, alpha as u32);
-            }
+            over_in_row(src, dst, alpha as u32);
         });
     }
 
