@@ -581,15 +581,12 @@ impl DrawTarget {
     /// Draws an image at (x, y) with the size (width, height). This will rescale the image to the
     /// destination size.
     pub fn draw_image_with_size_at(&mut self, width: f32, height: f32, x: f32, y: f32, image: &Image, options: &DrawOptions) {
-
-        let mut pb = PathBuilder::new();
-        pb.rect(x, y, width, height);
         let source = Source::Image(*image,
                                    ExtendMode::Pad,
                                    FilterMode::Bilinear,
                                    Transform::create_translation(-x, -y).post_scale(image.width as f32 / width, image.height as f32 / height));
 
-        self.fill(&pb.finish(), &source, options);
+        self.fill_rect(x, y, width, height, &source, options);
     }
 
     /// Draws an image at x, y
@@ -620,6 +617,13 @@ impl DrawTarget {
         }
         let stroked = stroke_to_path(&path, style);
         self.fill(&stroked, src, options);
+    }
+
+    /// Fills the rect `x`, `y,`, `width`, `height` with `src`
+    pub fn fill_rect(&mut self, x: f32, y: f32, width: f32, height: f32, src: &Source, options: &DrawOptions) {
+        let mut pb = PathBuilder::new();
+        pb.rect(x, y, width, height);
+        self.fill(&pb.finish(), src, options);
     }
 
     /// Fills `path` with `src`
