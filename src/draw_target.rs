@@ -574,7 +574,7 @@ impl DrawTarget {
                                   FilterMode::Nearest,
                                   Transform::create_translation(-layer.rect.min.x as f32,
                                                                 -layer.rect.min.y as f32));
-        self.composite(&image, &mask, intrect(0, 0, self.width, self.height), layer.rect, layer.blend, 1.);
+        self.composite(&image, Some(&mask), intrect(0, 0, self.width, self.height), layer.rect, layer.blend, 1.);
         self.transform = ctm;
     }
 
@@ -596,7 +596,7 @@ impl DrawTarget {
 
     /// Draws `src` through an untransformed `mask` positioned at `x`, `y` in device space
     pub fn mask(&mut self, src: &Source, x: i32, y: i32, mask: &Mask) {
-        self.composite(src, &mask.data, intrect(x, y, mask.width, mask.height), intrect(x, y, mask.width, mask.height), BlendMode::SrcOver, 1.);
+        self.composite(src, Some(&mask.data), intrect(x, y, mask.width, mask.height), intrect(x, y, mask.width, mask.height), BlendMode::SrcOver, 1.);
     }
 
     /// Strokes `path` with `style` and fills the result with `src`
@@ -621,9 +621,26 @@ impl DrawTarget {
 
     /// Fills the rect `x`, `y,`, `width`, `height` with `src`
     pub fn fill_rect(&mut self, x: f32, y: f32, width: f32, height: f32, src: &Source, options: &DrawOptions) {
-        let mut pb = PathBuilder::new();
-        pb.rect(x, y, width, height);
-        self.fill(&pb.finish(), src, options);
+        let ix = x as i32;
+        let iy = y as i32;
+        let iwidth = width as i32;
+        let iheight = height as i32;
+        let integer_rect = ix as f32 == x        && iy as f32 == y &&
+                                iwidth as f32 == width && iheight as f32 == height;
+
+        if self.transform == Transform::identity() && integer_rect && self.clip_stack.is_empty() {
+            let bounds = intrect(0, 0, self.width, self.height);
+            let mut irect = intrect(ix, iy, ix + iwidth, iy + iheight);
+            irect = irect.intersection(&bounds);
+            if irect.is_negative() {
+                return;
+            }
+            self.composite(src, None, irect, irect, options.blend_mode, options.alpha);
+        } else {
+            let mut pb = PathBuilder::new();
+            pb.rect(x, y, width, height);
+            self.fill(&pb.finish(), src, options);
+        }
     }
 
     /// Fills `path` with `src`
@@ -636,7 +653,7 @@ impl DrawTarget {
                 self.rasterizer.rasterize(&mut blitter, path.winding);
                 self.composite(
                     src,
-                    &blitter.buf,
+                    Some(&blitter.buf),
                     bounds,
                     bounds,
                     options.blend_mode,
@@ -648,7 +665,7 @@ impl DrawTarget {
                 self.rasterizer.rasterize(&mut blitter, path.winding);
                 self.composite(
                     src,
-                    &blitter.buf,
+                    Some(&blitter.buf),
                     bounds,
                     bounds,
                     options.blend_mode,
@@ -756,7 +773,7 @@ impl DrawTarget {
 
         self.composite(
             src,
-            &canvas.pixels,
+            Some(&canvas.pixels),
             combined_bounds.to_box2d(),
             combined_bounds.to_box2d(),
             options.blend_mode,
@@ -767,16 +784,16 @@ impl DrawTarget {
 
 
 
-    fn choose_blitter<'a, 'b, 'c>(clip_stack: &'a Vec<Clip>, blitter_storage: &'b mut ShaderBlitterStorage<'a>, shader: &'a dyn Shader, blend: BlendMode, dest: &'a mut [u32], dest_bounds: IntRect, width: i32) -> &'b mut dyn Blitter {
+    fn choose_blitter<'a, 'b, 'c>(mask: Option<&[u8]>, clip_stack: &'a Vec<Clip>, blitter_storage: &'b mut ShaderBlitterStorage<'a>, shader: &'a dyn Shader, blend: BlendMode, dest: &'a mut [u32], dest_bounds: IntRect, width: i32) -> &'b mut dyn Blitter {
         let blitter: &mut dyn Blitter;
 
-        if blend == BlendMode::SrcOver {
-            match clip_stack.last() {
-                Some(Clip {
-                         rect: _,
-                         mask: Some(clip),
-                     }) => {
-                    let scb = ShaderClipBlitter {
+        match (mask, clip_stack.last()) {
+            (Some(_mask), Some(Clip {
+                        rect: _,
+                        mask: Some(clip),
+                    })) => {
+                if blend == BlendMode::SrcOver {
+                    let scb = ShaderClipMaskBlitter {
                         x: dest_bounds.min.x,
                         y: dest_bounds.min.y,
                         shader: shader,
@@ -786,31 +803,11 @@ impl DrawTarget {
                         clip,
                         clip_stride: width,
                     };
-                    *blitter_storage = ShaderBlitterStorage::ShaderClipBlitter(scb);
-                    blitter = match blitter_storage { ShaderBlitterStorage::ShaderClipBlitter(s) => s, _ => panic!() };
-                }
-                _ => {
-                    let sb = ShaderBlitter {
-                        x: dest_bounds.min.x,
-                        y: dest_bounds.min.y,
-                        shader: &*shader,
-                        tmp: vec![0; width as usize],
-                        dest,
-                        dest_stride: dest_bounds.size().width,
-                    };
-                    *blitter_storage = ShaderBlitterStorage::ShaderBlitter(sb);
-                    blitter = match blitter_storage { ShaderBlitterStorage::ShaderBlitter(s) => s, _ => panic!() };
-                }
-            }
-        } else {
-
-            match clip_stack.last() {
-                Some(Clip {
-                         rect: _,
-                         mask: Some(clip),
-                     }) => {
+                    *blitter_storage = ShaderBlitterStorage::ShaderClipMaskBlitter(scb);
+                    blitter = match blitter_storage { ShaderBlitterStorage::ShaderClipMaskBlitter(s) => s, _ => panic!() };
+                } else {
                     let blend_fn = build_blend_proc::<BlendRowMaskClip>(blend);
-                    let scb_blend = ShaderClipBlendBlitter {
+                    let scb_blend = ShaderClipBlendMaskBlitter {
                         x: dest_bounds.min.x,
                         y: dest_bounds.min.y,
                         shader: shader,
@@ -822,15 +819,28 @@ impl DrawTarget {
                         blend_fn
                     };
 
-                    *blitter_storage = ShaderBlitterStorage::ShaderClipBlendBlitter(scb_blend);
+                    *blitter_storage = ShaderBlitterStorage::ShaderClipBlendMaskBlitter(scb_blend);
                     blitter = match blitter_storage {
-                        ShaderBlitterStorage::ShaderClipBlendBlitter(s) => s,
+                        ShaderBlitterStorage::ShaderClipBlendMaskBlitter(s) => s,
                         _ => panic!()
                     };
                 }
-                _ => {
+            }
+            (Some(_mask), _) => {
+                if blend == BlendMode::SrcOver {
+                    let sb = ShaderMaskBlitter {
+                        x: dest_bounds.min.x,
+                        y: dest_bounds.min.y,
+                        shader: &*shader,
+                        tmp: vec![0; width as usize],
+                        dest,
+                        dest_stride: dest_bounds.size().width,
+                    };
+                    *blitter_storage = ShaderBlitterStorage::ShaderMaskBlitter(sb);
+                    blitter = match blitter_storage { ShaderBlitterStorage::ShaderMaskBlitter(s) => s, _ => panic!() };
+                } else {
                     let blend_fn = build_blend_proc::<BlendRowMask>(blend);
-                    let sb_blend = ShaderBlendBlitter {
+                    let sb_blend = ShaderBlendMaskBlitter {
                         x: dest_bounds.min.x,
                         y: dest_bounds.min.y,
                         shader: &*shader,
@@ -839,12 +849,29 @@ impl DrawTarget {
                         dest_stride: dest_bounds.size().width,
                         blend_fn,
                     };
-                    *blitter_storage = ShaderBlitterStorage::ShaderBlendBlitter(sb_blend);
+                    *blitter_storage = ShaderBlitterStorage::ShaderBlendMaskBlitter(sb_blend);
                     blitter = match blitter_storage {
-                        ShaderBlitterStorage::ShaderBlendBlitter(s) => s,
+                        ShaderBlitterStorage::ShaderBlendMaskBlitter(s) => s,
                         _ => panic!()
                     };
                 }
+            }
+            (None, _) => {
+                let blend_fn = build_blend_proc::<BlendRow>(blend);
+                let sb_blend = ShaderBlendBlitter {
+                    x: dest_bounds.min.x,
+                    y: dest_bounds.min.y,
+                    shader: &*shader,
+                    tmp: vec![0; width as usize],
+                    dest,
+                    dest_stride: dest_bounds.size().width,
+                    blend_fn,
+                };
+                *blitter_storage = ShaderBlitterStorage::ShaderBlendBlitter(sb_blend);
+                blitter = match blitter_storage {
+                    ShaderBlitterStorage::ShaderBlendBlitter(s) => s,
+                    _ => panic!()
+                };
             }
         }
         blitter
@@ -852,7 +879,7 @@ impl DrawTarget {
 
     /// `mask_rect` is in DrawTarget space. i.e size is the size of the mask and origin is the position.
     /// you can not render a part of the mask
-    fn composite(&mut self, src: &Source, mask: &[u8], mask_rect: IntRect, mut rect: IntRect, blend: BlendMode, alpha: f32) {
+    fn composite(&mut self, src: &Source, mask: Option<&[u8]>, mask_rect: IntRect, mut rect: IntRect, blend: BlendMode, alpha: f32) {
         let ti = self.transform.inverse();
         let ti = if let Some(ti) = ti {
             ti
@@ -880,14 +907,24 @@ impl DrawTarget {
         let shader = choose_shader(&ti, src, alpha, &mut shader_storage);
 
         let mut blitter_storage: ShaderBlitterStorage = ShaderBlitterStorage::None;
-        let blitter = DrawTarget::choose_blitter(&self.clip_stack, &mut blitter_storage, shader, blend, dest, dest_bounds, self.width);
+        let blitter = DrawTarget::choose_blitter(mask, &self.clip_stack, &mut blitter_storage, shader, blend, dest, dest_bounds, self.width);
 
-        for y in rect.min.y..rect.max.y {
-            let mask_row = (y - mask_rect.min.y) * mask_rect.size().width;
-            let mask_start = (mask_row + rect.min.x - mask_rect.min.x) as usize;
-            let mask_end = (mask_row + rect.max.x - mask_rect.min.x) as usize;
-            blitter.blit_span(y, rect.min.x, rect.max.x, &mask[mask_start..mask_end]);
-        }
+        match mask {
+            Some(mask) => {
+                for y in rect.min.y..rect.max.y {
+                    let mask_row = (y - mask_rect.min.y) * mask_rect.size().width;
+                    let mask_start = (mask_row + rect.min.x - mask_rect.min.x) as usize;
+                    let mask_end = (mask_row + rect.max.x - mask_rect.min.x) as usize;
+                    blitter.blit_span(y, rect.min.x, rect.max.x, &mask[mask_start..mask_end]);
+                }
+            }
+            None => {
+                for y in rect.min.y..rect.max.y {
+                    let empty_mask = [];
+                    blitter.blit_span(y, rect.min.x, rect.max.x, &empty_mask[..]);
+                }
+            }
+        };
     }
 
     /// Draws `src_rect` of `src` at `dst`. The current transform and clip are ignored
