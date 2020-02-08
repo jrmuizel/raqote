@@ -6,8 +6,7 @@
 
 A pure Rust 2D Graphics Library.
 
-Raqote aims to be a small, simple, fast software 2D graphics library with roughly
-the same capabilities as the cairo image backend.
+Raqote is a small, simple, fast software 2D graphics library.
 
 Current functionality
  - path filling
@@ -20,16 +19,16 @@ Current functionality
  - repeat modes for images
  - global alpha
 
-Planned functionality
- - perspective image drawing
- - shadows?
-
 #### Notable users
 - [resvg](https://github.com/RazrFalcon/resvg) supports using raqote as a backend.
 - [Servo](https://github.com/servo/servo) uses raqote as its canvas backend.
 - [orbtk](https://gitlab.redox-os.org/redox-os/orbtk/tree/master/crates/render) uses raqote.
 
 Example:
+
+[A simple example drawing to a window](https://github.com/jrmuizel/raqote-examples/blob/master/examples/minifb.rs)
+
+Another example drawing to a png follows:
 
 ```rust
 use raqote::*;
