@@ -316,6 +316,50 @@ impl<'a, 'b> Shader for ImagePadAlphaShader<'a, 'b> {
     }
 }
 
+pub struct ImageRepeatAlphaShader<'a, 'b> {
+    image: &'a Image<'b>,
+    offset_x: i32,
+    offset_y: i32,
+    alpha: u32,
+}
+
+impl<'a, 'b> ImageRepeatAlphaShader<'a, 'b> {
+    pub fn new(image: &'a Image<'b>, x: i32, y: i32, alpha: u32) -> ImageRepeatAlphaShader<'a, 'b> {
+        ImageRepeatAlphaShader {
+            image,
+            offset_x: x,
+            offset_y: y,
+            alpha: alpha_to_alpha256(alpha),
+        }
+    }
+}
+
+impl<'a, 'b> Shader for ImageRepeatAlphaShader<'a, 'b> {
+    fn shade_span(&self, mut x: i32, mut y: i32, dest: &mut [u32], mut count: usize) {
+        x += self.offset_x;
+        y += self.offset_y;
+        let mut dest_x = 0;
+
+        let y = y % self.image.height;
+        let mut x = x % self.image.width;
+
+        while count > 0 {
+            let len = count.min((self.image.width - x) as usize);
+            let d = &mut dest[dest_x..dest_x + len];
+            let src_start = (self.image.width * y + x) as usize;
+            let s = &self.image.data[src_start..src_start + len];
+
+            for (d, s) in d.iter_mut().zip(s) {
+                *d = alpha_mul(*s, self.alpha);
+            }
+
+            dest_x += len;
+            count -= len;
+            x = 0;
+        }
+    }
+}
+
 pub struct RadialGradientShader {
     gradient: Box<GradientSource>,
     spread: Spread,
@@ -549,6 +593,7 @@ pub enum ShaderStorage<'a, 'b> {
     None,
     Solid(SolidShader),
     ImagePadAlpha(ImagePadAlphaShader<'a, 'b>),
+    ImageRepeatAlpha(ImageRepeatAlphaShader<'a, 'b>),
     TransformedNearestPadImageAlpha(TransformedNearestImageAlphaShader<'a, 'b, PadFetch>),
     TransformedNearestRepeatImageAlpha(TransformedNearestImageAlphaShader<'a, 'b, RepeatFetch>),
     TransformedPadImageAlpha(TransformedImageAlphaShader<'a, 'b, PadFetch>),
@@ -624,38 +669,47 @@ pub fn choose_shader<'a, 'b, 'c>(ti: &Transform, src: &'b Source<'c>, alpha: f32
                 }
             }
         }
-        Source::Image(ref image, ExtendMode::Repeat, FilterMode::Bilinear, transform) => {
-            if alpha != 255 {
-                let s = TransformedImageAlphaShader::<RepeatFetch>::new(image, &ti.post_transform(&transform), alpha);
-                *shader_storage = ShaderStorage::TransformedRepeatImageAlpha(s);
+        Source::Image(ref image, ExtendMode::Repeat, filter, transform) => {
+            if let Some(offset) = is_integer_transform(&ti.post_transform(&transform)) {
+                *shader_storage = ShaderStorage::ImageRepeatAlpha(ImageRepeatAlphaShader::new(image, offset.x, offset.y, alpha));
                 shader = match shader_storage {
-                    ShaderStorage::TransformedRepeatImageAlpha(s) => s,
+                    ShaderStorage::ImageRepeatAlpha(s) => s,
                     _ => panic!()
                 };
             } else {
-                let s = TransformedImageShader::<RepeatFetch>::new(image, &ti.post_transform(&transform));
-                *shader_storage = ShaderStorage::TransformedRepeatImage(s);
-                shader = match shader_storage {
-                    ShaderStorage::TransformedRepeatImage(s) => s,
-                    _ => panic!()
-                };
-            }
-        }
-        Source::Image(ref image, ExtendMode::Repeat, FilterMode::Nearest, transform) => {
-            if alpha != 255 {
-                let s = TransformedNearestImageAlphaShader::<RepeatFetch>::new(image, &ti.post_transform(&transform), alpha);
-                *shader_storage = ShaderStorage::TransformedNearestRepeatImageAlpha(s);
-                shader = match shader_storage {
-                    ShaderStorage::TransformedNearestRepeatImageAlpha(s) => s,
-                    _ => panic!()
-                };
-            } else {
-                let s = TransformedNearestImageShader::<RepeatFetch>::new(image, &ti.post_transform(&transform));
-                *shader_storage = ShaderStorage::TransformedNearestRepeatImage(s);
-                shader = match shader_storage {
-                    ShaderStorage::TransformedNearestRepeatImage(s) => s,
-                    _ => panic!()
-                };
+                if *filter == FilterMode::Bilinear {
+                    if alpha != 255 {
+                        let s = TransformedImageAlphaShader::<RepeatFetch>::new(image, &ti.post_transform(&transform), alpha);
+                        *shader_storage = ShaderStorage::TransformedRepeatImageAlpha(s);
+                        shader = match shader_storage {
+                            ShaderStorage::TransformedRepeatImageAlpha(s) => s,
+                            _ => panic!()
+                        };
+                    } else {
+                        let s = TransformedImageShader::<RepeatFetch>::new(image, &ti.post_transform(&transform));
+                        *shader_storage = ShaderStorage::TransformedRepeatImage(s);
+                        shader = match shader_storage {
+                            ShaderStorage::TransformedRepeatImage(s) => s,
+                            _ => panic!()
+                        };
+                    }
+                } else {
+                    if alpha != 255 {
+                        let s = TransformedNearestImageAlphaShader::<RepeatFetch>::new(image, &ti.post_transform(&transform), alpha);
+                        *shader_storage = ShaderStorage::TransformedNearestRepeatImageAlpha(s);
+                        shader = match shader_storage {
+                            ShaderStorage::TransformedNearestRepeatImageAlpha(s) => s,
+                            _ => panic!()
+                        };
+                    } else {
+                        let s = TransformedNearestImageShader::<RepeatFetch>::new(image, &ti.post_transform(&transform));
+                        *shader_storage = ShaderStorage::TransformedNearestRepeatImage(s);
+                        shader = match shader_storage {
+                            ShaderStorage::TransformedNearestRepeatImage(s) => s,
+                            _ => panic!()
+                        };
+                    }
+                }
             }
         }
         Source::RadialGradient(ref gradient, spread, transform) => {
