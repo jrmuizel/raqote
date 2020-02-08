@@ -619,7 +619,8 @@ impl DrawTarget {
         self.fill(&stroked, src, options);
     }
 
-    /// Fills the rect `x`, `y,`, `width`, `height` with `src`
+    /// Fills the rect `x`, `y,`, `width`, `height` with `src`. If the result is an
+    /// integer aligned rectangle performance will be faster than filling a rectangular path.
     pub fn fill_rect(&mut self, x: f32, y: f32, width: f32, height: f32, src: &Source, options: &DrawOptions) {
         let ix = x as i32;
         let iy = y as i32;
