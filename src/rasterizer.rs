@@ -210,17 +210,16 @@ fn abs(mut value: i32) -> i32 {
     return value;
 }
 
-// See also: http://www.flipcode.com/archives/Fast_Approximate_Distance_Functions.shtml
+// A cheap version of the "Alpha max plus beta min" algorithm (⍺=1, β=0.5)
 fn cheap_distance(mut dx: i32, mut dy: i32) -> i32 {
     dx = abs(dx);
     dy = abs(dy);
     // return max + min/2
     if dx > dy {
-        dx += dy >> 1;
+        dx + (dy >> 1)
     } else {
-        dx = dy + (dx >> 1);
+        dy + (dx >> 1)
     }
-    return dx;
 }
 
 fn diff_to_shift(dx: i32, dy: i32) -> i32 {
