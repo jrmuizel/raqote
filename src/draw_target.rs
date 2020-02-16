@@ -738,7 +738,7 @@ impl DrawTarget {
             let bounds = font.raster_bounds(
                 *id,
                 point_size,
-                &fk::FontTransform::new(self.transform.m11, self.transform.m12, self.transform.m21, self.transform.m22),
+                &fk::FontTransform::new(self.transform.m11, self.transform.m21, self.transform.m12, self.transform.m22),
                 &(self.transform.transform_point(*position)),
                 fk::HintingOptions::None,
                 fk::RasterizationOptions::GrayscaleAa,
@@ -765,7 +765,7 @@ impl DrawTarget {
                 &mut canvas,
                 *id,
                 point_size,
-                &fk::FontTransform::new(self.transform.m11, self.transform.m12, self.transform.m21, self.transform.m22),
+                &fk::FontTransform::new(self.transform.m11, self.transform.m21, self.transform.m12, self.transform.m22),
                 &position,
                 fk::HintingOptions::None,
                 fk::RasterizationOptions::GrayscaleAa,
