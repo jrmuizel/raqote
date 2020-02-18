@@ -17,12 +17,7 @@ mod tests {
         pb.rect(1., 1., 1., 1.);
         dt.fill(
             &pb.finish(),
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &DrawOptions::new(),
         );
         let white = 0xffffffff;
@@ -39,12 +34,7 @@ mod tests {
         pb.line_to(1., 2.);
         dt.fill(
             &pb.finish(),
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &DrawOptions::new(),
         );
         let white = 0xffffffff;
@@ -58,12 +48,7 @@ mod tests {
         pb.rect(1., 0., 8., 1.);
         dt.fill(
             &pb.finish(),
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &DrawOptions::new(),
         );
         let white = 0xffffffff;
@@ -78,12 +63,7 @@ mod tests {
         pb.rect(0., 0., 2., 2.);
         dt.fill(
             &pb.finish(),
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &DrawOptions::new(),
         );
         let white = 0xffffffff;
@@ -99,12 +79,7 @@ mod tests {
         pb.rect(0., 0., 2., 2.);
         dt.fill(
             &pb.finish(),
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &DrawOptions::new(),
         );
         let white = 0xffffffff;
@@ -122,12 +97,7 @@ mod tests {
         path.winding = Winding::EvenOdd;
         dt.fill(
             &path,
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &DrawOptions::new(),
         );
         let white = 0xffffffff;
@@ -142,12 +112,7 @@ mod tests {
         let path = pb.finish();
         dt.fill(
             &path,
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &DrawOptions::new(),
         );
         dt.clear(SolidSource {
@@ -168,12 +133,7 @@ mod tests {
         pb.rect(1., 1., 1., 1.);
         dt.fill(
             &pb.finish(),
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &DrawOptions::new(),
         );
         let white = 0xffffffff;
@@ -190,12 +150,7 @@ mod tests {
         pb.rect(0., 0., 1., 1.);
         dt2.fill(
             &pb.finish(),
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &DrawOptions::new(),
         );
         let image = Image {
@@ -217,12 +172,7 @@ mod tests {
         pb.rect(1., 1., 1., 1.);
         dt2.fill(
             &pb.finish(),
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &DrawOptions::new(),
         );
         let image = Image {
@@ -244,12 +194,7 @@ mod tests {
         pb.rect(0., 0., 1., 1.);
         dt2.fill(
             &pb.finish(),
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &DrawOptions::new(),
         );
         let image = Image {
@@ -278,12 +223,7 @@ mod tests {
         pb.rect(0.5, 0.5, 2., 2.);
         dt.stroke(
             &pb.finish(),
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &StrokeStyle {
                 width: 1.,
                 ..Default::default()
@@ -307,12 +247,7 @@ mod tests {
         pb.line_to(4., 2.);
         dt.stroke(
             &pb.finish(),
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &StrokeStyle {
                 width: 1.,
                 ..Default::default()
@@ -330,12 +265,7 @@ mod tests {
         pb.line_to(2., 4.);
         dt.stroke(
             &pb.finish(),
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &StrokeStyle {
                 width: 1.,
                 ..Default::default()
@@ -355,12 +285,7 @@ mod tests {
         pb.close();
         dt.stroke(
             &pb.finish(),
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &StrokeStyle {
                 width: 1.,
                 dash_array: vec![10.0, 6.0, 4.0, 10.0, 6.0, 4.0],
@@ -378,12 +303,7 @@ mod tests {
         pb.rect(0.5, 0.5, 12., 12.);
         dt.stroke(
             &pb.finish(),
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &StrokeStyle {
                 width: 1.,
                 dash_array: vec![1., 1.],
@@ -403,12 +323,7 @@ mod tests {
         pb.rect(1., 1., 1., 1.);
         dt.fill(
             &pb.finish(),
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &DrawOptions {
                 alpha: 0.,
                 ..Default::default()
@@ -500,12 +415,7 @@ mod tests {
         pb.rect(0.5, 0.5, 1., 1.);
         dt.fill(
             &pb.finish(),
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &DrawOptions {
                 antialias: AntialiasMode::None,
                 ..Default::default()
@@ -522,12 +432,7 @@ mod tests {
         pb.rect(1., 3., 1., 1.);
         dt.fill(
             &pb.finish(),
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &DrawOptions {
                 antialias: AntialiasMode::None,
                 ..Default::default()
@@ -612,12 +517,7 @@ mod tests {
         pb.line_to(2., 0.);
         dt.fill(
             &pb.finish(),
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &DrawOptions::new(),
         );
         assert_eq!(dt.get_data()[0], 0)
@@ -632,12 +532,7 @@ mod tests {
         let path = pb.finish();
         dt.stroke(
             &path,
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &StrokeStyle {
                 width: 2.,
                 ..Default::default()
@@ -648,12 +543,7 @@ mod tests {
 
         dt.stroke(
             &path,
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &StrokeStyle {
                 width: 2.,
                 dash_array: vec![2., 2.],
@@ -791,12 +681,7 @@ mod tests {
         let path = pb.finish();
         dt.stroke(
             &path,
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &StrokeStyle {
                 width: 5.,
                 ..Default::default()
@@ -813,12 +698,7 @@ mod tests {
         let mut dt = crate::DrawTarget::new(3, 3);
         dt.stroke(
             &path,
-            &Source::Solid(SolidSource {
-                r: 0xff,
-                g: 0xff,
-                b: 0xff,
-                a: 0xff,
-            }),
+            &WHITE_SOURCE,
             &StrokeStyle {
                 width: 5.,
                 dash_array: vec![1000., 10.],
