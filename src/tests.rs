@@ -3,6 +3,12 @@ mod tests {
 
     use crate::geom::intrect;
     use crate::*;
+    const WHITE_SOURCE: Source = Source::Solid(SolidSource {
+        r: 0xff,
+        g: 0xff,
+        b: 0xff,
+        a: 0xff,
+    });
 
     #[test]
     fn basic_rasterizer() {
@@ -825,5 +831,32 @@ mod tests {
             dt.get_data(),
             &vec![white, white, white, white, white, white, white, white, white][..]
         );
+    }
+
+    #[test]
+    fn close_clears_start_point() {
+        let mut dt = DrawTarget::new(4, 4);
+
+        // This path is positioned just outside of the draw
+        // target so that when it's stroked we can ensure
+        // that none of the stroke leaks in
+        let mut pb = PathBuilder::new();
+        pb.move_to(14.0, 0.0);
+        pb.line_to(104.0, 30.0);
+        pb.line_to(14.0, 70.0);
+        pb.close();
+
+        let style = StrokeStyle {
+            width: 20.0,
+            cap: LineCap::Square,
+            join: LineJoin::Bevel,
+            ..StrokeStyle::default()
+        };
+
+        dt.stroke(&pb.finish(), &WHITE_SOURCE, &style, &DrawOptions::new());
+
+        for i in dt.get_data() {
+            assert_eq!(*i, 0);
+        }
     }
 }
