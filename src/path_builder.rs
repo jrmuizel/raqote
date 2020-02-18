@@ -275,14 +275,16 @@ impl PathBuilder {
 
 
     /// Adds an arc approximated by quadratic beziers with center `x`, `y`
-    /// and radius `r` from `angle1` and to `angle2`
-    pub fn arc(&mut self, x: f32, y: f32, r: f32, angle1: f32, angle2: f32) {
+    /// and radius `r` starting at `start_angle` and sweeping by `sweep_angle`.
+    /// For a positive `sweep_angle` the sweep is done clockwise, for a negative
+    /// `sweep_angle` the sweep is done counterclockwise.
+    pub fn arc(&mut self, x: f32, y: f32, r: f32, start_angle: f32, sweep_angle: f32) {
         //XXX: handle the current point being the wrong spot
         let a: Arc<f32> = Arc {
             center: Point::new(x, y),
             radii: Vector::new(r, r),
-            start_angle: Angle::radians(angle1),
-            sweep_angle: Angle::radians(angle2),
+            start_angle: Angle::radians(start_angle),
+            sweep_angle: Angle::radians(sweep_angle),
             x_rotation: Angle::zero(),
         };
         let start = a.from();
