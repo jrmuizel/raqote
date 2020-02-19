@@ -37,7 +37,7 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
     // join the end of the path with it.
     let mut is_first_segment = true;
     let mut first_dash = true;
-    let mut initial_segment : Vec<Point> = Vec::new();
+    let mut initial_segment: Vec<Point> = Vec::new();
 
     // adjust our position in the dash array by the dash offset
     while dash_offset > remaining_dash_length {
