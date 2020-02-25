@@ -68,7 +68,6 @@ fn div_fixed16_fixed16(a: i32, b: i32) -> i32 {
 // with the following layout:
 //
 // 4 x2,y2
-// 8 shape
 // 8 next
 // 6*4 slope_x,fullx,next_x,next_y, old_x,old_y
 // 4*4 dx,ddx,dy,ddy
@@ -98,7 +97,7 @@ pub struct ActiveEdge {
     // we need to use count so that we make sure that we always line the last point up
     // exactly. i.e. we don't have a great way to know when we're at the end implicitly.
     count: i32,
-    winding: i8,
+    winding: i8, // the direction of the edge
 }
 
 impl ActiveEdge {
@@ -128,7 +127,6 @@ impl ActiveEdge {
     fn step(&mut self, cury: i32) {
         // if we have a shift that means we have a curve
         if self.shift != 0 {
-            //printf("inner cur %d,%d next %d %d %f\n", curx, cury, next_x>>16, next_y>>16, fnext_y);
             if cury >= (self.next_y >> (16 - SAMPLE_SHIFT)) {
                 self.old_y = self.next_y;
                 self.old_x = self.next_x;
@@ -156,10 +154,8 @@ impl ActiveEdge {
             self.fullx += self.slope_x;
         } else {
             // XXX: look into bresenham to control error here
-
             self.fullx += self.slope_x;
         }
-        //cury += 1;
     }
 }
 
@@ -259,6 +255,10 @@ const MAX_COEFF_SHIFT: i32 = 6;
 // can go as high as edge count: 374640
 // with curve count: 67680
 impl Rasterizer {
+
+    // Overflow:
+    // cairo just does _cairo_fixed_from_double (x) which ends up having some
+    // weird behaviour around overflow because of the double to fixed conversion trick that it does.
     #[allow(non_snake_case)]
     pub fn add_edge(&mut self, mut start: Point, mut end: Point, curve: bool, control: Point) {
         if curve {
