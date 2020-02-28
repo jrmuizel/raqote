@@ -259,6 +259,8 @@ impl Rasterizer {
     // Overflow:
     // cairo just does _cairo_fixed_from_double (x) which ends up having some
     // weird behaviour around overflow because of the double to fixed conversion trick that it does.
+
+    // Fitz clips edges to the bounding box
     #[allow(non_snake_case)]
     pub fn add_edge(&mut self, mut start: Point, mut end: Point, curve: bool, control: Point) {
         if curve {
