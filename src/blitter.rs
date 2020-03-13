@@ -340,8 +340,8 @@ impl<'a, 'b> Shader for ImageRepeatAlphaShader<'a, 'b> {
         y += self.offset_y;
         let mut dest_x = 0;
 
-        let y = y % self.image.height;
-        let mut x = x % self.image.width;
+        let y = y.rem_euclid(self.image.height);
+        let mut x = x.rem_euclid(self.image.width);
 
         while count > 0 {
             let len = count.min((self.image.width - x) as usize);

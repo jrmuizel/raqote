@@ -739,4 +739,21 @@ mod tests {
             assert_eq!(*i, 0);
         }
     }
+
+    #[test]
+    fn negative_repeat() {
+        let mut dt = DrawTarget::new(2, 2);
+        let options = DrawOptions::new();
+
+        let img = Image {
+            width: 2,
+            height: 2,
+            data: &vec![0xffff0000; 2*2],
+        };
+
+        let identity = Transform::identity();
+        let img_src = Source::Image(img, ExtendMode::Repeat, FilterMode::Nearest, identity);
+        dt.set_transform(&dt.get_transform().pre_translate(euclid::vec2(0., 1.)));
+        dt.fill_rect(0., -1., 100., 50., &img_src, &options);
+    }
 }
