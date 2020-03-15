@@ -4,6 +4,13 @@ use crate::Point;
 
 use lyon_geom::LineSegment;
 
+///
+/// True modulo, always returns positive.
+///
+fn modulo(lhs: f32, rhs: f32) -> f32 {
+    (lhs % rhs + rhs) % rhs
+}
+
 pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path {
     let mut dashed = PathBuilder::new();
 
@@ -23,10 +30,7 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
 
     // Handle large positive and negative offsets so that we don't loop for a high number of
     // iterations below in extreme cases
-    dash_offset = dash_offset % total_dash_length;
-    if dash_offset < 0. {
-        dash_offset += total_dash_length;
-    }
+    dash_offset = modulo(dash_offset, total_dash_length);
 
     let mut remaining_dash_length = dash_array[current_dash % dash_array.len()];
     let mut dash_on = true;
