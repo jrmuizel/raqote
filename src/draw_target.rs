@@ -219,6 +219,12 @@ pub enum Source<'a> {
     LinearGradient(Gradient, Spread, Transform),
 }
 
+impl<'a> From<SolidSource> for Source<'a> {
+    fn from(other: SolidSource) -> Self {
+        Source::Solid(other)
+    }
+}
+
 impl<'a> Source<'a> {
     /// Creates a new linear gradient source where the start point corresponds to the gradient
     /// stop at position = 0 and the end point corresponds to the gradient stop at position = 1.
