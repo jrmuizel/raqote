@@ -62,6 +62,17 @@ impl SolidSource {
     }
 }
 
+impl From<Color> for SolidSource {
+    fn from(color: Color) -> Self {
+        SolidSource::from_unpremultiplied_argb(
+            color.a(),
+            color.r(),
+            color.g(),
+            color.b(),
+        )
+    }
+}
+
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum BlendMode {
     Dst,
@@ -219,9 +230,15 @@ pub enum Source<'a> {
     LinearGradient(Gradient, Spread, Transform),
 }
 
-impl<'a> From<SolidSource> for Source<'a> {
+impl From<SolidSource> for Source<'_> {
     fn from(other: SolidSource) -> Self {
         Source::Solid(other)
+    }
+}
+
+impl From<Color> for Source<'_> {
+    fn from(color: Color) -> Self {
+        Source::Solid(SolidSource::from(color))
     }
 }
 
