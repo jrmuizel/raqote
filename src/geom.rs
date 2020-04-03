@@ -10,13 +10,6 @@ pub fn intrect<T: Copy>(x1: T, y1: T, x2: T, y2: T) -> euclid::default::Box2D<T>
     euclid::default::Box2D::new(euclid::point2(x1, y1), euclid::point2(x2, y2))
 }
 
-pub fn abs(a: f32) -> f32 {
-    if a < 0. {
-        return -a;
-    }
-    return a;
-}
-
 // we can do this
 pub fn valid_unit_divide(mut numer: f32, mut denom: f32, ratio: &mut f32) -> bool {
     if numer < 0. {
@@ -38,7 +31,8 @@ pub fn valid_unit_divide(mut numer: f32, mut denom: f32, ratio: &mut f32) -> boo
         return false;
     }
     *ratio = r;
-    return true;
+
+    true
 }
 
 pub fn is_not_monotonic(a: f32, b: f32, c: f32) -> bool {
@@ -47,12 +41,13 @@ pub fn is_not_monotonic(a: f32, b: f32, c: f32) -> bool {
     if ab < 0. {
         bc = -bc;
     }
-    return ab == 0. || bc < 0.;
+
+    ab == 0. || bc < 0.
 }
 
 fn interp(a: f32, b: f32, t: f32) -> f32 {
     debug_assert!(t >= 0. && t <= 1.);
-    return a + (b - a) * t;
+    a + (b - a) * t
 }
 
 // Skia does a weird thing where it treats arrays of points as castable to array of floats.

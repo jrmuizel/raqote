@@ -174,8 +174,8 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
         }
     }
 
-    // We still have an intial segment that we need to emit
-    if initial_segment.len() > 0 {
+    // We still have an initial segment that we need to emit
+    if !initial_segment.is_empty() {
         dashed.move_to(initial_segment[0].x, initial_segment[0].y);
         for i in 1..initial_segment.len() {
             dashed.line_to(initial_segment[i].x, initial_segment[i].y);

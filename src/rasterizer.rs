@@ -199,17 +199,10 @@ impl Rasterizer {
     }
 }
 
-fn abs(mut value: i32) -> i32 {
-    if value < 0 {
-        value = -value;
-    }
-    return value;
-}
-
 // A cheap version of the "Alpha max plus beta min" algorithm (⍺=1, β=0.5)
 fn cheap_distance(mut dx: i32, mut dy: i32) -> i32 {
-    dx = abs(dx);
-    dy = abs(dy);
+    dx = dx.abs();
+    dy = dy.abs();
     // return max + min/2
     if dx > dy {
         dx + (dy >> 1)
@@ -229,7 +222,7 @@ fn diff_to_shift(dx: i32, dy: i32) -> i32 {
     dist = (dist + (1 << 4)) >> 5;
 
     // each subdivision (shift value) cuts this dist (error) by 1/4
-    return (32 - ((dist as u32).leading_zeros()) as i32) >> 1;
+    (32 - ((dist as u32).leading_zeros()) as i32) >> 1
 }
 
 // this metric is taken from skia
@@ -238,7 +231,8 @@ fn compute_curve_steps(e: &Edge) -> i32 {
     let dy = (e.control_y << 1) - e.y1 - e.y2;
     let shift = diff_to_shift(dx << 4, dy << 4);
     assert!(shift >= 0);
-    return shift;
+
+    shift
 }
 
 const SAMPLE_SIZE: f32 = (1 << SAMPLE_SHIFT) as f32;
@@ -381,9 +375,9 @@ impl Rasterizer {
             }
         }
 
-        // add to the begining of the edge start list
+        // add to the beginning of the edge start list
         // if edges are added from left to right
-        // the'll be in this list from right to left
+        // they'll be in this list from right to left
         // this works out later during insertion
         e.next = self.edge_starts[cury as usize];
         self.edge_starts[cury as usize] = Some(NonNull::from(e));

@@ -187,7 +187,7 @@ fn bevel(
  * This function has a period of 4. e.g. swap(swap(swap(swap(x) == x */
 fn swap(a: Vector) -> Vector {
     /* one of these needs to be negative. We choose a.x so that we rotate to the right instead of negating */
-    return Vector::new(a.y, -a.x);
+    Vector::new(a.y, -a.x)
 }
 
 fn unperp(a: Vector) -> Vector {
