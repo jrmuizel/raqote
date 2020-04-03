@@ -22,9 +22,9 @@ pub struct MaskSuperBlitter {
 }
 
 const SHIFT: i32 = crate::rasterizer::SAMPLE_SHIFT;
-const SCALE: i32 = (1 << SHIFT);
-const MASK: i32 = (SCALE - 1);
-const SUPER_MASK: i32 = ((1 << SHIFT) - 1);
+const SCALE: i32 = 1 << SHIFT;
+const MASK: i32 = SCALE - 1;
+const SUPER_MASK: i32 = (1 << SHIFT) - 1;
 
 fn coverage_to_partial_alpha(mut aa: i32) -> u8 {
     aa <<= 8 - 2 * SHIFT;
