@@ -446,7 +446,7 @@ impl DrawTarget {
             }
             // if we get here, we need to force dst to be monotonic, even though
             // we couldn't compute a unit_divide value (probably underflow).
-            let b = if abs(a - b) < abs(b - c) { a } else { c };
+            let b = if (a - b).abs() < (b - c).abs() { a } else { c };
             curve[1].y = b;
         }
         self.rasterizer.add_edge(curve[0], curve[2], true, curve[1]);
@@ -1051,7 +1051,7 @@ impl DrawTarget {
     pub fn write_png<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), png::EncodingError> {
         let file = File::create(path)?;
 
-        let ref mut w = BufWriter::new(file);
+        let w = &mut BufWriter::new(file);
 
         let mut encoder = png::Encoder::new(w, self.width as u32, self.height as u32);
         encoder.set_color(png::ColorType::RGBA);
