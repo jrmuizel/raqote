@@ -485,6 +485,12 @@ impl DrawTarget {
     }
 
     fn apply_path(&mut self, path: &Path) {
+
+        // we have no height so there can be no edges
+        if self.height == 0 {
+            return;
+        }
+
         for op in &path.ops {
             match *op {
                 PathOp::MoveTo(pt) => {

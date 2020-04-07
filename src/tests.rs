@@ -756,4 +756,18 @@ mod tests {
         dt.set_transform(&dt.get_transform().pre_translate(euclid::vec2(0., 1.)));
         dt.fill_rect(0., -1., 100., 50., &img_src, &options);
     }
+
+    #[test]
+    fn zero_sized_draw_target() {
+        let mut dt = DrawTarget::new(0, 0);
+        let mut pb = PathBuilder::new();
+        pb.line_to(0.5, 0.5);
+        pb.line_to(2.0, -2.0);
+        pb.line_to(2.0, 0.5);
+        dt.fill(
+            &pb.finish(),
+            &WHITE_SOURCE,
+            &DrawOptions::new(),
+        );
+    }
 }
