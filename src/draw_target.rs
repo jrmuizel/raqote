@@ -16,7 +16,8 @@ mod fk {
     pub use font_kit::canvas::{Canvas, Format, RasterizationOptions};
     pub use font_kit::font::Font;
     pub use font_kit::hinting::HintingOptions;
-    pub use font_kit::loader::FontTransform;
+    pub use pathfinder_geometry::transform2d::Transform2F;
+    pub use pathfinder_geometry::vector::{vec2f, vec2i};
 }
 
 use std::fs::*;
@@ -741,16 +742,17 @@ impl DrawTarget {
         font: &fk::Font,
         point_size: f32,
         text: &str,
-        mut start: Point,
+        start: Point,
         src: &Source,
         options: &DrawOptions,
     ) {
+        let mut start = fk::vec2f(start.x, start.y);
         let mut ids = Vec::new();
         let mut positions = Vec::new();
         for c in text.chars() {
             let id = font.glyph_for_char(c).unwrap();
             ids.push(id);
-            positions.push(start);
+            positions.push(Point::new(start.x(), start.y()));
             start += font.advance(id).unwrap() * point_size / 24. / 96.;
         }
         self.draw_glyphs(font, point_size, &ids, &positions, src, options);
@@ -771,13 +773,16 @@ impl DrawTarget {
             let bounds = font.raster_bounds(
                 *id,
                 point_size,
-                &fk::FontTransform::new(self.transform.m11, self.transform.m21, self.transform.m12, self.transform.m22),
-                &(self.transform.transform_point(*position)),
+                fk::Transform2F::row_major(self.transform.m11, self.transform.m12, self.transform.m21, self.transform.m22, 0., 0.)
+                    .translate(fk::vec2f(position.x, position.y)),
                 fk::HintingOptions::None,
                 fk::RasterizationOptions::GrayscaleAa,
             );
             combined_bounds = match bounds {
                 Ok(bounds) => {
+                    let origin = bounds.origin();
+                    let size = bounds.size();
+                    let bounds = euclid::Rect::new(IntPoint::new(origin.x(), origin.y()), euclid::Size2D::new(size.x(), size.y()));
                     combined_bounds.union(&bounds)
                 }
                 _ => panic!(),
@@ -787,7 +792,7 @@ impl DrawTarget {
         /*let mut canvas = Canvas::new(&euclid::Size2D::new(combined_bounds.size.width as u32,
         combined_bounds.size.height as u32), Format::A8);*/
         let mut canvas = fk::Canvas::new(
-            &euclid::Size2D::new(combined_bounds.size.width as u32, combined_bounds.size.height as u32),
+            fk::vec2i(combined_bounds.size.width, combined_bounds.size.height),
             fk::Format::A8,
         );
         for (id, position) in ids.iter().zip(positions.iter()) {
@@ -798,8 +803,8 @@ impl DrawTarget {
                 &mut canvas,
                 *id,
                 point_size,
-                &fk::FontTransform::new(self.transform.m11, self.transform.m21, self.transform.m12, self.transform.m22),
-                &position,
+                fk::Transform2F::row_major(self.transform.m11, self.transform.m12, self.transform.m21, self.transform.m22, 0., 0.)
+                    .translate(fk::vec2f(position.x, position.y)),
                 fk::HintingOptions::None,
                 fk::RasterizationOptions::GrayscaleAa,
             ).unwrap();

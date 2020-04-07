@@ -13,12 +13,13 @@ categories = ["graphics"]
 
 [dependencies]
 euclid = "0.20"
-font-kit = { version = "0.5", optional = true }
+font-kit = { version = "0.7", optional = true }
 lyon_geom = "0.15"
+pathfinder_geometry = { version = "0.5", optional = true }
 png = "0.15"
 typed-arena = "2.0"
 sw-composite = "0.7.9"
 
 [features]
 default = ["text"]
-text = ["font-kit"]
+text = ["font-kit", "pathfinder_geometry"]
