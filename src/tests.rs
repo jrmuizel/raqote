@@ -770,4 +770,38 @@ mod tests {
             &DrawOptions::new(),
         );
     }
+
+    #[test]
+    fn dash_subpath_restart() {
+        let mut dt = DrawTarget::new(2, 2);
+        let mut pb = PathBuilder::new();
+
+        // move to some arbitrary place
+        pb.move_to(40., 40.);
+        pb.line_to(60., 40.);
+        // the dash should still be off
+
+        // Start a new subpath. This should reset the dash state so that we
+        // cover the entire draw target with the dash
+        pb.move_to(-0.5, 1.);
+        pb.line_to(3., 1.);
+
+        dt.stroke(
+            &pb.finish(),
+            &WHITE_SOURCE,
+            &StrokeStyle {
+                width: 2.,
+                dash_array: vec![1.0, 14.0, 3.0, 80.],
+                dash_offset: 15.0,
+                ..Default::default()
+            },
+            &DrawOptions::new(),
+        );
+
+        let white = 0xffffffff;
+        assert_eq!(
+            dt.get_data(),
+            &vec![white, white, white, white][..]
+        );
+    }
 }

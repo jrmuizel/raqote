@@ -4,11 +4,17 @@ use crate::Point;
 
 use lyon_geom::LineSegment;
 
+#[derive(Clone, Copy)]
+struct DashState {
+    index: usize, // index into the dash array
+    on: bool, // whether the dash is on or off
+    remaining_length: f32, // how much of the dash remains
+}
+
 pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path {
     let mut dashed = PathBuilder::new();
 
     let mut cur_pt = None;
-    let mut current_dash = 0;
     let mut start_point = None;
 
     let mut total_dash_length = 0.;
@@ -28,9 +34,6 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
         dash_offset += total_dash_length;
     }
 
-    let mut remaining_dash_length = dash_array[current_dash % dash_array.len()];
-    let mut dash_on = true;
-
     // To handle closed paths we need a bunch of extra state so that we properly
     // join the first segment. Unfortunately, this makes the code sort of hairy.
     // We need to store all of the points in the initial segment so that we can
@@ -39,15 +42,24 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
     let mut first_dash = true;
     let mut initial_segment : Vec<Point> = Vec::new();
 
-    // adjust our position in the dash array by the dash offset
-    while dash_offset > remaining_dash_length {
-        dash_offset -= remaining_dash_length;
-        current_dash += 1;
-        remaining_dash_length = dash_array[current_dash % dash_array.len()];
-        dash_on = !dash_on;
-    }
-    remaining_dash_length -= dash_offset;
+    let mut state = DashState {
+        on: true,
+        remaining_length: dash_array[0],
+        index: 0,
+    };
 
+    // adjust our position in the dash array by the dash offset
+    while dash_offset > state.remaining_length {
+        dash_offset -= state.remaining_length;
+        state.index += 1;
+        state.remaining_length = dash_array[state.index % dash_array.len()];
+        state.on = !state.on;
+    }
+    state.remaining_length -= dash_offset;
+
+    // Save a copy of the intial state so that we can restore it for each subpath
+    let initial = state;
+    
     for op in &path.ops {
         match *op {
             PathOp::MoveTo(pt) => {
@@ -65,6 +77,9 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
                 is_first_segment = true;
                 initial_segment = Vec::new();
                 first_dash = true;
+
+                // reset the dash state
+                state = initial;
             }
             PathOp::LineTo(pt) => {
                 if let Some(cur_pt) = cur_pt {
@@ -75,9 +90,9 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
                     };
                     let mut len = line.length();
                     let lv = line.to_vector().normalize();
-                    while len > remaining_dash_length {
-                        let seg = start + lv * remaining_dash_length;
-                        if dash_on {
+                    while len > state.remaining_length {
+                        let seg = start + lv * state.remaining_length;
+                        if state.on {
                             if is_first_segment {
                                 initial_segment.push(start);
                                 initial_segment.push(seg);
@@ -89,13 +104,13 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
                             dashed.move_to(seg.x, seg.y);
                         }
                         is_first_segment = false;
-                        dash_on = !dash_on;
-                        current_dash += 1;
-                        len -= remaining_dash_length;
-                        remaining_dash_length = dash_array[current_dash % dash_array.len()];
+                        state.on = !state.on;
+                        state.index += 1;
+                        len -= state.remaining_length;
+                        state.remaining_length = dash_array[state.index % dash_array.len()];
                         start = seg;
                     }
-                    if dash_on {
+                    if state.on {
                         if is_first_segment {
                             initial_segment.push(start);
                             initial_segment.push(pt);
@@ -106,7 +121,7 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
                         first_dash = false;
                         dashed.move_to(pt.x, pt.y);
                     }
-                    remaining_dash_length -= len;
+                    state.remaining_length -= len;
                 }
                 cur_pt = Some(pt);
             }
@@ -120,9 +135,9 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
                     let mut len = line.length();
                     let lv = line.to_vector().normalize();
 
-                    while len > remaining_dash_length {
-                        let seg = start + lv * remaining_dash_length;
-                        if dash_on {
+                    while len > state.remaining_length {
+                        let seg = start + lv * state.remaining_length;
+                        if state.on {
                             if is_first_segment {
                                 initial_segment.push(start);
                                 initial_segment.push(seg);
@@ -133,14 +148,14 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
                             first_dash = false;
                             dashed.move_to(seg.x, seg.y);
                         }
-                        dash_on = !dash_on;
-                        current_dash += 1;
-                        len -= remaining_dash_length;
-                        remaining_dash_length = dash_array[current_dash % dash_array.len()];
+                        state.on = !state.on;
+                        state.index += 1;
+                        len -= state.remaining_length;
+                        state.remaining_length = dash_array[state.index % dash_array.len()];
                         start = seg;
                     }
 
-                    if dash_on {
+                    if state.on {
                         if first_dash {
                             // If we're still on the first dash we can just close
                             dashed.close();
@@ -163,8 +178,10 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
                         }
                     }
                     initial_segment = Vec::new();
-                    remaining_dash_length -= len;
                     cur_pt = Some(start_point);
+
+                    // reset the dash state
+                    state = initial;
                 } else {
                     cur_pt = None;
                 }
