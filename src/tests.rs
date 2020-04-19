@@ -804,4 +804,25 @@ mod tests {
             &vec![white, white, white, white][..]
         );
     }
+
+    #[test]
+    fn nearest_offset() {
+        let white = 0xffffffff;
+        let checkerboard = vec![0xff000000, white, white, 0xff000000];
+        let (width, height ) = (2, 2);
+
+        let mut dt = DrawTarget::new(width, height);
+        let image = Image { width, height, data: &checkerboard };
+        dt.set_transform(&Transform::create_translation(-299., -299.));
+        let source = Source::Image(image, ExtendMode::Pad, FilterMode::Nearest,
+            Transform::identity().post_scale(width as f32 / 600., height as f32 / 600.));
+    
+        // draw a checkerboard scaled way up and make sure the origin stays in the center
+        dt.fill_rect(0., 0., 600., 600., &source, &DrawOptions::new());
+        
+        assert_eq!(
+            dt.get_data(),
+            &checkerboard[..]
+        );
+    }
 }
