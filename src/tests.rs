@@ -816,10 +816,10 @@ mod tests {
         dt.set_transform(&Transform::create_translation(-299., -299.));
         let source = Source::Image(image, ExtendMode::Pad, FilterMode::Nearest,
             Transform::identity().post_scale(width as f32 / 600., height as f32 / 600.));
-    
+
         // draw a checkerboard scaled way up and make sure the origin stays in the center
         dt.fill_rect(0., 0., 600., 600., &source, &DrawOptions::new());
-        
+
         assert_eq!(
             dt.get_data(),
             &checkerboard[..]
