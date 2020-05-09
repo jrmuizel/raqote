@@ -394,6 +394,48 @@ mod tests {
     }
 
     #[test]
+    fn two_circle_radial_gradient_boundary() {
+        // make sure the gradient doesn't draw anything for r < 0 circles
+        let mut dt = DrawTarget::new(2, 2);
+        let gradient = Gradient {
+            stops: vec![
+                GradientStop {
+                    position: 0.0,
+                    color: Color::new(0xff, 0xff, 0, 0xff),
+                },
+                GradientStop {
+                    position: 1.0,
+                    color: Color::new(0xff, 0x0, 0, 0xff),
+                },
+            ],
+        };
+
+        let src = Source::new_two_circle_radial_gradient(
+            gradient.clone(),
+            Point::new(150., 25.),
+            50.,
+            Point::new(200., 25.),
+            100.,
+            Spread::Pad,
+        );
+
+        dt.fill_rect(0., 0., 2., 2., &src, &DrawOptions::default());
+        assert_eq!(dt.get_data(), &vec![0, 0, 0, 0][..]);
+
+        let src = Source::new_two_circle_radial_gradient(
+            gradient,
+            Point::new(100., 25.),
+            50.,
+            Point::new(200., 25.),
+            100.,
+            Spread::Pad,
+        );
+
+        dt.fill_rect(0., 0., 2., 2., &src, &DrawOptions::default());
+        assert_eq!(dt.get_data(), &vec![0, 0, 0, 0][..])
+    }
+
+    #[test]
     fn get_mut_data() {
         let mut dt = DrawTarget::new(1, 1);
 
