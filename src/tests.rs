@@ -275,6 +275,57 @@ mod tests {
     }
 
     #[test]
+    fn zero_width_stroke() {
+        let mut dt = DrawTarget::new(3, 3);
+        let mut pb = PathBuilder::new();
+        pb.move_to(2., 2.);
+        pb.line_to(200., 300.);
+        dt.stroke(
+            &pb.finish(),
+            &WHITE_SOURCE,
+            &StrokeStyle {
+                width: 0.,
+                ..Default::default()
+            },
+            &DrawOptions::new(),
+        );
+    }
+
+    #[test]
+    fn negative_width_stroke() {
+        let mut dt = DrawTarget::new(3, 3);
+        let mut pb = PathBuilder::new();
+        pb.move_to(2., 2.);
+        pb.line_to(200., 300.);
+        dt.stroke(
+            &pb.finish(),
+            &WHITE_SOURCE,
+            &StrokeStyle {
+                width: std::f32::MIN,
+                ..Default::default()
+            },
+            &DrawOptions::new(),
+        );
+    }
+
+    #[test]
+    fn tiny_negative_width_stroke() {
+        let mut dt = DrawTarget::new(3, 3);
+        let mut pb = PathBuilder::new();
+        pb.move_to(2., 2.);
+        pb.line_to(200., 300.);
+        dt.stroke(
+            &pb.finish(),
+            &WHITE_SOURCE,
+            &StrokeStyle {
+                width: -core::f32::MIN_POSITIVE,
+                ..Default::default()
+            },
+            &DrawOptions::new(),
+        );
+    }
+
+    #[test]
     fn dashing() {
         let mut dt = DrawTarget::new(3, 3);
         let mut pb = PathBuilder::new();

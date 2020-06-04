@@ -275,8 +275,13 @@ fn join_line(
 }
 
 pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
-    let mut cur_pt = None;
     let mut stroked_path = PathBuilder::new();
+
+    if style.width <= 0. {
+        return stroked_path.finish();
+    }
+
+    let mut cur_pt = None;
     let mut last_normal = Vector::zero();
     let half_width = style.width / 2.;
     let mut start_point = None;
