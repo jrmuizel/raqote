@@ -608,136 +608,95 @@ pub enum ShaderStorage<'a, 'b> {
 }
 
 // The idea here is to store a shader in shader_storage and then return
-// a refrence to it. The goal is to avoid a heap allocation but the end
+// a reference to it. The goal is to avoid a heap allocation but the end
 // result is pretty ugly.
 pub fn choose_shader<'a, 'b, 'c>(ti: &Transform, src: &'b Source<'c>, alpha: f32, shader_storage: &'a mut ShaderStorage<'b, 'c>) -> &'a dyn Shader {
-    let shader: &dyn Shader;
-
     // XXX: clamp alpha
     let alpha = (alpha * 255. + 0.5) as u32;
 
-    match src {
+    *shader_storage = match src {
         Source::Solid(c) => {
             let color = alpha_mul(c.to_u32(), alpha_to_alpha256(alpha));
             let s = SolidShader { color };
-            *shader_storage = ShaderStorage::Solid(s);
-            shader = match shader_storage {
-                ShaderStorage::Solid(s) => s,
-                _ => panic!()
-            }
+            ShaderStorage::Solid(s)
         }
         Source::Image(ref image, ExtendMode::Pad, filter, transform) => {
             if let Some(offset) = is_integer_transform(&ti.post_transform(&transform)) {
-                *shader_storage = ShaderStorage::ImagePadAlpha(ImagePadAlphaShader::new(image, offset.x, offset.y, alpha));
-                shader = match shader_storage {
-                    ShaderStorage::ImagePadAlpha(s) => s,
-                    _ => panic!()
-                };
+                ShaderStorage::ImagePadAlpha(ImagePadAlphaShader::new(image, offset.x, offset.y, alpha))
             } else {
                 if alpha != 255 {
                     if *filter == FilterMode::Bilinear {
                         let s = TransformedImageAlphaShader::<PadFetch>::new(image, &ti.post_transform(&transform), alpha);
-                        *shader_storage = ShaderStorage::TransformedPadImageAlpha(s);
-                        shader = match shader_storage {
-                            ShaderStorage::TransformedPadImageAlpha(s) => s,
-                            _ => panic!()
-                        };
+                        ShaderStorage::TransformedPadImageAlpha(s)
                     } else {
                         let s = TransformedNearestImageAlphaShader::<PadFetch>::new(image, &ti.post_transform(&transform), alpha);
-                        *shader_storage = ShaderStorage::TransformedNearestPadImageAlpha(s);
-                        shader = match shader_storage {
-                            ShaderStorage::TransformedNearestPadImageAlpha(s) => s,
-                            _ => panic!()
-                        };
+                        ShaderStorage::TransformedNearestPadImageAlpha(s)
                     }
                 } else {
                     if *filter == FilterMode::Bilinear {
                         let s = TransformedImageShader::<PadFetch>::new(image, &ti.post_transform(&transform));
-                        *shader_storage = ShaderStorage::TransformedPadImage(s);
-                        shader = match shader_storage {
-                            ShaderStorage::TransformedPadImage(s) => s,
-                            _ => panic!()
-                        };
+                        ShaderStorage::TransformedPadImage(s)
                     } else {
                         let s = TransformedNearestImageShader::<PadFetch>::new(image, &ti.post_transform(&transform));
-                        *shader_storage = ShaderStorage::TransformedNearestPadImage(s);
-                        shader = match shader_storage {
-                            ShaderStorage::TransformedNearestPadImage(s) => s,
-                            _ => panic!()
-                        };
+                        ShaderStorage::TransformedNearestPadImage(s)
                     }
                 }
             }
         }
         Source::Image(ref image, ExtendMode::Repeat, filter, transform) => {
             if let Some(offset) = is_integer_transform(&ti.post_transform(&transform)) {
-                *shader_storage = ShaderStorage::ImageRepeatAlpha(ImageRepeatAlphaShader::new(image, offset.x, offset.y, alpha));
-                shader = match shader_storage {
-                    ShaderStorage::ImageRepeatAlpha(s) => s,
-                    _ => panic!()
-                };
+                ShaderStorage::ImageRepeatAlpha(ImageRepeatAlphaShader::new(image, offset.x, offset.y, alpha))
             } else {
                 if *filter == FilterMode::Bilinear {
                     if alpha != 255 {
                         let s = TransformedImageAlphaShader::<RepeatFetch>::new(image, &ti.post_transform(&transform), alpha);
-                        *shader_storage = ShaderStorage::TransformedRepeatImageAlpha(s);
-                        shader = match shader_storage {
-                            ShaderStorage::TransformedRepeatImageAlpha(s) => s,
-                            _ => panic!()
-                        };
+                        ShaderStorage::TransformedRepeatImageAlpha(s)
                     } else {
                         let s = TransformedImageShader::<RepeatFetch>::new(image, &ti.post_transform(&transform));
-                        *shader_storage = ShaderStorage::TransformedRepeatImage(s);
-                        shader = match shader_storage {
-                            ShaderStorage::TransformedRepeatImage(s) => s,
-                            _ => panic!()
-                        };
+                        ShaderStorage::TransformedRepeatImage(s)
                     }
                 } else {
                     if alpha != 255 {
                         let s = TransformedNearestImageAlphaShader::<RepeatFetch>::new(image, &ti.post_transform(&transform), alpha);
-                        *shader_storage = ShaderStorage::TransformedNearestRepeatImageAlpha(s);
-                        shader = match shader_storage {
-                            ShaderStorage::TransformedNearestRepeatImageAlpha(s) => s,
-                            _ => panic!()
-                        };
+                        ShaderStorage::TransformedNearestRepeatImageAlpha(s)
                     } else {
                         let s = TransformedNearestImageShader::<RepeatFetch>::new(image, &ti.post_transform(&transform));
-                        *shader_storage = ShaderStorage::TransformedNearestRepeatImage(s);
-                        shader = match shader_storage {
-                            ShaderStorage::TransformedNearestRepeatImage(s) => s,
-                            _ => panic!()
-                        };
+                        ShaderStorage::TransformedNearestRepeatImage(s)
                     }
                 }
             }
         }
         Source::RadialGradient(ref gradient, spread, transform) => {
             let s = RadialGradientShader::new(gradient, &ti.post_transform(&transform), *spread, alpha);
-            *shader_storage = ShaderStorage::RadialGradient(s);
-            shader = match shader_storage {
-                ShaderStorage::RadialGradient(s) => s,
-                _ => panic!()
-            };
+            ShaderStorage::RadialGradient(s)
         }
         Source::TwoCircleRadialGradient(ref gradient, spread, c1, r1, c2, r2, transform) => {
             let s = TwoCircleRadialGradientShader::new(gradient, &ti.post_transform(&transform), *c1, *r1, *c2, *r2, *spread, alpha);
-            *shader_storage = ShaderStorage::TwoCircleRadialGradient(s);
-            shader = match shader_storage {
-                ShaderStorage::TwoCircleRadialGradient(s) => s,
-                _ => panic!()
-            };
+            ShaderStorage::TwoCircleRadialGradient(s)
         }
         Source::LinearGradient(ref gradient, spread, transform) => {
             let s = LinearGradientShader::new(gradient, &ti.post_transform(&transform), *spread, alpha);
-            *shader_storage = ShaderStorage::LinearGradient(s);
-            shader = match shader_storage {
-                ShaderStorage::LinearGradient(s) => s,
-                _ => panic!()
-            };
+            ShaderStorage::LinearGradient(s)
         }
     };
-    shader
+
+    match shader_storage {
+        ShaderStorage::None => unreachable!(),
+        ShaderStorage::Solid(s) => s,
+        ShaderStorage::ImagePadAlpha(s) => s,
+        ShaderStorage::ImageRepeatAlpha(s) => s,
+        ShaderStorage::TransformedNearestPadImageAlpha(s) => s,
+        ShaderStorage::TransformedNearestRepeatImageAlpha(s) => s,
+        ShaderStorage::TransformedPadImageAlpha(s) => s,
+        ShaderStorage::TransformedRepeatImageAlpha(s) => s,
+        ShaderStorage::TransformedPadImage(s) => s,
+        ShaderStorage::TransformedRepeatImage(s) => s,
+        ShaderStorage::TransformedNearestPadImage(s) => s,
+        ShaderStorage::TransformedNearestRepeatImage(s) => s,
+        ShaderStorage::RadialGradient(s) => s,
+        ShaderStorage::TwoCircleRadialGradient(s) => s,
+        ShaderStorage::LinearGradient(s) => s,
+    }
 }
 
 pub enum ShaderBlitterStorage<'a> {
