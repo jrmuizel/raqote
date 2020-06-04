@@ -820,13 +820,8 @@ impl DrawTarget {
         );
     }
 
-
-
-
     fn choose_blitter<'a, 'b, 'c>(mask: Option<&[u8]>, clip_stack: &'a Vec<Clip>, blitter_storage: &'b mut ShaderBlitterStorage<'a>, shader: &'a dyn Shader, blend: BlendMode, dest: &'a mut [u32], dest_bounds: IntRect, width: i32) -> &'b mut dyn Blitter {
-        let blitter: &mut dyn Blitter;
-
-        match (mask, clip_stack.last()) {
+        *blitter_storage = match (mask, clip_stack.last()) {
             (Some(_mask), Some(Clip {
                         rect: _,
                         mask: Some(clip),
@@ -835,21 +830,20 @@ impl DrawTarget {
                     let scb = ShaderClipMaskBlitter {
                         x: dest_bounds.min.x,
                         y: dest_bounds.min.y,
-                        shader: shader,
+                        shader,
                         tmp: vec![0; width as usize],
                         dest,
                         dest_stride: dest_bounds.size().width,
                         clip,
                         clip_stride: width,
                     };
-                    *blitter_storage = ShaderBlitterStorage::ShaderClipMaskBlitter(scb);
-                    blitter = match blitter_storage { ShaderBlitterStorage::ShaderClipMaskBlitter(s) => s, _ => panic!() };
+                    ShaderBlitterStorage::ShaderClipMaskBlitter(scb)
                 } else {
                     let blend_fn = build_blend_proc::<BlendRowMaskClip>(blend);
                     let scb_blend = ShaderClipBlendMaskBlitter {
                         x: dest_bounds.min.x,
                         y: dest_bounds.min.y,
-                        shader: shader,
+                        shader,
                         tmp: vec![0; width as usize],
                         dest,
                         dest_stride: dest_bounds.size().width,
@@ -857,12 +851,7 @@ impl DrawTarget {
                         clip_stride: width,
                         blend_fn
                     };
-
-                    *blitter_storage = ShaderBlitterStorage::ShaderClipBlendMaskBlitter(scb_blend);
-                    blitter = match blitter_storage {
-                        ShaderBlitterStorage::ShaderClipBlendMaskBlitter(s) => s,
-                        _ => panic!()
-                    };
+                    ShaderBlitterStorage::ShaderClipBlendMaskBlitter(scb_blend)
                 }
             }
             (Some(_mask), _) => {
@@ -875,8 +864,7 @@ impl DrawTarget {
                         dest,
                         dest_stride: dest_bounds.size().width,
                     };
-                    *blitter_storage = ShaderBlitterStorage::ShaderMaskBlitter(sb);
-                    blitter = match blitter_storage { ShaderBlitterStorage::ShaderMaskBlitter(s) => s, _ => panic!() };
+                    ShaderBlitterStorage::ShaderMaskBlitter(sb)
                 } else {
                     let blend_fn = build_blend_proc::<BlendRowMask>(blend);
                     let sb_blend = ShaderBlendMaskBlitter {
@@ -888,11 +876,7 @@ impl DrawTarget {
                         dest_stride: dest_bounds.size().width,
                         blend_fn,
                     };
-                    *blitter_storage = ShaderBlitterStorage::ShaderBlendMaskBlitter(sb_blend);
-                    blitter = match blitter_storage {
-                        ShaderBlitterStorage::ShaderBlendMaskBlitter(s) => s,
-                        _ => panic!()
-                    };
+                    ShaderBlitterStorage::ShaderBlendMaskBlitter(sb_blend)
                 }
             }
             (None, _) => {
@@ -906,14 +890,18 @@ impl DrawTarget {
                     dest_stride: dest_bounds.size().width,
                     blend_fn,
                 };
-                *blitter_storage = ShaderBlitterStorage::ShaderBlendBlitter(sb_blend);
-                blitter = match blitter_storage {
-                    ShaderBlitterStorage::ShaderBlendBlitter(s) => s,
-                    _ => panic!()
-                };
+                ShaderBlitterStorage::ShaderBlendBlitter(sb_blend)
             }
+        };
+
+        match blitter_storage {
+            ShaderBlitterStorage::None => unreachable!(),
+            ShaderBlitterStorage::ShaderBlendMaskBlitter(s) => s,
+            ShaderBlitterStorage::ShaderClipBlendMaskBlitter(s) => s,
+            ShaderBlitterStorage::ShaderMaskBlitter(s) => s,
+            ShaderBlitterStorage::ShaderClipMaskBlitter(s) => s,
+            ShaderBlitterStorage::ShaderBlendBlitter(s) => s,
         }
-        blitter
     }
 
     /// `mask_rect` is in DrawTarget space. i.e size is the size of the mask and origin is the position.
@@ -942,10 +930,10 @@ impl DrawTarget {
             return;
         }
 
-        let mut shader_storage: ShaderStorage = ShaderStorage::None;
+        let mut shader_storage = ShaderStorage::None;
         let shader = choose_shader(&ti, src, alpha, &mut shader_storage);
 
-        let mut blitter_storage: ShaderBlitterStorage = ShaderBlitterStorage::None;
+        let mut blitter_storage = ShaderBlitterStorage::None;
         let blitter = DrawTarget::choose_blitter(mask, &self.clip_stack, &mut blitter_storage, shader, blend, dest, dest_bounds, self.width);
 
         match mask {
