@@ -27,6 +27,11 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
         total_dash_length *= 2.;
     }
 
+    // The dash length must be more than zero.
+    if !(total_dash_length > 0.) {
+        return dashed.finish();
+    }
+
     // Handle large positive and negative offsets so that we don't loop for a high number of
     // iterations below in extreme cases
     dash_offset = dash_offset % total_dash_length;
@@ -57,9 +62,8 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
     }
     state.remaining_length -= dash_offset;
 
-    // Save a copy of the intial state so that we can restore it for each subpath
+    // Save a copy of the initial state so that we can restore it for each subpath
     let initial = state;
-    
     for op in &path.ops {
         match *op {
             PathOp::MoveTo(pt) => {

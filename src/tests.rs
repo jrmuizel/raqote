@@ -317,6 +317,44 @@ mod tests {
     }
 
     #[test]
+    fn dash_with_negative_length_1() {
+        let mut dt = DrawTarget::new(3, 3);
+        let mut pb = PathBuilder::new();
+        pb.rect(0.5, 0.5, 12., 12.);
+        dt.stroke(
+            &pb.finish(),
+            &WHITE_SOURCE,
+            &StrokeStyle {
+                width: 1.,
+                dash_array: vec![-1.],
+                dash_offset: 0.5,
+                ..Default::default()
+            },
+            &DrawOptions::new(),
+        );
+        // Must not loop.
+    }
+
+    #[test]
+    fn dash_with_negative_length_2() {
+        let mut dt = DrawTarget::new(3, 3);
+        let mut pb = PathBuilder::new();
+        pb.rect(0.5, 0.5, 12., 12.);
+        dt.stroke(
+            &pb.finish(),
+            &WHITE_SOURCE,
+            &StrokeStyle {
+                width: 1.,
+                dash_array: vec![5., -10.],
+                dash_offset: 0.5,
+                ..Default::default()
+            },
+            &DrawOptions::new(),
+        );
+        // Must not loop.
+    }
+
+    #[test]
     fn draw_options_alpha() {
         let mut dt = DrawTarget::new(2, 2);
         let mut pb = PathBuilder::new();
