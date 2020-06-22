@@ -558,8 +558,11 @@ impl Rasterizer {
     }
 
     pub fn rasterize(&mut self, blitter: &mut dyn RasterBlitter, winding_mode: Winding) {
-        self.cur_y = 0;
-        while self.cur_y < self.height {
+        let start = (self.bounds_top << SAMPLE_SHIFT).max(0);
+        let end = (self.bounds_bottom << SAMPLE_SHIFT).min(self.height);
+
+        self.cur_y = start;
+        while self.cur_y < end {
             // we do 4x4 super-sampling so we need
             // to scan 4 times before painting a line of pixels
             for _ in 0..4 {
