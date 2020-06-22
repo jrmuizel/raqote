@@ -588,8 +588,25 @@ impl Rasterizer {
     }
 
     pub fn reset(&mut self) {
+        if self.bounds_bottom < self.bounds_top {
+            debug_assert_eq!(self.active_edges, None);
+            for e in &mut self.edge_starts {
+                debug_assert_eq!(*e, None);
+            }
+            debug_assert_eq!(self.bounds_bottom, 0);
+            debug_assert_eq!(self.bounds_right, 0);
+            debug_assert_eq!(self.bounds_top, self.height >> SAMPLE_SHIFT);
+            debug_assert_eq!(self.bounds_left, self.width >> SAMPLE_SHIFT);
+            // Currently we allocate an edge in the arena even if we don't
+            // end up putting it in the edge_starts list. Avoiding that
+            // would let us avoiding having to reinitialize the arena
+            self.edge_arena = Arena::new();
+            return;
+        }
+        let start = (self.bounds_top << SAMPLE_SHIFT).max(0) as usize;
+        let end = (self.bounds_bottom << SAMPLE_SHIFT).min(self.height) as usize;
         self.active_edges = None;
-        for e in &mut self.edge_starts {
+        for e in &mut self.edge_starts[start..end] {
             *e = None;
         }
         self.edge_arena = Arena::new();
