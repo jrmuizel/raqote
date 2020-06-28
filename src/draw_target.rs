@@ -775,8 +775,8 @@ impl DrawTarget {
             let bounds = font.raster_bounds(
                 *id,
                 point_size,
-                fk::Transform2F::row_major(self.transform.m11, self.transform.m12, self.transform.m21, self.transform.m22, 0., 0.)
-                    .translate(fk::vec2f(position.x, position.y)),
+                fk::Transform2F::row_major(self.transform.m11, self.transform.m21, self.transform.m12, self.transform.m22, self.transform.m31, self.transform.m32)
+                    * fk::Transform2F::from_translation(fk::vec2f(position.x, position.y)),
                 fk::HintingOptions::None,
                 fk::RasterizationOptions::GrayscaleAa,
             );
@@ -790,23 +790,21 @@ impl DrawTarget {
                 _ => panic!(),
             }
         }
+        //let combined_bounds: euclid::Rect<i32, euclid::UnknownUnit> = euclid::Rect::new(euclid::Point2D::new(0, 0),euclid::Size2D::new( self.width, self.height));
 
-        /*let mut canvas = Canvas::new(&euclid::Size2D::new(combined_bounds.size.width as u32,
-        combined_bounds.size.height as u32), Format::A8);*/
         let mut canvas = fk::Canvas::new(
             fk::vec2i(combined_bounds.size.width, combined_bounds.size.height),
             fk::Format::A8,
         );
         for (id, position) in ids.iter().zip(positions.iter()) {
-            let mut position = self.transform.transform_point(*position);
-            position.x -= combined_bounds.origin.x as f32;
-            position.y -= combined_bounds.origin.y as f32;
+            let adjust = fk::Transform2F::from_translation(fk::vec2f(-combined_bounds.origin.x as f32, -combined_bounds.origin.y as f32));
+            dbg!(fk::Transform2F::row_major(self.transform.m11, self.transform.m21, self.transform.m12, self.transform.m22, self.transform.m31, self.transform.m32));
             font.rasterize_glyph(
                 &mut canvas,
                 *id,
                 point_size,
-                fk::Transform2F::row_major(self.transform.m11, self.transform.m12, self.transform.m21, self.transform.m22, 0., 0.)
-                    .translate(fk::vec2f(position.x, position.y)),
+                adjust * fk::Transform2F::row_major(self.transform.m11, self.transform.m21, self.transform.m12, self.transform.m22, self.transform.m31, self.transform.m32)
+                    * fk::Transform2F::from_translation(fk::vec2f(position.x, position.y)),
                 fk::HintingOptions::None,
                 fk::RasterizationOptions::GrayscaleAa,
             ).unwrap();
