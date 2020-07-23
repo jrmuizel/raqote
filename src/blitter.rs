@@ -154,7 +154,7 @@ fn transform_to_fixed(transform: &Transform) -> MatrixFixedPoint {
 pub struct TransformedImageShader<'a, 'b, Fetch: PixelFetch> {
     image: &'a Image<'b>,
     xfm: MatrixFixedPoint,
-    fetch: std::marker::PhantomData<Fetch>,
+    fetch: PhantomData<Fetch>,
 }
 
 impl<'a, 'b, Fetch: PixelFetch> TransformedImageShader<'a, 'b, Fetch> {
@@ -181,7 +181,7 @@ pub struct TransformedImageAlphaShader<'a, 'b, Fetch: PixelFetch> {
     image: &'a Image<'b>,
     xfm: MatrixFixedPoint,
     alpha: u32,
-    fetch: std::marker::PhantomData<Fetch>,
+    fetch: PhantomData<Fetch>,
 }
 
 impl<'a, 'b, Fetch: PixelFetch> TransformedImageAlphaShader<'a, 'b, Fetch> {
@@ -208,7 +208,7 @@ impl<'a, 'b, Fetch: PixelFetch> Shader for TransformedImageAlphaShader<'a, 'b, F
 pub struct TransformedNearestImageShader<'a, 'b, Fetch: PixelFetch> {
     image: &'a Image<'b>,
     xfm: MatrixFixedPoint,
-    fetch: std::marker::PhantomData<Fetch>,
+    fetch: PhantomData<Fetch>,
 }
 
 impl<'a, 'b, Fetch: PixelFetch> TransformedNearestImageShader<'a, 'b, Fetch> {
@@ -235,7 +235,7 @@ pub struct TransformedNearestImageAlphaShader<'a, 'b, Fetch: PixelFetch> {
     image: &'a Image<'b>,
     xfm: MatrixFixedPoint,
     alpha: u32,
-    fetch: std::marker::PhantomData<Fetch>,
+    fetch: PhantomData<Fetch>,
 }
 
 impl<'a, 'b, Fetch: PixelFetch> TransformedNearestImageAlphaShader<'a, 'b, Fetch> {
