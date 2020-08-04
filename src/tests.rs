@@ -15,11 +15,7 @@ mod tests {
         let mut dt = DrawTarget::new(2, 2);
         let mut pb = PathBuilder::new();
         pb.rect(1., 1., 1., 1.);
-        dt.fill(
-            &pb.finish(),
-            &WHITE_SOURCE,
-            &DrawOptions::new(),
-        );
+        dt.fill(&pb.finish(), &WHITE_SOURCE, &DrawOptions::new());
         let white = 0xffffffff;
         assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
     }
@@ -32,11 +28,7 @@ mod tests {
         pb.line_to(2., 1.);
         pb.line_to(2., 2.);
         pb.line_to(1., 2.);
-        dt.fill(
-            &pb.finish(),
-            &WHITE_SOURCE,
-            &DrawOptions::new(),
-        );
+        dt.fill(&pb.finish(), &WHITE_SOURCE, &DrawOptions::new());
         let white = 0xffffffff;
         assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
     }
@@ -46,11 +38,7 @@ mod tests {
         let mut dt = DrawTarget::new(2, 2);
         let mut pb = PathBuilder::new();
         pb.rect(1., 0., 8., 1.);
-        dt.fill(
-            &pb.finish(),
-            &WHITE_SOURCE,
-            &DrawOptions::new(),
-        );
+        dt.fill(&pb.finish(), &WHITE_SOURCE, &DrawOptions::new());
         let white = 0xffffffff;
         assert_eq!(dt.get_data(), &vec![0, white, 0, 0][..])
     }
@@ -61,11 +49,7 @@ mod tests {
         dt.push_clip_rect(intrect(1, 1, 2, 2));
         let mut pb = PathBuilder::new();
         pb.rect(0., 0., 2., 2.);
-        dt.fill(
-            &pb.finish(),
-            &WHITE_SOURCE,
-            &DrawOptions::new(),
-        );
+        dt.fill(&pb.finish(), &WHITE_SOURCE, &DrawOptions::new());
         let white = 0xffffffff;
         assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
     }
@@ -77,11 +61,7 @@ mod tests {
         dt.push_clip_rect(intrect(1, 0, 2, 2));
         let mut pb = PathBuilder::new();
         pb.rect(0., 0., 2., 2.);
-        dt.fill(
-            &pb.finish(),
-            &WHITE_SOURCE,
-            &DrawOptions::new(),
-        );
+        dt.fill(&pb.finish(), &WHITE_SOURCE, &DrawOptions::new());
         let white = 0xffffffff;
         assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
     }
@@ -95,11 +75,7 @@ mod tests {
         pb.rect(1., 1., 2., 2.);
         let mut path = pb.finish();
         path.winding = Winding::EvenOdd;
-        dt.fill(
-            &path,
-            &WHITE_SOURCE,
-            &DrawOptions::new(),
-        );
+        dt.fill(&path, &WHITE_SOURCE, &DrawOptions::new());
         let white = 0xffffffff;
         assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
     }
@@ -110,11 +86,7 @@ mod tests {
         let mut pb = PathBuilder::new();
         pb.rect(0., 0., 2., 2.);
         let path = pb.finish();
-        dt.fill(
-            &path,
-            &WHITE_SOURCE,
-            &DrawOptions::new(),
-        );
+        dt.fill(&path, &WHITE_SOURCE, &DrawOptions::new());
         dt.clear(SolidSource {
             r: 0,
             g: 0,
@@ -131,11 +103,7 @@ mod tests {
         dt.push_clip_rect(intrect(1, 1, 2, 2));
         dt.push_layer(1.);
         pb.rect(1., 1., 1., 1.);
-        dt.fill(
-            &pb.finish(),
-            &WHITE_SOURCE,
-            &DrawOptions::new(),
-        );
+        dt.fill(&pb.finish(), &WHITE_SOURCE, &DrawOptions::new());
         let white = 0xffffffff;
         dt.pop_layer();
         assert_eq!(dt.get_data(), &vec![0, 0, 0, white][..])
@@ -148,11 +116,7 @@ mod tests {
 
         let mut pb = PathBuilder::new();
         pb.rect(0., 0., 1., 1.);
-        dt2.fill(
-            &pb.finish(),
-            &WHITE_SOURCE,
-            &DrawOptions::new(),
-        );
+        dt2.fill(&pb.finish(), &WHITE_SOURCE, &DrawOptions::new());
         let image = Image {
             width: 1,
             height: 1,
@@ -170,11 +134,7 @@ mod tests {
 
         let mut pb = PathBuilder::new();
         pb.rect(1., 1., 1., 1.);
-        dt2.fill(
-            &pb.finish(),
-            &WHITE_SOURCE,
-            &DrawOptions::new(),
-        );
+        dt2.fill(&pb.finish(), &WHITE_SOURCE, &DrawOptions::new());
         let image = Image {
             width: 3,
             height: 3,
@@ -192,11 +152,7 @@ mod tests {
 
         let mut pb = PathBuilder::new();
         pb.rect(0., 0., 1., 1.);
-        dt2.fill(
-            &pb.finish(),
-            &WHITE_SOURCE,
-            &DrawOptions::new(),
-        );
+        dt2.fill(&pb.finish(), &WHITE_SOURCE, &DrawOptions::new());
         let image = Image {
             width: 2,
             height: 1,
@@ -208,7 +164,7 @@ mod tests {
             image,
             ExtendMode::Repeat,
             FilterMode::Bilinear,
-            Transform::create_translation(0., 0.),
+            Transform::translation(0., 0.),
         );
 
         dt.fill(&pb.finish(), &source, &DrawOptions::default());
@@ -364,7 +320,10 @@ mod tests {
             &DrawOptions::new(),
         );
         let white = 0xffffffff;
-        assert_eq!(dt.get_data(), &vec![white, 0, white, 0, 0, 0, white, 0, 0][..])
+        assert_eq!(
+            dt.get_data(),
+            &vec![white, 0, white, 0, 0, 0, white, 0, 0][..]
+        )
     }
 
     #[test]
@@ -599,7 +558,6 @@ mod tests {
 
     #[test]
     fn path_contains_point() {
-
         let mut pb = PathBuilder::new();
         pb.rect(0., 0., 2., 2.);
         let rect = pb.finish();
@@ -622,7 +580,6 @@ mod tests {
 
     #[test]
     fn push_clip() {
-
         let mut dest = DrawTarget::new(2, 2);
 
         let mut pb = PathBuilder::new();
@@ -646,11 +603,7 @@ mod tests {
         pb.line_to(0., 2.);
         pb.line_to(2., 2.);
         pb.line_to(2., 0.);
-        dt.fill(
-            &pb.finish(),
-            &WHITE_SOURCE,
-            &DrawOptions::new(),
-        );
+        dt.fill(&pb.finish(), &WHITE_SOURCE, &DrawOptions::new());
         assert_eq!(dt.get_data()[0], 0)
     }
 
@@ -688,7 +641,6 @@ mod tests {
 
     #[test]
     fn clip_rect_composite() {
-
         let mut dest = DrawTarget::new(2, 2);
 
         let mut pb = PathBuilder::new();
@@ -706,11 +658,7 @@ mod tests {
 
         let pixels = dest.get_data();
         // expected a red pixel
-        let expected =
-            255 << 24 |
-                255 << 16 |
-                0 << 8 |
-                0;
+        let expected = 255 << 24 | 255 << 16 | 0 << 8 | 0;
         assert_eq!(pixels[0], expected);
 
         let fill = Source::Solid(SolidSource {
@@ -722,11 +670,7 @@ mod tests {
         dest.fill(&rect, &fill, &DrawOptions::new());
         let pixels = dest.get_data();
         // expected a green pixel
-        let expected =
-            255 << 24 |
-                0 << 16 |
-                255 << 8 |
-                0;
+        let expected = 255 << 24 | 0 << 16 | 255 << 8 | 0;
         assert_eq!(pixels[0], expected);
     }
 
@@ -741,7 +685,6 @@ mod tests {
         target.fill(
             &rect,
             &Source::Solid(SolidSource::from_unpremultiplied_argb(128, 0, 255, 255)),
-
             &options,
         );
 
@@ -749,7 +692,6 @@ mod tests {
         target.fill(
             &rect,
             &Source::Solid(SolidSource::from_unpremultiplied_argb(0xbf, 255, 255, 0)),
-
             &options,
         );
     }
@@ -786,21 +728,21 @@ mod tests {
                 assert_eq!(transform.m22, 0.);
                 assert_eq!(transform.m31, 0.);
                 assert_eq!(transform.m32, 0.);
-            },
+            }
             _ => panic!("dead end"),
         };
     }
 
     #[test]
     fn blend_surface_with_negative_offset() {
-            let mut dt1 = crate::DrawTarget::new(3, 3);
-            let dt2 = crate::DrawTarget::new(3, 3);
-            dt1.blend_surface_with_alpha(
-                &dt2,
-                crate::IntRect::new(crate::IntPoint::new(-1, -1), crate::IntPoint::new(2, 2)),
-                crate::IntPoint::new(2, 2),
-                1.0,
-            );
+        let mut dt1 = crate::DrawTarget::new(3, 3);
+        let dt2 = crate::DrawTarget::new(3, 3);
+        dt1.blend_surface_with_alpha(
+            &dt2,
+            crate::IntRect::new(crate::IntPoint::new(-1, -1), crate::IntPoint::new(2, 2)),
+            crate::IntPoint::new(2, 2),
+            1.0,
+        );
     }
 
     #[test]
@@ -879,7 +821,7 @@ mod tests {
         let img = Image {
             width: 2,
             height: 2,
-            data: &vec![0xffff0000; 2*2],
+            data: &vec![0xffff0000; 2 * 2],
         };
 
         let identity = Transform::identity();
@@ -895,11 +837,7 @@ mod tests {
         pb.line_to(0.5, 0.5);
         pb.line_to(2.0, -2.0);
         pb.line_to(2.0, 0.5);
-        dt.fill(
-            &pb.finish(),
-            &WHITE_SOURCE,
-            &DrawOptions::new(),
-        );
+        dt.fill(&pb.finish(), &WHITE_SOURCE, &DrawOptions::new());
     }
 
     #[test]
@@ -930,30 +868,32 @@ mod tests {
         );
 
         let white = 0xffffffff;
-        assert_eq!(
-            dt.get_data(),
-            &vec![white, white, white, white][..]
-        );
+        assert_eq!(dt.get_data(), &vec![white, white, white, white][..]);
     }
 
     #[test]
     fn nearest_offset() {
         let white = 0xffffffff;
         let checkerboard = vec![0xff000000, white, white, 0xff000000];
-        let (width, height ) = (2, 2);
+        let (width, height) = (2, 2);
 
         let mut dt = DrawTarget::new(width, height);
-        let image = Image { width, height, data: &checkerboard };
-        dt.set_transform(&Transform::create_translation(-299., -299.));
-        let source = Source::Image(image, ExtendMode::Pad, FilterMode::Nearest,
-            Transform::identity().post_scale(width as f32 / 600., height as f32 / 600.));
+        let image = Image {
+            width,
+            height,
+            data: &checkerboard,
+        };
+        dt.set_transform(&Transform::translation(-299., -299.));
+        let source = Source::Image(
+            image,
+            ExtendMode::Pad,
+            FilterMode::Nearest,
+            Transform::identity().then_scale(width as f32 / 600., height as f32 / 600.),
+        );
 
         // draw a checkerboard scaled way up and make sure the origin stays in the center
         dt.fill_rect(0., 0., 600., 600., &source, &DrawOptions::new());
 
-        assert_eq!(
-            dt.get_data(),
-            &checkerboard[..]
-        );
+        assert_eq!(dt.get_data(), &checkerboard[..]);
     }
 }

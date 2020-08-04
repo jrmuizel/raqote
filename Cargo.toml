@@ -12,9 +12,9 @@ keywords = ["2d", "graphics"]
 categories = ["graphics"]
 
 [dependencies]
-euclid = "0.20"
+euclid = "0.22"
 font-kit = { version = "0.9", optional = true }
-lyon_geom = "0.15"
+lyon_geom = "0.16"
 pathfinder_geometry = { version = "0.5", optional = true }
 png = "0.16"
 typed-arena = "2.0"

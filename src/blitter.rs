@@ -1,7 +1,7 @@
 use sw_composite::*;
 
+use crate::draw_target::{ExtendMode, FilterMode, Source};
 use crate::{IntPoint, Point, Transform};
-use crate::draw_target::{ExtendMode, Source, FilterMode};
 
 use euclid::vec2;
 use std::marker::PhantomData;
@@ -34,7 +34,8 @@ fn coverage_to_partial_alpha(mut aa: i32) -> u8 {
 impl MaskSuperBlitter {
     pub fn new(x: i32, y: i32, width: i32, height: i32) -> MaskSuperBlitter {
         MaskSuperBlitter {
-            x: x * SCALE, y: y * SCALE,
+            x: x * SCALE,
+            y: y * SCALE,
             width,
             // we can end up writing one byte past the end of the buffer so allocate that
             // padding to avoid needing to do an extra check
@@ -76,10 +77,10 @@ impl RasterBlitter for MaskSuperBlitter {
             b[0] = saturated_add(b[0], coverage_to_partial_alpha(fb));
 
             // Rust seems to emit bounds checks here when it should be able to avoid them
-            for i in &mut b[1..len-1] {
+            for i in &mut b[1..len - 1] {
                 *i += max;
             }
-            b[len-1] = saturated_add(b[len-1], coverage_to_partial_alpha(fe));
+            b[len - 1] = saturated_add(b[len - 1], coverage_to_partial_alpha(fe));
         }
     }
 }
@@ -158,10 +159,17 @@ pub struct TransformedImageShader<'a, 'b, Fetch: PixelFetch> {
 }
 
 impl<'a, 'b, Fetch: PixelFetch> TransformedImageShader<'a, 'b, Fetch> {
-    pub fn new(image: &'a Image<'b>, transform: &Transform) -> TransformedImageShader<'a, 'b, Fetch> {
+    pub fn new(
+        image: &'a Image<'b>,
+        transform: &Transform,
+    ) -> TransformedImageShader<'a, 'b, Fetch> {
         TransformedImageShader {
             image,
-            xfm: transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5)).post_translate(vec2(-0.5, -0.5))),
+            xfm: transform_to_fixed(
+                &transform
+                    .pre_translate(vec2(0.5, 0.5))
+                    .then_translate(vec2(-0.5, -0.5)),
+            ),
             fetch: PhantomData,
         }
     }
@@ -185,10 +193,18 @@ pub struct TransformedImageAlphaShader<'a, 'b, Fetch: PixelFetch> {
 }
 
 impl<'a, 'b, Fetch: PixelFetch> TransformedImageAlphaShader<'a, 'b, Fetch> {
-    pub fn new(image: &'a Image<'b>, transform: &Transform, alpha: u32) -> TransformedImageAlphaShader<'a, 'b, Fetch> {
+    pub fn new(
+        image: &'a Image<'b>,
+        transform: &Transform,
+        alpha: u32,
+    ) -> TransformedImageAlphaShader<'a, 'b, Fetch> {
         TransformedImageAlphaShader {
             image,
-            xfm: transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5)).post_translate(vec2(-0.5, -0.5))),
+            xfm: transform_to_fixed(
+                &transform
+                    .pre_translate(vec2(0.5, 0.5))
+                    .then_translate(vec2(-0.5, -0.5)),
+            ),
             alpha: alpha_to_alpha256(alpha),
             fetch: PhantomData,
         }
@@ -212,10 +228,17 @@ pub struct TransformedNearestImageShader<'a, 'b, Fetch: PixelFetch> {
 }
 
 impl<'a, 'b, Fetch: PixelFetch> TransformedNearestImageShader<'a, 'b, Fetch> {
-    pub fn new(image: &'a Image<'b>, transform: &Transform) -> TransformedNearestImageShader<'a, 'b, Fetch> {
+    pub fn new(
+        image: &'a Image<'b>,
+        transform: &Transform,
+    ) -> TransformedNearestImageShader<'a, 'b, Fetch> {
         TransformedNearestImageShader {
             image,
-            xfm: transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5)).post_translate(vec2(-0.5, -0.5))),
+            xfm: transform_to_fixed(
+                &transform
+                    .pre_translate(vec2(0.5, 0.5))
+                    .then_translate(vec2(-0.5, -0.5)),
+            ),
             fetch: PhantomData,
         }
     }
@@ -239,10 +262,18 @@ pub struct TransformedNearestImageAlphaShader<'a, 'b, Fetch: PixelFetch> {
 }
 
 impl<'a, 'b, Fetch: PixelFetch> TransformedNearestImageAlphaShader<'a, 'b, Fetch> {
-    pub fn new(image: &'a Image<'b>, transform: &Transform, alpha: u32) -> TransformedNearestImageAlphaShader<'a, 'b, Fetch> {
+    pub fn new(
+        image: &'a Image<'b>,
+        transform: &Transform,
+        alpha: u32,
+    ) -> TransformedNearestImageAlphaShader<'a, 'b, Fetch> {
         TransformedNearestImageAlphaShader {
             image,
-            xfm: transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5)).post_translate(vec2(-0.5, -0.5))),
+            xfm: transform_to_fixed(
+                &transform
+                    .pre_translate(vec2(0.5, 0.5))
+                    .then_translate(vec2(-0.5, -0.5)),
+            ),
             alpha: alpha_to_alpha256(alpha),
             fetch: PhantomData,
         }
@@ -309,7 +340,10 @@ impl<'a, 'b> Shader for ImagePadAlphaShader<'a, 'b> {
             count -= len;
         }
         while count > 0 {
-            dest[dest_x] = alpha_mul(self.image.data[(self.image.width * y + self.image.width - 1) as usize], self.alpha);
+            dest[dest_x] = alpha_mul(
+                self.image.data[(self.image.width * y + self.image.width - 1) as usize],
+                self.alpha,
+            );
             dest_x += 1;
             count -= 1;
         }
@@ -366,11 +400,16 @@ pub struct RadialGradientShader {
 }
 
 impl RadialGradientShader {
-    pub fn new(gradient: &Gradient, transform: &Transform, spread: Spread, alpha: u32) -> RadialGradientShader {
+    pub fn new(
+        gradient: &Gradient,
+        transform: &Transform,
+        spread: Spread,
+        alpha: u32,
+    ) -> RadialGradientShader {
         RadialGradientShader {
-            gradient: gradient.make_source(&transform_to_fixed(
-                &transform.pre_translate(vec2(0.5, 0.5))),
-                alpha
+            gradient: gradient.make_source(
+                &transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5))),
+                alpha,
             ),
             spread,
         }
@@ -380,7 +419,9 @@ impl RadialGradientShader {
 impl Shader for RadialGradientShader {
     fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
         for i in 0..count {
-            dest[i] = self.gradient.radial_gradient_eval(x as u16, y as u16, self.spread);
+            dest[i] = self
+                .gradient
+                .radial_gradient_eval(x as u16, y as u16, self.spread);
             x += 1;
         }
     }
@@ -392,21 +433,26 @@ pub struct TwoCircleRadialGradientShader {
 }
 
 impl TwoCircleRadialGradientShader {
-    pub fn new(gradient: &Gradient,
-               transform: &Transform,
-               c1: Point,
-               r1: f32,
-               c2: Point,
-               r2: f32,
-               spread: Spread,
-               alpha: u32) -> TwoCircleRadialGradientShader {
+    pub fn new(
+        gradient: &Gradient,
+        transform: &Transform,
+        c1: Point,
+        r1: f32,
+        c2: Point,
+        r2: f32,
+        spread: Spread,
+        alpha: u32,
+    ) -> TwoCircleRadialGradientShader {
         TwoCircleRadialGradientShader {
             gradient: gradient.make_two_circle_source(
-                c1.x, c1.y,
+                c1.x,
+                c1.y,
                 r1,
-                c2.x, c2.y,
+                c2.x,
+                c2.y,
                 r2,
-                &transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5))), alpha
+                &transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5))),
+                alpha,
             ),
             spread,
         }
@@ -428,11 +474,16 @@ pub struct LinearGradientShader {
 }
 
 impl LinearGradientShader {
-    pub fn new(gradient: &Gradient, transform: &Transform, spread: Spread, alpha: u32) -> LinearGradientShader {
+    pub fn new(
+        gradient: &Gradient,
+        transform: &Transform,
+        spread: Spread,
+        alpha: u32,
+    ) -> LinearGradientShader {
         LinearGradientShader {
-            gradient: gradient.make_source(&transform_to_fixed(
-                &transform.pre_translate(vec2(0.5, 0.5))),
-                alpha
+            gradient: gradient.make_source(
+                &transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5))),
+                alpha,
             ),
             spread,
         }
@@ -442,7 +493,9 @@ impl LinearGradientShader {
 impl Shader for LinearGradientShader {
     fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
         for i in 0..count {
-            dest[i] = self.gradient.linear_gradient_eval(x as u16, y as u16, self.spread);
+            dest[i] = self
+                .gradient
+                .linear_gradient_eval(x as u16, y as u16, self.spread);
             x += 1;
         }
     }
@@ -516,7 +569,7 @@ pub struct ShaderClipBlendMaskBlitter<'a> {
     pub dest_stride: i32,
     pub clip: &'a [u8],
     pub clip_stride: i32,
-    pub blend_fn: fn (&[u32], &[u8], &[u8], &mut [u32]),
+    pub blend_fn: fn(&[u32], &[u8], &[u8], &mut [u32]),
 }
 
 impl<'a> Blitter for ShaderClipBlendMaskBlitter<'a> {
@@ -525,10 +578,12 @@ impl<'a> Blitter for ShaderClipBlendMaskBlitter<'a> {
         let clip_row = y * self.clip_stride;
         let count = (x2 - x1) as usize;
         self.shader.shade_span(x1, y, &mut self.tmp[..], count);
-        (self.blend_fn)(&self.tmp[..],
-                      mask,
-                      &self.clip[(clip_row + x1) as usize..],
-                      &mut self.dest[(dest_row + x1 - self.x) as usize..])
+        (self.blend_fn)(
+            &self.tmp[..],
+            mask,
+            &self.clip[(clip_row + x1) as usize..],
+            &mut self.dest[(dest_row + x1 - self.x) as usize..],
+        )
     }
 }
 
@@ -539,7 +594,7 @@ pub struct ShaderBlendMaskBlitter<'a> {
     pub tmp: Vec<u32>,
     pub dest: &'a mut [u32],
     pub dest_stride: i32,
-    pub blend_fn: fn (&[u32], &[u8], &mut [u32]),
+    pub blend_fn: fn(&[u32], &[u8], &mut [u32]),
 }
 
 impl<'a> Blitter for ShaderBlendMaskBlitter<'a> {
@@ -547,9 +602,11 @@ impl<'a> Blitter for ShaderBlendMaskBlitter<'a> {
         let dest_row = (y - self.y) * self.dest_stride;
         let count = (x2 - x1) as usize;
         self.shader.shade_span(x1, y, &mut self.tmp[..], count);
-        (self.blend_fn)(&self.tmp[..],
-                        mask,
-                        &mut self.dest[(dest_row + x1 - self.x) as usize..])
+        (self.blend_fn)(
+            &self.tmp[..],
+            mask,
+            &mut self.dest[(dest_row + x1 - self.x) as usize..],
+        )
     }
 }
 
@@ -560,7 +617,7 @@ pub struct ShaderBlendBlitter<'a> {
     pub tmp: Vec<u32>,
     pub dest: &'a mut [u32],
     pub dest_stride: i32,
-    pub blend_fn: fn (&[u32], &mut [u32]),
+    pub blend_fn: fn(&[u32], &mut [u32]),
 }
 
 impl<'a> Blitter for ShaderBlendBlitter<'a> {
@@ -568,22 +625,19 @@ impl<'a> Blitter for ShaderBlendBlitter<'a> {
         let dest_row = (y - self.y) * self.dest_stride;
         let count = (x2 - x1) as usize;
         self.shader.shade_span(x1, y, &mut self.tmp[..], count);
-        (self.blend_fn)(&self.tmp[..],
-                        &mut self.dest[(dest_row + x1 - self.x) as usize..])
+        (self.blend_fn)(
+            &self.tmp[..],
+            &mut self.dest[(dest_row + x1 - self.x) as usize..],
+        )
     }
 }
 
-
 fn is_integer_transform(trans: &Transform) -> Option<IntPoint> {
-    if trans.m11 == 1. &&
-        trans.m12 == 0. &&
-        trans.m21 == 0. &&
-        trans.m22 == 1. {
+    if trans.m11 == 1. && trans.m12 == 0. && trans.m21 == 0. && trans.m22 == 1. {
         let x = trans.m31 as i32;
         let y = trans.m32 as i32;
-        if x as f32 == trans.m31 &&
-            y as f32 == trans.m32 {
-            return Some(IntPoint::new(x, y))
+        if x as f32 == trans.m31 && y as f32 == trans.m32 {
+            return Some(IntPoint::new(x, y));
         }
     }
     None
@@ -610,7 +664,12 @@ pub enum ShaderStorage<'a, 'b> {
 // The idea here is to store a shader in shader_storage and then return
 // a reference to it. The goal is to avoid a heap allocation but the end
 // result is pretty ugly.
-pub fn choose_shader<'a, 'b, 'c>(ti: &Transform, src: &'b Source<'c>, alpha: f32, shader_storage: &'a mut ShaderStorage<'b, 'c>) -> &'a dyn Shader {
+pub fn choose_shader<'a, 'b, 'c>(
+    ti: &Transform,
+    src: &'b Source<'c>,
+    alpha: f32,
+    shader_storage: &'a mut ShaderStorage<'b, 'c>,
+) -> &'a dyn Shader {
     // XXX: clamp alpha
     let alpha = (alpha * 255. + 0.5) as u32;
 
@@ -621,61 +680,98 @@ pub fn choose_shader<'a, 'b, 'c>(ti: &Transform, src: &'b Source<'c>, alpha: f32
             ShaderStorage::Solid(s)
         }
         Source::Image(ref image, ExtendMode::Pad, filter, transform) => {
-            if let Some(offset) = is_integer_transform(&ti.post_transform(&transform)) {
-                ShaderStorage::ImagePadAlpha(ImagePadAlphaShader::new(image, offset.x, offset.y, alpha))
+            if let Some(offset) = is_integer_transform(&ti.then(&transform)) {
+                ShaderStorage::ImagePadAlpha(ImagePadAlphaShader::new(
+                    image, offset.x, offset.y, alpha,
+                ))
             } else {
                 if alpha != 255 {
                     if *filter == FilterMode::Bilinear {
-                        let s = TransformedImageAlphaShader::<PadFetch>::new(image, &ti.post_transform(&transform), alpha);
+                        let s = TransformedImageAlphaShader::<PadFetch>::new(
+                            image,
+                            &ti.then(&transform),
+                            alpha,
+                        );
                         ShaderStorage::TransformedPadImageAlpha(s)
                     } else {
-                        let s = TransformedNearestImageAlphaShader::<PadFetch>::new(image, &ti.post_transform(&transform), alpha);
+                        let s = TransformedNearestImageAlphaShader::<PadFetch>::new(
+                            image,
+                            &ti.then(&transform),
+                            alpha,
+                        );
                         ShaderStorage::TransformedNearestPadImageAlpha(s)
                     }
                 } else {
                     if *filter == FilterMode::Bilinear {
-                        let s = TransformedImageShader::<PadFetch>::new(image, &ti.post_transform(&transform));
+                        let s =
+                            TransformedImageShader::<PadFetch>::new(image, &ti.then(&transform));
                         ShaderStorage::TransformedPadImage(s)
                     } else {
-                        let s = TransformedNearestImageShader::<PadFetch>::new(image, &ti.post_transform(&transform));
+                        let s = TransformedNearestImageShader::<PadFetch>::new(
+                            image,
+                            &ti.then(&transform),
+                        );
                         ShaderStorage::TransformedNearestPadImage(s)
                     }
                 }
             }
         }
         Source::Image(ref image, ExtendMode::Repeat, filter, transform) => {
-            if let Some(offset) = is_integer_transform(&ti.post_transform(&transform)) {
-                ShaderStorage::ImageRepeatAlpha(ImageRepeatAlphaShader::new(image, offset.x, offset.y, alpha))
+            if let Some(offset) = is_integer_transform(&ti.then(&transform)) {
+                ShaderStorage::ImageRepeatAlpha(ImageRepeatAlphaShader::new(
+                    image, offset.x, offset.y, alpha,
+                ))
             } else {
                 if *filter == FilterMode::Bilinear {
                     if alpha != 255 {
-                        let s = TransformedImageAlphaShader::<RepeatFetch>::new(image, &ti.post_transform(&transform), alpha);
+                        let s = TransformedImageAlphaShader::<RepeatFetch>::new(
+                            image,
+                            &ti.then(&transform),
+                            alpha,
+                        );
                         ShaderStorage::TransformedRepeatImageAlpha(s)
                     } else {
-                        let s = TransformedImageShader::<RepeatFetch>::new(image, &ti.post_transform(&transform));
+                        let s =
+                            TransformedImageShader::<RepeatFetch>::new(image, &ti.then(&transform));
                         ShaderStorage::TransformedRepeatImage(s)
                     }
                 } else {
                     if alpha != 255 {
-                        let s = TransformedNearestImageAlphaShader::<RepeatFetch>::new(image, &ti.post_transform(&transform), alpha);
+                        let s = TransformedNearestImageAlphaShader::<RepeatFetch>::new(
+                            image,
+                            &ti.then(&transform),
+                            alpha,
+                        );
                         ShaderStorage::TransformedNearestRepeatImageAlpha(s)
                     } else {
-                        let s = TransformedNearestImageShader::<RepeatFetch>::new(image, &ti.post_transform(&transform));
+                        let s = TransformedNearestImageShader::<RepeatFetch>::new(
+                            image,
+                            &ti.then(&transform),
+                        );
                         ShaderStorage::TransformedNearestRepeatImage(s)
                     }
                 }
             }
         }
         Source::RadialGradient(ref gradient, spread, transform) => {
-            let s = RadialGradientShader::new(gradient, &ti.post_transform(&transform), *spread, alpha);
+            let s = RadialGradientShader::new(gradient, &ti.then(&transform), *spread, alpha);
             ShaderStorage::RadialGradient(s)
         }
         Source::TwoCircleRadialGradient(ref gradient, spread, c1, r1, c2, r2, transform) => {
-            let s = TwoCircleRadialGradientShader::new(gradient, &ti.post_transform(&transform), *c1, *r1, *c2, *r2, *spread, alpha);
+            let s = TwoCircleRadialGradientShader::new(
+                gradient,
+                &ti.then(&transform),
+                *c1,
+                *r1,
+                *c2,
+                *r2,
+                *spread,
+                alpha,
+            );
             ShaderStorage::TwoCircleRadialGradient(s)
         }
         Source::LinearGradient(ref gradient, spread, transform) => {
-            let s = LinearGradientShader::new(gradient, &ti.post_transform(&transform), *spread, alpha);
+            let s = LinearGradientShader::new(gradient, &ti.then(&transform), *spread, alpha);
             ShaderStorage::LinearGradient(s)
         }
     };
