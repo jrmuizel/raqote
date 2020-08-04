@@ -9,13 +9,12 @@
  * found in the LICENSE.skia file.
  */
 
-
 use typed_arena::Arena;
 
-use crate::{IntRect, Point};
 use crate::blitter::RasterBlitter;
-use crate::path_builder::Winding;
 use crate::geom::intrect;
+use crate::path_builder::Winding;
+use crate::{IntRect, Point};
 
 use std::ptr::NonNull;
 
@@ -63,7 +62,6 @@ fn div_fixed16_fixed16(a: i32, b: i32) -> i32 {
 //           edge->e -= edge->adj_down;
 //       }
 
-
 // it is possible to fit this into 64 bytes on x86-64
 // with the following layout:
 //
@@ -81,7 +79,7 @@ pub struct ActiveEdge {
     y2: i32, // 30.2
     next: Option<NonNull<ActiveEdge>>,
     slope_x: i32,
-    fullx: i32, // 16.16
+    fullx: i32,  // 16.16
     next_x: i32, // 16.16
     next_y: i32, // 16.16
 
@@ -148,7 +146,9 @@ impl ActiveEdge {
                 // update slope if we're going to be using it
                 // we want to avoid dividing by 0 which can happen if we exited the loop above early
                 if (cury + 1) < self.y2 {
-                    self.slope_x = div_fixed16_fixed16(self.next_x - self.old_x, self.next_y - self.old_y) >> 2;
+                    self.slope_x =
+                        div_fixed16_fixed16(self.next_x - self.old_x, self.next_y - self.old_y)
+                            >> 2;
                 }
             }
             self.fullx += self.slope_x;
@@ -158,8 +158,6 @@ impl ActiveEdge {
         }
     }
 }
-
-
 
 pub struct Rasterizer {
     edge_starts: Vec<Option<NonNull<ActiveEdge>>>,
@@ -249,7 +247,6 @@ const MAX_COEFF_SHIFT: i32 = 6;
 // can go as high as edge count: 374640
 // with curve count: 67680
 impl Rasterizer {
-
     // Overflow:
     // cairo just does _cairo_fixed_from_double (x) which ends up having some
     // weird behaviour around overflow because of the double to fixed conversion trick that it does.
@@ -315,7 +312,8 @@ impl Rasterizer {
             // we'll iterate t from 0..1 (0-256)
             // range of A is 4 times coordinate-range
             // we can get more accuracy here by using the input points instead of the rounded versions
-            let mut A = (edge.x1 - edge.control_x - edge.control_x + edge.x2) << (15 - SAMPLE_SHIFT);
+            let mut A =
+                (edge.x1 - edge.control_x - edge.control_x + edge.x2) << (15 - SAMPLE_SHIFT);
             let mut B = edge.control_x - edge.x1;
             //let mut C = edge.x1;
             let mut shift = compute_curve_steps(&edge);
@@ -355,7 +353,8 @@ impl Rasterizer {
                 e.next_y = edge.y2 << (16 - SAMPLE_SHIFT);
                 e.next_x = edge.x2 << (16 - SAMPLE_SHIFT);
             }
-            e.slope_x = ((e.next_x - (e.fullx)) << 0) / ((e.next_y - (cury << (16 - SAMPLE_SHIFT))) >> 14);
+            e.slope_x =
+                ((e.next_x - (e.fullx)) << 0) / ((e.next_y - (cury << (16 - SAMPLE_SHIFT))) >> 14);
         } else {
             e.shift = 0;
             e.slope_x = ((edge.x2 - edge.x1) * (1 << (16 - SAMPLE_SHIFT))) / (edge.y2 - edge.y1);
@@ -581,10 +580,12 @@ impl Rasterizer {
     }
 
     pub fn get_bounds(&self) -> IntRect {
-        intrect(self.bounds_left.max(0),
-                self.bounds_top.max(0),
-                self.bounds_right.min(self.width >> SAMPLE_SHIFT),
-                self.bounds_bottom.min(self.height >> SAMPLE_SHIFT))
+        intrect(
+            self.bounds_left.max(0),
+            self.bounds_top.max(0),
+            self.bounds_right.min(self.width >> SAMPLE_SHIFT),
+            self.bounds_bottom.min(self.height >> SAMPLE_SHIFT),
+        )
     }
 
     pub fn reset(&mut self) {

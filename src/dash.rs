@@ -6,8 +6,8 @@ use lyon_geom::LineSegment;
 
 #[derive(Clone, Copy)]
 struct DashState {
-    index: usize, // index into the dash array
-    on: bool, // whether the dash is on or off
+    index: usize,          // index into the dash array
+    on: bool,              // whether the dash is on or off
     remaining_length: f32, // how much of the dash remains
 }
 
@@ -45,7 +45,7 @@ pub fn dash_path(path: &Path, dash_array: &[f32], mut dash_offset: f32) -> Path 
     // join the end of the path with it.
     let mut is_first_segment = true;
     let mut first_dash = true;
-    let mut initial_segment : Vec<Point> = Vec::new();
+    let mut initial_segment: Vec<Point> = Vec::new();
 
     let mut state = DashState {
         on: true,

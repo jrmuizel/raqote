@@ -312,12 +312,14 @@ pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
                             cur_pt.x + normal.x * half_width,
                             cur_pt.y + normal.y * half_width,
                         );
-                        stroked_path.line_to(pt.x + normal.x * half_width, pt.y + normal.y * half_width);
+                        stroked_path
+                            .line_to(pt.x + normal.x * half_width, pt.y + normal.y * half_width);
                         // we add a point at the midpoint of the line so that our edge has matching
                         // end points with the edges used for joining. This avoids seams during
                         // rasterization caused by precision differences in the slope and endpoints
                         stroked_path.line_to(pt.x, pt.y);
-                        stroked_path.line_to(pt.x + -normal.x * half_width, pt.y + -normal.y * half_width);
+                        stroked_path
+                            .line_to(pt.x + -normal.x * half_width, pt.y + -normal.y * half_width);
                         stroked_path.line_to(
                             cur_pt.x - normal.x * half_width,
                             cur_pt.y - normal.y * half_width,
@@ -327,11 +329,9 @@ pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
                         stroked_path.close();
 
                         last_normal = normal;
-
                     }
                 }
                 cur_pt = Some(pt);
-
             }
             PathOp::Close => {
                 if let (Some(cur_pt), Some((end_point, start_normal))) = (cur_pt, start_point) {
@@ -346,10 +346,7 @@ pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
                             end_point.x + normal.x * half_width,
                             end_point.y + normal.y * half_width,
                         );
-                        stroked_path.line_to(
-                            end_point.x,
-                            end_point.y,
-                        );
+                        stroked_path.line_to(end_point.x, end_point.y);
                         stroked_path.line_to(
                             end_point.x + -normal.x * half_width,
                             end_point.y + -normal.y * half_width,
@@ -358,14 +355,17 @@ pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
                             cur_pt.x - normal.x * half_width,
                             cur_pt.y - normal.y * half_width,
                         );
-                        stroked_path.line_to(
-                            cur_pt.x,
-                            cur_pt.y,
-                        );
+                        stroked_path.line_to(cur_pt.x, cur_pt.y);
                         stroked_path.close();
                         join_line(&mut stroked_path, style, end_point, normal, start_normal);
                     } else {
-                        join_line(&mut stroked_path, style, end_point, last_normal, start_normal);
+                        join_line(
+                            &mut stroked_path,
+                            style,
+                            end_point,
+                            last_normal,
+                            start_normal,
+                        );
                     }
                 }
                 cur_pt = start_point.map(|x| x.0);

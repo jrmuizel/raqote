@@ -25,10 +25,9 @@ impl PathOp {
         match self {
             PathOp::MoveTo(p) => PathOp::MoveTo(xform.transform_point(p)),
             PathOp::LineTo(p) => PathOp::LineTo(xform.transform_point(p)),
-            PathOp::QuadTo(p1, p2) => PathOp::QuadTo(
-                xform.transform_point(p1),
-                xform.transform_point(p2)
-            ),
+            PathOp::QuadTo(p1, p2) => {
+                PathOp::QuadTo(xform.transform_point(p1), xform.transform_point(p2))
+            }
             PathOp::CubicTo(p1, p2, p3) => PathOp::CubicTo(
                 xform.transform_point(p1),
                 xform.transform_point(p2),
@@ -52,7 +51,10 @@ impl Path {
     /// so that the error is not greater than `tolerance`.
     pub fn flatten(&self, tolerance: f32) -> Path {
         let mut cur_pt = None;
-        let mut flattened = Path { ops: Vec::new(), winding: Winding::NonZero };
+        let mut flattened = Path {
+            ops: Vec::new(),
+            winding: Winding::NonZero,
+        };
         for op in &self.ops {
             match *op {
                 PathOp::MoveTo(pt) | PathOp::LineTo(pt) => {
@@ -112,11 +114,10 @@ impl Path {
 
         impl WindState {
             fn close(&mut self) {
-                if let (Some(first_point), Some(current_point)) = (self.first_point, self.current_point) {
-                    self.add_edge(
-                        current_point,
-                        first_point,
-                    );
+                if let (Some(first_point), Some(current_point)) =
+                    (self.first_point, self.current_point)
+                {
+                    self.add_edge(current_point, first_point);
                 }
                 self.first_point = None;
             }
@@ -130,17 +131,17 @@ impl Path {
 
                 // entirely to the right
                 if x1 > self.x && x2 > self.x {
-                    return
+                    return;
                 }
 
                 // entirely above
                 if y1 > self.y && y2 > self.y {
-                    return
+                    return;
                 }
 
                 // entirely below
                 if y1 < self.y && y2 < self.y {
-                    return
+                    return;
                 }
 
                 // entirely to the left
@@ -169,7 +170,14 @@ impl Path {
             }
         }
 
-        let mut ws = WindState { count: 0, first_point: None, current_point: None, x, y, on_edge: false};
+        let mut ws = WindState {
+            count: 0,
+            first_point: None,
+            current_point: None,
+            x,
+            y,
+            on_edge: false,
+        };
 
         for op in &flat_path.ops {
             match *op {
@@ -177,7 +185,7 @@ impl Path {
                     ws.close();
                     ws.current_point = Some(pt);
                     ws.first_point = Some(pt);
-                },
+                }
                 PathOp::LineTo(pt) => {
                     if let Some(current_point) = ws.current_point {
                         ws.add_edge(current_point, pt);
@@ -185,9 +193,8 @@ impl Path {
                         ws.first_point = Some(pt);
                     }
                     ws.current_point = Some(pt);
-                },
-                PathOp::QuadTo(..) |
-                PathOp::CubicTo(..) => panic!(),
+                }
+                PathOp::QuadTo(..) | PathOp::CubicTo(..) => panic!(),
                 PathOp::Close => ws.close(),
             }
         }
@@ -215,9 +222,7 @@ pub struct PathBuilder {
 
 impl From<Path> for PathBuilder {
     fn from(path: Path) -> Self {
-        PathBuilder {
-            path
-        }
+        PathBuilder { path }
     }
 }
 
@@ -272,7 +277,6 @@ impl PathBuilder {
     pub fn close(&mut self) {
         self.path.ops.push(PathOp::Close)
     }
-
 
     /// Adds an arc approximated by quadratic beziers with center `x`, `y`
     /// and radius `r` starting at `start_angle` and sweeping by `sweep_angle`.
