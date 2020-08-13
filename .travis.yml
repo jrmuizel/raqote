@@ -14,3 +14,9 @@ matrix:
       script:
         - cargo build --no-default-features
         - cargo test --verbose --all
+    - os: osx
+      script:
+        - cargo test --verbose --all
+    - os: windows
+      script:
+        - cargo test --verbose --all

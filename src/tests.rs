@@ -956,4 +956,34 @@ mod tests {
             &checkerboard[..]
         );
     }
+
+    #[test]
+    fn text() {
+        let mut dt = DrawTarget::new(64, 1);
+        dt.fill_rect(0., 0., 800., 800., &WHITE_SOURCE, &DrawOptions::new());
+
+        dt.set_transform(&Transform::create_rotation(euclid::Angle::degrees(15.0)));
+        let font = font_kit::loader::Loader::from_file(&mut std::fs::File::open("res/Box3.ttf").unwrap(), 0).unwrap();
+        let black = Source::Solid(SolidSource {
+            r: 0,
+            g: 0,
+            b: 0,
+            a: 0xff,
+        });
+        dt.draw_text(
+            &font,
+            30.,
+            "3333",
+            Point::new(-20., 30.),
+            &black,
+            &DrawOptions::new(),
+        );
+
+        let white = 0xffffffff;
+        let black = 0xff000000;
+        let d = dt.get_data();
+        assert_eq!(d[0], white);
+        assert_eq!(d[42], black);
+        assert_eq!(d[62], white);
+    }
 }
