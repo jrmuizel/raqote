@@ -20,7 +20,9 @@ mod fk {
     pub use pathfinder_geometry::vector::{vec2f, vec2i};
 }
 
+#[cfg(feature = "png")]
 use std::fs::*;
+#[cfg(feature = "png")]
 use std::io::BufWriter;
 
 use crate::stroke::*;
@@ -1047,8 +1049,8 @@ impl DrawTarget {
         self.buf
     }
 
-
     /// Saves the current pixel to a png file at `path`
+    #[cfg(feature = "png")]
     pub fn write_png<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), png::EncodingError> {
         let file = File::create(path)?;
 
