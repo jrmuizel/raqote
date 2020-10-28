@@ -110,7 +110,7 @@ mod path_builder;
 pub use path_builder::*;
 
 pub use crate::draw_target::{AntialiasMode, FilterMode};
-pub use crate::draw_target::{BlendMode, DrawOptions, DrawTarget, SolidSource, Source, Winding, ExtendMode};
+pub use crate::draw_target::{BlendMode, DrawOptions, DrawTarget, SolidSource, Source, Winding, ExtendMode, Mask};
 pub use crate::stroke::*;
 
 pub use sw_composite::{Color, Gradient, GradientStop, Image, Spread};
