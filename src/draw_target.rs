@@ -772,6 +772,10 @@ impl DrawTarget {
         src: &Source,
         options: &DrawOptions,
     ) {
+        let antialias_mode = match options.antialias {
+            AntialiasMode::Gray => fk::RasterizationOptions::GrayscaleAa,
+            AntialiasMode::None => fk::RasterizationOptions::Bilevel,
+        };
         let mut combined_bounds = euclid::Rect::zero();
         for (id, position) in ids.iter().zip(positions.iter()) {
             let bounds = font.raster_bounds(
@@ -780,7 +784,7 @@ impl DrawTarget {
                 fk::Transform2F::row_major(self.transform.m11, self.transform.m12, self.transform.m21, self.transform.m22, 0., 0.)
                     .translate(fk::vec2f(position.x, position.y)),
                 fk::HintingOptions::None,
-                fk::RasterizationOptions::GrayscaleAa,
+                antialias_mode,
             );
             combined_bounds = match bounds {
                 Ok(bounds) => {
@@ -810,7 +814,7 @@ impl DrawTarget {
                 fk::Transform2F::row_major(self.transform.m11, self.transform.m12, self.transform.m21, self.transform.m22, 0., 0.)
                     .translate(fk::vec2f(position.x, position.y)),
                 fk::HintingOptions::None,
-                fk::RasterizationOptions::GrayscaleAa,
+                antialias_mode,
             ).unwrap();
         }
 
