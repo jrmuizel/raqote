@@ -297,6 +297,16 @@ pub enum AntialiasMode {
     Gray,
 }
 
+#[cfg(feature = "text")]
+impl From<AntialiasMode> for fk::RasterizationOptions {
+    fn from(mode: AntialiasMode) -> Self {
+        match mode {
+            AntialiasMode::Gray => fk::RasterizationOptions::GrayscaleAa,
+            AntialiasMode::None => fk::RasterizationOptions::Bilevel,
+        }
+    }
+}
+
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub struct DrawOptions {
     pub blend_mode: BlendMode,
@@ -797,30 +807,12 @@ impl<Backing : AsRef<[u32]> + AsMut<[u32]>> DrawTarget<Backing> {
         src: &Source,
         options: &DrawOptions,
     ) {
-        let antialias_mode = match options.antialias {
-            AntialiasMode::Gray => fk::RasterizationOptions::GrayscaleAa,
-            AntialiasMode::None => fk::RasterizationOptions::Bilevel,
-        };
-        let mut combined_bounds = euclid::Rect::zero();
-        for (id, position) in ids.iter().zip(positions.iter()) {
-            let bounds = font.raster_bounds(
-                *id,
-                point_size,
-                fk::Transform2F::row_major(self.transform.m11, self.transform.m12, self.transform.m21, self.transform.m22, 0., 0.)
-                    .translate(fk::vec2f(position.x, position.y)),
-                fk::HintingOptions::None,
-                antialias_mode,
-            );
-            combined_bounds = match bounds {
-                Ok(bounds) => {
-                    let origin = bounds.origin();
-                    let size = bounds.size();
-                    let bounds = euclid::Rect::new(IntPoint::new(origin.x(), origin.y()), euclid::Size2D::new(size.x(), size.y()));
-                    combined_bounds.union(&bounds)
-                }
-                _ => panic!(),
-            }
-        }
+        let combined_bounds = self.measure_glyphs(
+            &font,
+            point_size,
+            ids.iter().copied().zip(positions.iter().copied()),
+            options.antialias,
+        ).unwrap();
 
         /*let mut canvas = Canvas::new(&euclid::Size2D::new(combined_bounds.size.width as u32,
         combined_bounds.size.height as u32), Format::A8);*/
@@ -828,6 +820,7 @@ impl<Backing : AsRef<[u32]> + AsMut<[u32]>> DrawTarget<Backing> {
             fk::vec2i(combined_bounds.size.width, combined_bounds.size.height),
             fk::Format::A8,
         );
+        let antialias_mode: fk::RasterizationOptions =  options.antialias.into();
         for (id, position) in ids.iter().zip(positions.iter()) {
             let mut position = self.transform.transform_point(*position);
             position.x -= combined_bounds.origin.x as f32;
@@ -851,6 +844,67 @@ impl<Backing : AsRef<[u32]> + AsMut<[u32]>> DrawTarget<Backing> {
             options.blend_mode,
             1.,
         );
+    }
+
+    #[cfg(feature = "text")]
+    pub fn measure_text(
+        &self,
+        font: &fk::Font,
+        point_size: f32,
+        text: &str,
+        antialias_mode: AntialiasMode,
+    ) -> Result<euclid::Rect<i32, euclid::UnknownUnit>, font_kit::error::GlyphLoadingError> {
+        self.measure_glyphs(
+            font,
+            point_size,
+            text.chars().scan(fk::vec2f(0., 0.), |start, c| {
+                let id = font.glyph_for_char(c).unwrap();
+                let position = Point::new(start.x(), start.y());
+                *start += font.advance(id).unwrap() * point_size / 24. / 96.;
+
+                Some((id, position))
+            }),
+            antialias_mode,
+        )
+    }
+
+    #[cfg(feature = "text")]
+    pub fn measure_glyphs(
+        &self,
+        font: &fk::Font,
+        point_size: f32,
+        glyphs: impl IntoIterator<Item = (u32, Point)>,
+        antialias_mode: AntialiasMode,
+    ) -> Result<euclid::Rect<i32, euclid::UnknownUnit>, font_kit::error::GlyphLoadingError> {
+        let antialias_mode: fk::RasterizationOptions = antialias_mode.into();
+        let mut combined_bounds = euclid::Rect::zero();
+        for (id, position) in glyphs.into_iter() {
+            let bounds = font.raster_bounds(
+                id,
+                point_size,
+                fk::Transform2F::row_major(
+                    self.transform.m11,
+                    self.transform.m12,
+                    self.transform.m21,
+                    self.transform.m22,
+                    0.,
+                    0.,
+                )
+                .translate(fk::vec2f(position.x, position.y)),
+                fk::HintingOptions::None,
+                antialias_mode,
+            );
+            let bounds = bounds?;
+            let origin = bounds.origin();
+            let size = bounds.size();
+            let bounds = euclid::Rect::new(
+                IntPoint::new(origin.x(), origin.y()),
+                euclid::Size2D::new(size.x(), size.y()),
+            );
+            combined_bounds = combined_bounds.union(&bounds);
+        }
+
+        Ok(combined_bounds)
     }
 }
 
