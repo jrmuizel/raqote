@@ -258,28 +258,28 @@ impl<'a> Source<'a> {
             let sin = gradient_vector.y;
             let cos = gradient_vector.x;
             // Build up a rotation matrix from our vector
-            let mat = Transform::row_major(cos, -sin, sin, cos, 0., 0.);
+            let mat = Transform::new(cos, -sin, sin, cos, 0., 0.);
 
             // Adjust for the start point
             let mat = mat.pre_translate(vec2(-start.x, -start.y));
 
             // Scale gradient to desired length
-            let mat = mat.post_scale(1. / length, 1. / length);
+            let mat = mat.then_scale(1. / length, 1. / length);
             Source::LinearGradient(gradient, spread, mat)
         } else {
             // use some degenerate matrix
-            Source::LinearGradient(gradient, spread, Transform::create_scale(0., 0.))
+            Source::LinearGradient(gradient, spread, Transform::scale(0., 0.))
         }
     }
 
     /// Creates a new radial gradient that is centered at the given point and has the given radius.
     pub fn new_radial_gradient(gradient: Gradient, center: Point, radius: f32, spread: Spread) -> Source<'a> {
         // Scale gradient to desired radius
-        let scale = Transform::create_scale(radius, radius);
+        let scale = Transform::scale(radius, radius);
         // Transform gradient to center of gradient
-        let translate = Transform::create_translation(center.x, center.y);
+        let translate = Transform::translation(center.x, center.y);
         // Compute final transform
-        let transform = translate.pre_transform(&scale).inverse().unwrap();
+        let transform = scale.then(&translate).inverse().unwrap();
 
         Source::RadialGradient(gradient, spread, transform)
     }
@@ -525,7 +525,7 @@ impl DrawTarget {
                      rect: current_clip,
                      mask: _,
                  }) => Clip {
-                rect: current_clip.intersection(&rect),
+                rect: current_clip.intersection_unchecked(&rect),
                 mask: None,
             },
             _ => Clip {
@@ -608,7 +608,7 @@ impl DrawTarget {
         },
                                   ExtendMode::Pad,
                                   FilterMode::Nearest,
-                                  Transform::create_translation(-layer.rect.min.x as f32,
+                                  Transform::translation(-layer.rect.min.x as f32,
                                                                 -layer.rect.min.y as f32));
         self.composite(&image, Some(&mask), intrect(0, 0, self.width, self.height), layer.rect, layer.blend, 1.);
         self.transform = ctm;
@@ -620,7 +620,7 @@ impl DrawTarget {
         let source = Source::Image(*image,
                                    ExtendMode::Pad,
                                    FilterMode::Bilinear,
-                                   Transform::create_translation(-x, -y).post_scale(image.width as f32 / width, image.height as f32 / height));
+                                   Transform::translation(-x, -y).then_scale(image.width as f32 / width, image.height as f32 / height));
 
         self.fill_rect(x, y, width, height, &source, options);
     }
@@ -668,10 +668,10 @@ impl DrawTarget {
         if self.transform == Transform::identity() && integer_rect && self.clip_stack.is_empty() {
             let bounds = intrect(0, 0, self.width, self.height);
             let mut irect = intrect(ix, iy, ix + iwidth, iy + iheight);
-            irect = irect.intersection(&bounds);
-            if irect.is_negative() {
-                return;
-            }
+            irect = match irect.intersection(&bounds) {
+                Some(irect) => irect,
+                _ => return,
+            };
             self.composite(src, None, irect, irect, options.blend_mode, options.alpha);
         } else {
             let mut pb = PathBuilder::new();
@@ -931,10 +931,10 @@ impl DrawTarget {
         };
 
         rect = rect
-            .intersection(&clip_bounds)
-            .intersection(&dest_bounds)
-            .intersection(&mask_rect);
-        if rect.is_negative() {
+            .intersection_unchecked(&clip_bounds)
+            .intersection_unchecked(&dest_bounds)
+            .intersection_unchecked(&mask_rect);
+        if rect.is_empty() {
             return;
         }
 
@@ -967,16 +967,16 @@ impl DrawTarget {
         let dst_rect = intrect(0, 0, self.width, self.height);
 
         // intersect the src_rect with the source size so that we don't go out of bounds
-        let src_rect = src_rect.intersection(&intrect(0, 0, src.width, src.height));
+        let src_rect = src_rect.intersection_unchecked(&intrect(0, 0, src.width, src.height));
 
         let src_rect = dst_rect
-            .intersection(&src_rect.translate(dst.to_vector())).translate(-dst.to_vector());
+            .intersection_unchecked(&src_rect.translate(dst.to_vector())).translate(-dst.to_vector());
 
         // clamp requires Float so open code it
         let dst = IntPoint::new(dst.x.max(dst_rect.min.x).min(dst_rect.max.x),
                                 dst.y.max(dst_rect.min.y).min(dst_rect.max.y));
 
-        if src_rect.is_negative() {
+        if src_rect.is_empty() {
             return;
         }
 

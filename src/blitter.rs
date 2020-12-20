@@ -161,7 +161,7 @@ impl<'a, 'b, Fetch: PixelFetch> TransformedImageShader<'a, 'b, Fetch> {
     pub fn new(image: &'a Image<'b>, transform: &Transform) -> TransformedImageShader<'a, 'b, Fetch> {
         TransformedImageShader {
             image,
-            xfm: transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5)).post_translate(vec2(-0.5, -0.5))),
+            xfm: transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5)).then_translate(vec2(-0.5, -0.5))),
             fetch: PhantomData,
         }
     }
@@ -188,7 +188,7 @@ impl<'a, 'b, Fetch: PixelFetch> TransformedImageAlphaShader<'a, 'b, Fetch> {
     pub fn new(image: &'a Image<'b>, transform: &Transform, alpha: u32) -> TransformedImageAlphaShader<'a, 'b, Fetch> {
         TransformedImageAlphaShader {
             image,
-            xfm: transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5)).post_translate(vec2(-0.5, -0.5))),
+            xfm: transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5)).then_translate(vec2(-0.5, -0.5))),
             alpha: alpha_to_alpha256(alpha),
             fetch: PhantomData,
         }
@@ -215,7 +215,7 @@ impl<'a, 'b, Fetch: PixelFetch> TransformedNearestImageShader<'a, 'b, Fetch> {
     pub fn new(image: &'a Image<'b>, transform: &Transform) -> TransformedNearestImageShader<'a, 'b, Fetch> {
         TransformedNearestImageShader {
             image,
-            xfm: transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5)).post_translate(vec2(-0.5, -0.5))),
+            xfm: transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5)).then_translate(vec2(-0.5, -0.5))),
             fetch: PhantomData,
         }
     }
@@ -242,7 +242,7 @@ impl<'a, 'b, Fetch: PixelFetch> TransformedNearestImageAlphaShader<'a, 'b, Fetch
     pub fn new(image: &'a Image<'b>, transform: &Transform, alpha: u32) -> TransformedNearestImageAlphaShader<'a, 'b, Fetch> {
         TransformedNearestImageAlphaShader {
             image,
-            xfm: transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5)).post_translate(vec2(-0.5, -0.5))),
+            xfm: transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5)).then_translate(vec2(-0.5, -0.5))),
             alpha: alpha_to_alpha256(alpha),
             fetch: PhantomData,
         }
@@ -621,61 +621,61 @@ pub fn choose_shader<'a, 'b, 'c>(ti: &Transform, src: &'b Source<'c>, alpha: f32
             ShaderStorage::Solid(s)
         }
         Source::Image(ref image, ExtendMode::Pad, filter, transform) => {
-            if let Some(offset) = is_integer_transform(&ti.post_transform(&transform)) {
+            if let Some(offset) = is_integer_transform(&ti.then(&transform)) {
                 ShaderStorage::ImagePadAlpha(ImagePadAlphaShader::new(image, offset.x, offset.y, alpha))
             } else {
                 if alpha != 255 {
                     if *filter == FilterMode::Bilinear {
-                        let s = TransformedImageAlphaShader::<PadFetch>::new(image, &ti.post_transform(&transform), alpha);
+                        let s = TransformedImageAlphaShader::<PadFetch>::new(image, &ti.then(&transform), alpha);
                         ShaderStorage::TransformedPadImageAlpha(s)
                     } else {
-                        let s = TransformedNearestImageAlphaShader::<PadFetch>::new(image, &ti.post_transform(&transform), alpha);
+                        let s = TransformedNearestImageAlphaShader::<PadFetch>::new(image, &ti.then(&transform), alpha);
                         ShaderStorage::TransformedNearestPadImageAlpha(s)
                     }
                 } else {
                     if *filter == FilterMode::Bilinear {
-                        let s = TransformedImageShader::<PadFetch>::new(image, &ti.post_transform(&transform));
+                        let s = TransformedImageShader::<PadFetch>::new(image, &ti.then(&transform));
                         ShaderStorage::TransformedPadImage(s)
                     } else {
-                        let s = TransformedNearestImageShader::<PadFetch>::new(image, &ti.post_transform(&transform));
+                        let s = TransformedNearestImageShader::<PadFetch>::new(image, &ti.then(&transform));
                         ShaderStorage::TransformedNearestPadImage(s)
                     }
                 }
             }
         }
         Source::Image(ref image, ExtendMode::Repeat, filter, transform) => {
-            if let Some(offset) = is_integer_transform(&ti.post_transform(&transform)) {
+            if let Some(offset) = is_integer_transform(&ti.then(&transform)) {
                 ShaderStorage::ImageRepeatAlpha(ImageRepeatAlphaShader::new(image, offset.x, offset.y, alpha))
             } else {
                 if *filter == FilterMode::Bilinear {
                     if alpha != 255 {
-                        let s = TransformedImageAlphaShader::<RepeatFetch>::new(image, &ti.post_transform(&transform), alpha);
+                        let s = TransformedImageAlphaShader::<RepeatFetch>::new(image, &ti.then(&transform), alpha);
                         ShaderStorage::TransformedRepeatImageAlpha(s)
                     } else {
-                        let s = TransformedImageShader::<RepeatFetch>::new(image, &ti.post_transform(&transform));
+                        let s = TransformedImageShader::<RepeatFetch>::new(image, &ti.then(&transform));
                         ShaderStorage::TransformedRepeatImage(s)
                     }
                 } else {
                     if alpha != 255 {
-                        let s = TransformedNearestImageAlphaShader::<RepeatFetch>::new(image, &ti.post_transform(&transform), alpha);
+                        let s = TransformedNearestImageAlphaShader::<RepeatFetch>::new(image, &ti.then(&transform), alpha);
                         ShaderStorage::TransformedNearestRepeatImageAlpha(s)
                     } else {
-                        let s = TransformedNearestImageShader::<RepeatFetch>::new(image, &ti.post_transform(&transform));
+                        let s = TransformedNearestImageShader::<RepeatFetch>::new(image, &ti.then(&transform));
                         ShaderStorage::TransformedNearestRepeatImage(s)
                     }
                 }
             }
         }
         Source::RadialGradient(ref gradient, spread, transform) => {
-            let s = RadialGradientShader::new(gradient, &ti.post_transform(&transform), *spread, alpha);
+            let s = RadialGradientShader::new(gradient, &ti.then(&transform), *spread, alpha);
             ShaderStorage::RadialGradient(s)
         }
         Source::TwoCircleRadialGradient(ref gradient, spread, c1, r1, c2, r2, transform) => {
-            let s = TwoCircleRadialGradientShader::new(gradient, &ti.post_transform(&transform), *c1, *r1, *c2, *r2, *spread, alpha);
+            let s = TwoCircleRadialGradientShader::new(gradient, &ti.then(&transform), *c1, *r1, *c2, *r2, *spread, alpha);
             ShaderStorage::TwoCircleRadialGradient(s)
         }
         Source::LinearGradient(ref gradient, spread, transform) => {
-            let s = LinearGradientShader::new(gradient, &ti.post_transform(&transform), *spread, alpha);
+            let s = LinearGradientShader::new(gradient, &ti.then(&transform), *spread, alpha);
             ShaderStorage::LinearGradient(s)
         }
     };

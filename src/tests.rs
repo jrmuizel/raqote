@@ -208,7 +208,7 @@ mod tests {
             image,
             ExtendMode::Repeat,
             FilterMode::Bilinear,
-            Transform::create_translation(0., 0.),
+            Transform::translation(0., 0.),
         );
 
         dt.fill(&pb.finish(), &source, &DrawOptions::default());
@@ -944,9 +944,9 @@ mod tests {
 
         let mut dt = DrawTarget::new(width, height);
         let image = Image { width, height, data: &checkerboard };
-        dt.set_transform(&Transform::create_translation(-299., -299.));
+        dt.set_transform(&Transform::translation(-299., -299.));
         let source = Source::Image(image, ExtendMode::Pad, FilterMode::Nearest,
-            Transform::identity().post_scale(width as f32 / 600., height as f32 / 600.));
+            Transform::identity().then_scale(width as f32 / 600., height as f32 / 600.));
 
         // draw a checkerboard scaled way up and make sure the origin stays in the center
         dt.fill_rect(0., 0., 600., 600., &source, &DrawOptions::new());
