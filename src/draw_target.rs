@@ -343,13 +343,13 @@ fn scaled_tolerance(x: f32, trans: &Transform) -> f32 {
 
 
 /// The main type used for drawing
-pub struct DrawTarget {
+pub struct DrawTarget<Backing = Vec<u32>> {
     width: i32,
     height: i32,
     rasterizer: Rasterizer,
     current_point: Option<Point>,
     first_point: Option<Point>,
-    buf: Vec<u32>,
+    buf: Backing,
     clip_stack: Vec<Clip>,
     layer_stack: Vec<Layer>,
     transform: Transform,
@@ -370,14 +370,6 @@ impl DrawTarget {
         }
     }
 
-    pub fn width(&self) -> i32 {
-        self.width
-    }
-
-    pub fn height(&self) -> i32 {
-        self.height
-    }
-
     /// Use a previously used vector for the bitmap and extend it to the given size(if needed)
     pub fn from_vec(width: i32, height: i32, mut vec: Vec<u32>) -> DrawTarget{
         vec.resize((width*height) as usize, 0);
@@ -391,8 +383,41 @@ impl DrawTarget {
             clip_stack: Vec::new(),
             layer_stack: Vec::new(),
             transform: Transform::identity()
+        }
+    }
+
+    /// Take ownership of the buffer backing the DrawTarget
+    pub fn into_vec(self) -> Vec<u32> {
+        self.buf
     }
 }
+
+impl<Backing : AsRef<[u32]> + AsMut<[u32]>> DrawTarget<Backing> {
+    /// Use an existing backing storage for the bitmap
+    ///
+    /// The backing store must be the correct size (width*height elements).
+    pub fn from_backing(width: i32, height: i32, buf : Backing) -> Self {
+        assert_eq!((width*height) as usize, buf.as_ref().len());
+        DrawTarget {
+            width,
+            height,
+            current_point: None,
+            first_point: None,
+            rasterizer: Rasterizer::new(width, height),
+            buf,
+            clip_stack: Vec::new(),
+            layer_stack: Vec::new(),
+            transform: Transform::identity()
+        }
+    }
+
+    pub fn width(&self) -> i32 {
+        self.width
+    }
+
+    pub fn height(&self) -> i32 {
+        self.height
+    }
 
     /// sets a transform that will be applied to all drawing operations
     pub fn set_transform(&mut self, transform: &Transform) {
@@ -720,7 +745,7 @@ impl DrawTarget {
         let mut pb = PathBuilder::new();
         if self.clip_stack.is_empty() {
             let color = solid.to_u32();
-            for pixel in &mut self.buf[..] {
+            for pixel in self.buf.as_mut() {
                 *pixel = color;
             }
         } else {
@@ -827,7 +852,9 @@ impl DrawTarget {
             1.,
         );
     }
+}
 
+impl DrawTarget {
     fn choose_blitter<'a, 'b, 'c>(mask: Option<&[u8]>, clip_stack: &'a Vec<Clip>, blitter_storage: &'b mut ShaderBlitterStorage<'a>, shader: &'a dyn Shader, blend: BlendMode, dest: &'a mut [u32], dest_bounds: IntRect, width: i32) -> &'b mut dyn Blitter {
         *blitter_storage = match (mask, clip_stack.last()) {
             (Some(_mask), Some(Clip {
@@ -911,7 +938,9 @@ impl DrawTarget {
             ShaderBlitterStorage::ShaderBlendBlitter(s) => s,
         }
     }
+}
 
+impl<Backing : AsRef<[u32]> + AsMut<[u32]>> DrawTarget<Backing> {
     /// `mask_rect` is in DrawTarget space. i.e size is the size of the mask and origin is the position.
     /// you can not render a part of the mask
     fn composite(&mut self, src: &Source, mask: Option<&[u8]>, mask_rect: IntRect, mut rect: IntRect, blend: BlendMode, alpha: f32) {
@@ -927,7 +956,7 @@ impl DrawTarget {
 
         let (dest, dest_bounds) = match self.layer_stack.last_mut() {
             Some(layer) => (&mut layer.buf[..], layer.rect),
-            None => (&mut self.buf[..], intrect(0, 0, self.width, self.height))
+            None => (self.buf.as_mut(), intrect(0, 0, self.width, self.height))
         };
 
         rect = rect
@@ -963,7 +992,7 @@ impl DrawTarget {
     }
 
     /// Draws `src_rect` of `src` at `dst`. The current transform and clip are ignored
-    pub fn composite_surface<F: Fn(&[u32], &mut [u32])>(&mut self, src: &DrawTarget, src_rect: IntRect, dst: IntPoint, f: F) {
+    pub fn composite_surface<F: Fn(&[u32], &mut [u32]), SrcBacking: AsRef<[u32]>>(&mut self, src: &DrawTarget<SrcBacking>, src_rect: IntRect, dst: IntPoint, f: F) {
         let dst_rect = intrect(0, 0, self.width, self.height);
 
         // intersect the src_rect with the source size so that we don't go out of bounds
@@ -985,13 +1014,13 @@ impl DrawTarget {
             let dst_row_end = dst_row_start + src_rect.size().width as usize;
             let src_row_start = (src_rect.min.x + y * src.width) as usize;
             let src_row_end = src_row_start + src_rect.size().width as usize;
-            f(&src.buf[src_row_start..src_row_end], &mut self.buf[dst_row_start..dst_row_end]);
+            f(&src.buf.as_ref()[src_row_start..src_row_end], &mut self.buf.as_mut()[dst_row_start..dst_row_end]);
         }
     }
 
     /// Draws `src_rect` of `src` at `dst`. The current transform and clip are ignored.
     /// `src_rect` is clamped to (0, 0, src.width, src.height).
-    pub fn copy_surface(&mut self, src: &DrawTarget, src_rect: IntRect, dst: IntPoint) {
+    pub fn copy_surface<SrcBacking : AsRef<[u32]>>(&mut self, src: &DrawTarget<SrcBacking>, src_rect: IntRect, dst: IntPoint) {
         self.composite_surface(src, src_rect, dst, |src, dst| {
             dst.copy_from_slice(src)
         })
@@ -1000,7 +1029,7 @@ impl DrawTarget {
     /// Blends `src_rect` of `src` at `dst`using `blend` mode.
     /// The current transform and clip are ignored.
     /// `src_rect` is clamped to (0, 0, `src.width`, `src.height`).
-    pub fn blend_surface(&mut self, src: &DrawTarget, src_rect: IntRect, dst: IntPoint, blend: BlendMode) {
+    pub fn blend_surface<SrcBacking : AsRef<[u32]>>(&mut self, src: &DrawTarget<SrcBacking>, src_rect: IntRect, dst: IntPoint, blend: BlendMode) {
         let blend_fn = build_blend_proc::<BlendRow>(blend);
         self.composite_surface(src, src_rect, dst, |src, dst| {
             blend_fn(src, dst);
@@ -1009,7 +1038,7 @@ impl DrawTarget {
 
     /// Blends `src_rect` of `src` at `dst` using `alpha`. The current transform and clip are ignored.
     /// `src_rect` is clamped to (0, 0, `src.width`, `src.height`).
-    pub fn blend_surface_with_alpha(&mut self, src: &DrawTarget, src_rect: IntRect, dst: IntPoint, alpha: f32) {
+    pub fn blend_surface_with_alpha<SrcBacking : AsRef<[u32]>>(&mut self, src: &DrawTarget<SrcBacking>, src_rect: IntRect, dst: IntPoint, alpha: f32) {
         let alpha = (alpha * 255. + 0.5) as u8;
 
         self.composite_surface(src, src_rect, dst, |src, dst| {
@@ -1019,20 +1048,21 @@ impl DrawTarget {
 
     /// Returns a reference to the underlying pixel data
     pub fn get_data(&self) -> &[u32] {
-        &self.buf
+        self.buf.as_ref()
     }
 
     /// Returns a mut reference to the underlying pixel data as ARGB with a representation
     /// like: (A << 24) | (R << 16) | (G << 8) | B
     pub fn get_data_mut(&mut self) -> &mut [u32] {
-        &mut self.buf
+        self.buf.as_mut()
     }
 
     /// Returns a reference to the underlying pixel data as individual bytes with the order BGRA
     /// on little endian.
     pub fn get_data_u8(&self) -> &[u8] {
-        let p = self.buf[..].as_ptr();
-        let len = self.buf[..].len();
+        let buf = self.buf.as_ref();
+        let p = buf.as_ptr();
+        let len = buf.len();
         // we want to return an [u8] slice instead of a [u32] slice. This is a safe thing to
         // do because requirements of a [u32] slice are stricter.
         unsafe { std::slice::from_raw_parts(p as *const u8, len * std::mem::size_of::<u32>()) }
@@ -1041,15 +1071,16 @@ impl DrawTarget {
     /// Returns a mut reference to the underlying pixel data as individual bytes with the order BGRA
     /// on little endian.
     pub fn get_data_u8_mut(&mut self) -> &mut [u8] {
-        let p = self.buf[..].as_mut_ptr();
-        let len = self.buf[..].len();
+        let buf = self.buf.as_mut();
+        let p = buf.as_mut_ptr();
+        let len = buf.len();
         // we want to return an [u8] slice instead of a [u32] slice. This is a safe thing to
         // do because requirements of a [u32] slice are stricter.
         unsafe { std::slice::from_raw_parts_mut(p as *mut u8, len * std::mem::size_of::<u32>()) }
     }
 
     /// Take ownership of the buffer backing the DrawTarget
-    pub fn into_vec(self) -> Vec<u32> {
+    pub fn into_inner(self) -> Backing {
         self.buf
     }
 
@@ -1064,9 +1095,10 @@ impl DrawTarget {
         encoder.set_color(png::ColorType::RGBA);
         encoder.set_depth(png::BitDepth::Eight);
         let mut writer = encoder.write_header()?;
-        let mut output = Vec::with_capacity(self.buf.len() * 4);
+        let buf = self.buf.as_ref();
+        let mut output = Vec::with_capacity(buf.len() * 4);
 
-        for pixel in &self.buf {
+        for pixel in buf {
             let a = (pixel >> 24) & 0xffu32;
             let mut r = (pixel >> 16) & 0xffu32;
             let mut g = (pixel >> 8) & 0xffu32;
