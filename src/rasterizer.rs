@@ -63,6 +63,8 @@ struct Edge {
 type Dot16 = i32;
 /// 30.2 fixed point representation.
 type Dot2 = i32;
+/// 26.6 fixed point representation.
+type Dot6 = i32;
 /// A "sliding fixed point" representation 16.16 >> shift.
 type ShiftedDot16 = i32;
 
@@ -96,6 +98,10 @@ fn f32_to_dot2(val: f32) -> Dot2 {
     (val * SAMPLE_SIZE) as i32
 }
 
+#[inline]
+fn dot2_to_dot6(val: Dot2) -> Dot6 {
+    val << 4
+}
 
 // it is possible to fit this into 64 bytes on x86-64
 // with the following layout:
@@ -240,7 +246,7 @@ impl Rasterizer {
 }
 
 // A cheap version of the "Alpha max plus beta min" algorithm (⍺=1, β=0.5)
-fn cheap_distance(mut dx: i32, mut dy: i32) -> i32 {
+fn cheap_distance(mut dx: Dot6, mut dy: Dot6) -> Dot6 {
     dx = dx.abs();
     dy = dy.abs();
     // return max + min/2
@@ -251,7 +257,7 @@ fn cheap_distance(mut dx: i32, mut dy: i32) -> i32 {
     }
 }
 
-fn diff_to_shift(dx: i32, dy: i32) -> i32 {
+fn diff_to_shift(dx: Dot6, dy: Dot6) -> i32 {
     // cheap calc of distance from center of p0-p2 to the center of the curve
     let mut dist = cheap_distance(dx, dy);
 
@@ -269,7 +275,7 @@ fn diff_to_shift(dx: i32, dy: i32) -> i32 {
 fn compute_curve_steps(e: &Edge) -> i32 {
     let dx = e.control_x * 2 - e.x1 - e.x2;
     let dy = e.control_y * 2 - e.y1 - e.y2;
-    let shift = diff_to_shift(dx << 4, dy << 4);
+    let shift = diff_to_shift(dot2_to_dot6(dx), dot2_to_dot6(dy));
     assert!(shift >= 0);
 
     shift
