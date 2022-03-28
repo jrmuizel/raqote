@@ -34,16 +34,12 @@ use std::ptr::NonNull;
 
 struct Edge {
     //XXX: it is probably worth renaming this to top and bottom
-    x1: i32,
-    y1: i32,
-    x2: i32,
-    y2: i32,
-    control_x: i32,
-    control_y: i32,
-}
-
-fn div_fixed16_fixed16(a: i32, b: i32) -> i32 {
-    (((a as i64) << 16) / (b as i64)) as i32
+    x1: Dot2,
+    y1: Dot2,
+    x2: Dot2,
+    y2: Dot2,
+    control_x: Dot2,
+    control_y: Dot2,
 }
 
 // Fixed point representation:
@@ -63,6 +59,43 @@ fn div_fixed16_fixed16(a: i32, b: i32) -> i32 {
 //           edge->e -= edge->adj_down;
 //       }
 
+/// 16.16 fixed point representation.
+type Dot16 = i32;
+/// 30.2 fixed point representation.
+type Dot2 = i32;
+/// A "sliding fixed point" representation 16.16 >> shift.
+type ShiftedDot16 = i32;
+
+
+fn div_fixed16_fixed16(a: Dot16, b: Dot16) -> Dot16 {
+    (((a as i64) << 16) / (b as i64)) as i32
+}
+
+#[inline]
+fn dot2_to_dot16(val: Dot2) -> Dot16 {
+    val << (16 - SAMPLE_SHIFT)
+}
+
+#[inline]
+fn dot16_to_dot2(val: Dot2) -> Dot16 {
+    val >> (16 - SAMPLE_SHIFT)
+}
+
+#[inline]
+fn dot2_to_int(val: Dot2) -> i32 {
+    val >> SAMPLE_SHIFT
+}
+
+#[inline]
+fn int_to_dot2(val: i32) -> Dot2 {
+    val << SAMPLE_SHIFT
+}
+
+#[inline]
+fn f32_to_dot2(val: f32) -> Dot2 {
+    (val * SAMPLE_SIZE) as i32
+}
+
 
 // it is possible to fit this into 64 bytes on x86-64
 // with the following layout:
@@ -77,22 +110,29 @@ fn div_fixed16_fixed16(a: i32, b: i32) -> i32 {
 //
 // some example counts 5704 curves, 1720 lines 7422 edges
 pub struct ActiveEdge {
-    x2: i32, // 30.2
-    y2: i32, // 30.2
+    x2: Dot2,
+    y2: Dot2,
     next: Option<NonNull<ActiveEdge>>,
-    slope_x: i32,
-    fullx: i32, // 16.16
-    next_x: i32, // 16.16
-    next_y: i32, // 16.16
+    slope_x: Dot16,
+    fullx: Dot16,
+    next_x: Dot16,
+    next_y: Dot16,
 
-    dx: i32,
-    ddx: i32,
-    dy: i32,
-    ddy: i32,
+    dx: Dot16,
+    ddx: ShiftedDot16,
+    dy: Dot16,
+    ddy: ShiftedDot16,
 
-    old_x: i32,
-    old_y: i32,
+    old_x: Dot16,
+    old_y: Dot16,
 
+    // Shift is used to "scale" how fast we move along the quadratic curve.
+    // The key is that we scale dx and dy by the same amount so it doesn't need to have a physical unit
+    // as long as it doesn't overshoot.
+    // shift isdiv_fixed16_fixed16 probably also needed to balance number of bits that we need and make sure we don't
+    // overflow the 32 bits we have.
+    // It looks like some of quantities are stored in a "sliding fixed point" representation where the
+    // point depends on the shift.
     shift: i32,
     // we need to use count so that we make sure that we always line the last point up
     // exactly. i.e. we don't have a great way to know when we're at the end implicitly.
@@ -124,15 +164,15 @@ impl ActiveEdge {
 
     // we want this to inline into step_edges() to
     // avoid the call overhead
-    fn step(&mut self, cury: i32) {
+    fn step(&mut self, cury: Dot2) {
         // if we have a shift that means we have a curve
         if self.shift != 0 {
-            if cury >= (self.next_y >> (16 - SAMPLE_SHIFT)) {
+            if cury >= dot16_to_dot2(self.next_y) {
                 self.old_y = self.next_y;
                 self.old_x = self.next_x;
                 self.fullx = self.next_x;
                 // increment until we have a next_y that's greater
-                while self.count > 0 && (cury >= (self.next_y >> (16 - SAMPLE_SHIFT))) {
+                while self.count > 0 && cury >= dot16_to_dot2(self.next_y) {
                     self.next_x += self.dx >> self.shift;
                     self.dx += self.ddx;
                     self.next_y += self.dy >> self.shift;
@@ -142,8 +182,8 @@ impl ActiveEdge {
                 if self.count == 0 {
                     // for the last line sgement we can
                     // just set next_y,x to the end point
-                    self.next_y = self.y2 << (16 - SAMPLE_SHIFT);
-                    self.next_x = self.x2 << (16 - SAMPLE_SHIFT);
+                    self.next_y = dot2_to_dot16(self.y2);
+                    self.next_x = dot2_to_dot16(self.x2);
                 }
                 // update slope if we're going to be using it
                 // we want to avoid dividing by 0 which can happen if we exited the loop above early
@@ -165,7 +205,7 @@ pub struct Rasterizer {
     edge_starts: Vec<Option<NonNull<ActiveEdge>>>,
     width: i32,
     height: i32,
-    cur_y: i32,
+    cur_y: Dot2,
 
     // we use this rect to track the bounds of the added edges
     bounds_top: i32,
@@ -181,12 +221,12 @@ pub struct Rasterizer {
 impl Rasterizer {
     pub fn new(width: i32, height: i32) -> Rasterizer {
         let mut edge_starts = Vec::new();
-        for _ in 0..(height * 4) {
+        for _ in 0..int_to_dot2(height) {
             edge_starts.push(None);
         }
         Rasterizer {
-            width: width * 4,
-            height: height * 4,
+            width: int_to_dot2(width),
+            height: int_to_dot2(height),
             bounds_right: 0,
             bounds_left: width,
             bounds_top: height,
@@ -227,8 +267,8 @@ fn diff_to_shift(dx: i32, dy: i32) -> i32 {
 
 // this metric is taken from skia
 fn compute_curve_steps(e: &Edge) -> i32 {
-    let dx = (e.control_x << 1) - e.x1 - e.x2;
-    let dy = (e.control_y << 1) - e.y1 - e.y2;
+    let dx = e.control_x * 2 - e.x1 - e.x2;
+    let dy = e.control_y * 2 - e.y1 - e.y2;
     let shift = diff_to_shift(dx << 4, dy << 4);
     assert!(shift >= 0);
 
@@ -273,12 +313,12 @@ impl Rasterizer {
             e.winding = 1;
         }
         let edge = Edge {
-            x1: (start.x * SAMPLE_SIZE) as i32,
-            y1: (start.y * SAMPLE_SIZE) as i32,
-            control_x: (control.x * SAMPLE_SIZE) as i32,
-            control_y: (control.y * SAMPLE_SIZE) as i32,
-            x2: (end.x * SAMPLE_SIZE) as i32,
-            y2: (end.y * SAMPLE_SIZE) as i32,
+            x1: f32_to_dot2(start.x),
+            y1: f32_to_dot2(start.y),
+            control_x: f32_to_dot2(control.x),
+            control_y: f32_to_dot2(control.y),
+            x2: f32_to_dot2(end.x),
+            y2: f32_to_dot2(end.y),
         };
         e.x2 = edge.x2;
         e.y2 = edge.y2;
@@ -286,7 +326,7 @@ impl Rasterizer {
         e.next = None;
         //e.curx = e.edge.x1;
         let mut cury = edge.y1;
-        e.fullx = edge.x1 << (16 - SAMPLE_SHIFT);
+        e.fullx = dot2_to_dot16(edge.x1);
 
         // if the edge is completely above or completely below we can drop it
         if edge.y2 < 0 || edge.y1 >= self.height {
@@ -298,25 +338,27 @@ impl Rasterizer {
             return;
         }
 
-        self.bounds_top = self.bounds_top.min(edge.y1 >> SAMPLE_SHIFT);
-        self.bounds_bottom = self.bounds_bottom.max((edge.y2 + 3) >> SAMPLE_SHIFT);
+        self.bounds_top = self.bounds_top.min(dot2_to_int(edge.y1));
+        self.bounds_bottom = self.bounds_bottom.max(dot2_to_int(edge.y2 + 3));
 
-        self.bounds_left = self.bounds_left.min(edge.x1 >> SAMPLE_SHIFT);
-        self.bounds_left = self.bounds_left.min(edge.x2 >> SAMPLE_SHIFT);
+        self.bounds_left = self.bounds_left.min(dot2_to_int(edge.x1));
+        self.bounds_left = self.bounds_left.min(dot2_to_int(edge.x2));
 
-        self.bounds_right = self.bounds_right.max((edge.x1 + 3) >> SAMPLE_SHIFT);
-        self.bounds_right = self.bounds_right.max((edge.x2 + 3) >> SAMPLE_SHIFT);
+        self.bounds_right = self.bounds_right.max(dot2_to_int(edge.x1 + 3));
+        self.bounds_right = self.bounds_right.max(dot2_to_int(edge.x2 + 3));
 
         if curve {
-            self.bounds_left = self.bounds_left.min(edge.control_x >> SAMPLE_SHIFT);
-            self.bounds_right = self.bounds_right.max((edge.control_x + 3) >> SAMPLE_SHIFT);
+            self.bounds_left = self.bounds_left.min(dot2_to_int(edge.control_x));
+            self.bounds_right = self.bounds_right.max(dot2_to_int(edge.control_x + 3));
 
             // Based on Skia
             // we'll iterate t from 0..1 (0-256)
             // range of A is 4 times coordinate-range
             // we can get more accuracy here by using the input points instead of the rounded versions
+            // A is derived from `dot2_to_dot16(2 * (from - 2 * ctrl + to))`, it is the second derivative of the
+            // quadratic bézier.
             let mut A = (edge.x1 - edge.control_x - edge.control_x + edge.x2) << (15 - SAMPLE_SHIFT);
-            let mut B = edge.control_x - edge.x1;
+            let mut B = edge.control_x - edge.x1; // The derivative at the start of the curve is 2 * (ctrl - from).
             //let mut C = edge.x1;
             let mut shift = compute_curve_steps(&edge);
 
@@ -344,7 +386,7 @@ impl Rasterizer {
             e.dy += e.ddy;
 
             // skia does this part in UpdateQuad. unfortunately we duplicate it
-            while e.count > 0 && cury >= (e.next_y >> (16 - SAMPLE_SHIFT)) {
+            while e.count > 0 && cury >= dot16_to_dot2(e.next_y) {
                 e.next_x += e.dx >> shift;
                 e.dx += e.ddx;
                 e.next_y += e.dy >> shift;
@@ -352,13 +394,13 @@ impl Rasterizer {
                 e.count -= 1;
             }
             if e.count == 0 {
-                e.next_y = edge.y2 << (16 - SAMPLE_SHIFT);
-                e.next_x = edge.x2 << (16 - SAMPLE_SHIFT);
+                e.next_y = dot2_to_dot16(edge.y2);
+                e.next_x = dot2_to_dot16(edge.x2);
             }
-            e.slope_x = ((e.next_x - (e.fullx)) << 0) / ((e.next_y - (cury << (16 - SAMPLE_SHIFT))) >> 14);
+            e.slope_x = (e.next_x - (e.fullx)) / dot16_to_dot2(e.next_y - dot2_to_dot16(cury));
         } else {
             e.shift = 0;
-            e.slope_x = ((edge.x2 - edge.x1) * (1 << (16 - SAMPLE_SHIFT))) / (edge.y2 - edge.y1);
+            e.slope_x = (edge.x2 - edge.x1) * (1 << (16 - SAMPLE_SHIFT)) / (edge.y2 - edge.y1);
         }
 
         if cury < 0 {
@@ -496,12 +538,12 @@ impl Rasterizer {
             if inside {
                 blitter.blit_span(
                     self.cur_y,
-                    (prevx + (1 << (15 - SAMPLE_SHIFT))) >> (16 - SAMPLE_SHIFT),
-                    (e.fullx + (1 << (15 - SAMPLE_SHIFT))) >> (16 - SAMPLE_SHIFT),
+                    dot16_to_dot2(prevx + (1 << (15 - SAMPLE_SHIFT))),
+                    dot16_to_dot2(e.fullx + (1 << (15 - SAMPLE_SHIFT))),
                 );
             }
 
-            if (e.fullx >> (16 - SAMPLE_SHIFT)) >= self.width {
+            if dot16_to_dot2(e.fullx) >= self.width {
                 break;
             }
             winding += e.winding as i32;
@@ -558,8 +600,8 @@ impl Rasterizer {
     }
 
     pub fn rasterize(&mut self, blitter: &mut dyn RasterBlitter, winding_mode: Winding) {
-        let start = (self.bounds_top << SAMPLE_SHIFT).max(0);
-        let end = (self.bounds_bottom << SAMPLE_SHIFT).min(self.height);
+        let start = int_to_dot2(self.bounds_top).max(0);
+        let end = int_to_dot2(self.bounds_bottom).min(self.height);
 
         self.cur_y = start;
         while self.cur_y < end {
@@ -583,8 +625,8 @@ impl Rasterizer {
     pub fn get_bounds(&self) -> IntRect {
         intrect(self.bounds_left.max(0),
                 self.bounds_top.max(0),
-                self.bounds_right.min(self.width >> SAMPLE_SHIFT),
-                self.bounds_bottom.min(self.height >> SAMPLE_SHIFT))
+                self.bounds_right.min(dot2_to_int(self.width)),
+                self.bounds_bottom.min(dot2_to_int(self.height)))
     }
 
     pub fn reset(&mut self) {
@@ -595,16 +637,16 @@ impl Rasterizer {
             }
             debug_assert_eq!(self.bounds_bottom, 0);
             debug_assert_eq!(self.bounds_right, 0);
-            debug_assert_eq!(self.bounds_top, self.height >> SAMPLE_SHIFT);
-            debug_assert_eq!(self.bounds_left, self.width >> SAMPLE_SHIFT);
+            debug_assert_eq!(self.bounds_top, dot2_to_int(self.height));
+            debug_assert_eq!(self.bounds_left, dot2_to_int(self.width));
             // Currently we allocate an edge in the arena even if we don't
             // end up putting it in the edge_starts list. Avoiding that
             // would let us avoiding having to reinitialize the arena
             self.edge_arena = Arena::new();
             return;
         }
-        let start = (self.bounds_top << SAMPLE_SHIFT).max(0) as usize;
-        let end = (self.bounds_bottom << SAMPLE_SHIFT).min(self.height) as usize;
+        let start = int_to_dot2(self.bounds_top).max(0) as usize;
+        let end = int_to_dot2(self.bounds_bottom).min(self.height) as usize;
         self.active_edges = None;
         for e in &mut self.edge_starts[start..end] {
             *e = None;
@@ -612,7 +654,7 @@ impl Rasterizer {
         self.edge_arena = Arena::new();
         self.bounds_bottom = 0;
         self.bounds_right = 0;
-        self.bounds_top = self.height >> SAMPLE_SHIFT;
-        self.bounds_left = self.width >> SAMPLE_SHIFT;
+        self.bounds_top = dot2_to_int(self.height);
+        self.bounds_left = dot2_to_int(self.width);
     }
 }
