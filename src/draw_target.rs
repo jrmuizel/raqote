@@ -657,7 +657,7 @@ impl<Backing : AsRef<[u32]> + AsMut<[u32]>> DrawTarget<Backing> {
 
     /// Draws `src` through an untransformed `mask` positioned at `x`, `y` in device space
     pub fn mask(&mut self, src: &Source, x: i32, y: i32, mask: &Mask) {
-        self.composite(src, Some(&mask.data), intrect(x, y, mask.width, mask.height), intrect(x, y, mask.width, mask.height), BlendMode::SrcOver, 1.);
+        self.composite(src, Some(&mask.data), intrect(x, y, x + mask.width, y + mask.height), intrect(x, y, x + mask.width, y + mask.height), BlendMode::SrcOver, 1.);
     }
 
     /// Strokes `path` with `style` and fills the result with `src`
