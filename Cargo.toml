@@ -13,10 +13,10 @@ categories = ["graphics"]
 
 [dependencies]
 euclid = "0.22"
-font-kit = { version = "0.10", optional = true }
-lyon_geom = "0.16"
+font-kit = { version = "0.11", optional = true }
+lyon_geom = "0.17"
 pathfinder_geometry = { version = "0.5", optional = true }
-png = { version = "0.16", optional = true }
+png = { version = "0.17", optional = true }
 typed-arena = "2.0"
 sw-composite = "0.7.14"
 
