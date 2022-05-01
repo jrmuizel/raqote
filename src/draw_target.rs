@@ -1100,7 +1100,7 @@ impl<Backing : AsRef<[u32]> + AsMut<[u32]>> DrawTarget<Backing> {
         let w = &mut BufWriter::new(file);
 
         let mut encoder = png::Encoder::new(w, self.width as u32, self.height as u32);
-        encoder.set_color(png::ColorType::RGBA);
+        encoder.set_color(png::ColorType::Rgba);
         encoder.set_depth(png::BitDepth::Eight);
         let mut writer = encoder.write_header()?;
         let buf = self.buf.as_ref();

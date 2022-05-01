@@ -1,4 +1,4 @@
-use lyon_geom::math::Angle;
+use lyon_geom::Angle;
 use lyon_geom::Arc;
 use lyon_geom::CubicBezierSegment;
 use lyon_geom::QuadraticBezierSegment;
