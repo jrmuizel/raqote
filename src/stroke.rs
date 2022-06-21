@@ -42,8 +42,9 @@ fn compute_normal(p0: Point, p1: Point) -> Option<Vector> {
     let ux = p1.x - p0.x;
     let uy = p1.y - p0.y;
 
-    // this could overflow f32. Skia checks for this and
-    // uses a double in that situation
+    // this could overflow f32. Skia in SkPoint::Normalize used to
+    // checks for this and used a double in that situation, but was
+    // simplified to always use doubles.
     let ulen = ux.hypot(uy);
     if ulen == 0. {
         return None;
