@@ -1,3 +1,6 @@
+// This is a simple path stroker. It flattens the path and strokes each segment invididually.
+// For a recent survey of stroking approaches see "Converting stroked primitives to filled primitives" by Diego Nehab
+
 use crate::path_builder::{Path, PathBuilder, PathOp};
 use crate::{Point, Vector};
 
