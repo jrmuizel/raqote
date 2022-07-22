@@ -422,6 +422,38 @@ impl Shader for TwoCircleRadialGradientShader {
     }
 }
 
+pub struct SweepGradientShader {
+    gradient: Box<SweepGradientSource>,
+    spread: Spread,
+}
+
+impl SweepGradientShader {
+    pub fn new(gradient: &Gradient,
+               transform: &Transform,
+               start_angle: f32,
+               end_angle: f32,
+               spread: Spread,
+               alpha: u32) -> SweepGradientShader {
+        SweepGradientShader {
+            gradient: gradient.make_sweep_source(
+                start_angle,
+                end_angle,
+                &transform_to_fixed(&transform.pre_translate(vec2(0.5, 0.5))), alpha
+            ),
+            spread,
+        }
+    }
+}
+
+impl Shader for SweepGradientShader {
+    fn shade_span(&self, mut x: i32, y: i32, dest: &mut [u32], count: usize) {
+        for i in 0..count {
+            dest[i] = self.gradient.eval(x as u16, y as u16, self.spread);
+            x += 1;
+        }
+    }
+}
+
 pub struct LinearGradientShader {
     gradient: Box<GradientSource>,
     spread: Spread,
@@ -605,6 +637,7 @@ pub enum ShaderStorage<'a, 'b> {
     RadialGradient(RadialGradientShader),
     TwoCircleRadialGradient(TwoCircleRadialGradientShader),
     LinearGradient(LinearGradientShader),
+    SweepGradient(SweepGradientShader),
 }
 
 // The idea here is to store a shader in shader_storage and then return
@@ -674,6 +707,10 @@ pub fn choose_shader<'a, 'b, 'c>(ti: &Transform, src: &'b Source<'c>, alpha: f32
             let s = TwoCircleRadialGradientShader::new(gradient, &ti.then(&transform), *c1, *r1, *c2, *r2, *spread, alpha);
             ShaderStorage::TwoCircleRadialGradient(s)
         }
+        Source::SweepGradient(ref gradient, spread, start_angle, end_angle, transform) => {
+            let s = SweepGradientShader::new(gradient, &ti.then(&transform), *start_angle, *end_angle, *spread, alpha);
+            ShaderStorage::SweepGradient(s)
+        }
         Source::LinearGradient(ref gradient, spread, transform) => {
             let s = LinearGradientShader::new(gradient, &ti.then(&transform), *spread, alpha);
             ShaderStorage::LinearGradient(s)
@@ -695,6 +732,7 @@ pub fn choose_shader<'a, 'b, 'c>(ti: &Transform, src: &'b Source<'c>, alpha: f32
         ShaderStorage::TransformedNearestRepeatImage(s) => s,
         ShaderStorage::RadialGradient(s) => s,
         ShaderStorage::TwoCircleRadialGradient(s) => s,
+        ShaderStorage::SweepGradient(s) => s,
         ShaderStorage::LinearGradient(s) => s,
     }
 }

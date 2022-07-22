@@ -231,6 +231,7 @@ pub enum Source<'a> {
     RadialGradient(Gradient, Spread, Transform),
     TwoCircleRadialGradient(Gradient, Spread, Point, f32, Point, f32, Transform),
     LinearGradient(Gradient, Spread, Transform),
+    SweepGradient(Gradient, Spread, f32, f32, Transform),
 }
 
 impl From<SolidSource> for Source<'_> {
@@ -288,6 +289,13 @@ impl<'a> Source<'a> {
     pub fn new_two_circle_radial_gradient(gradient: Gradient, center1: Point, radius1: f32,  center2: Point, radius2: f32, spread: Spread) -> Source<'a> {
         let transform = Transform::identity();
         Source::TwoCircleRadialGradient(gradient, spread, center1, radius1, center2, radius2, transform)
+    }
+
+    /// Creates a new sweep gradient that is centered at the given point with `start_angle` and `end_angle`.
+    pub fn new_sweep_gradient(gradient: Gradient, center: Point, start_angle: f32, end_angle: f32, spread: Spread) -> Source<'a> {
+        // Transform gradient to center of gradient
+        let transform = Transform::translation(-center.x, -center.y);
+        Source::SweepGradient(gradient, spread, start_angle, end_angle, transform)
     }
 }
 
