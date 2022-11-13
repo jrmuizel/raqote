@@ -1,4 +1,4 @@
-// This is a simple path stroker. It flattens the path and strokes each segment invididually.
+// This is a simple path stroker. It flattens the path and strokes each segment individually.
 // For a recent survey of stroking approaches see "Converting stroked primitives to filled primitives" by Diego Nehab
 
 use crate::path_builder::{Path, PathBuilder, PathOp};
@@ -71,7 +71,7 @@ The approximation is similar to an approximation given in:
 by Alekas Riškus. However that approximation becomes unstable when the
 angle of the arc approaches 0.
 
-This approximation is inspired by a discusion with Boris Zbarsky
+This approximation is inspired by a discussion with Boris Zbarsky
 and essentially just computes:
 
   h = 4.0/3.0 * tan ((angle_B - angle_A) / 4.0);
@@ -227,7 +227,7 @@ fn line_intersection(a: Point, a_perp: Vector, b: Point, b_perp: Vector) -> Opti
 }
 
 fn is_interior_angle(a: Vector, b: Vector) -> bool {
-    /* angles of 180 and 0 degress will evaluate to 0, however
+    /* angles of 180 and 0 degrees will evaluate to 0, however
      * we to treat 180 as an interior angle and 180 as an exterior angle */
     dot(perp(a), b) > 0. || a == b /* 0 degrees is interior */
 }

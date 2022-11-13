@@ -25,7 +25,7 @@ mod tests {
     }
 
     #[test]
-    fn implict_close() {
+    fn implicit_close() {
         let mut dt = DrawTarget::new(2, 2);
         let mut pb = PathBuilder::new();
         pb.move_to(1., 1.);
