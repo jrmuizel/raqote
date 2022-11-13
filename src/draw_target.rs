@@ -216,7 +216,7 @@ pub enum FilterMode {
 
 /// LinearGradients have an implicit start point at 0,0 and an end point at 256,0. The transform
 /// parameter can be used to adjust them to the desired location.
-/// RadialGradients have an implict center at 0,0 and a radius of 128.
+/// RadialGradients have an implicit center at 0,0 and a radius of 128.
 /// The helper functions: `new_linear_gradient`, `new_radial_gradient` and `new_two_circle_radial_gradient`
 /// allow the gradients to be constructed with easier to understand inputs.
 /// The `transform` parameter maps user space to source space. This means that setting the same transform

@@ -568,7 +568,7 @@ impl Rasterizer {
 
     // Some statistics from using a bubble sort on an
     // example scene. You can see that bubble sort does
-    // noticably better than O (n lg n).
+    // noticeably better than O (n lg n).
     // summary(edges*bubble_sort_iterations)
     //   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
     //    0.0     9.0    69.0   131.5   206.0  1278.0
@@ -621,7 +621,7 @@ impl Rasterizer {
                 // step all of the edges to the next scanline
                 // dropping the ones that end
                 self.step_edges();
-                // sort the remaning edges
+                // sort the remaining edges
                 self.sort_edges();
                 self.cur_y += 1;
             }

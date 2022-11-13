@@ -4,7 +4,7 @@ a repackaging of classic techniques used elsewhere. It borrows heavily from Skia
 The rasterizer is a relatively straightforward 4x4 supersampling scanline
 rasterizer. It includes some tricks taken from Skia:
 1. Monotonic quadratic curve edges can be used directly instead of having to flatten them.
-2. Partial results are accumulted diretly into a scanline with some approximations to avoid overflow at 255
+2. Partial results are accumulated directly into a scanline with some approximations to avoid overflow at 255
 3. An alpha mask for the entire shape is produced and then composited. However the intention is to switch
    to Skia like run length representation and only shade the parts of the mask where there is coverage.
 
@@ -28,4 +28,3 @@ Prior Art:
 - Libart
 - Antigrain
 - Java2D (Pisces/Marlin https://github.com/bourgesl/marlin-renderer)
-
