@@ -342,6 +342,7 @@ pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
                     if let Some(normal) = compute_normal(cur_pt, end_point) {
                         join_line(&mut stroked_path, style, cur_pt, last_normal, normal);
 
+                        // the closing line segment
                         stroked_path.move_to(
                             cur_pt.x + normal.x * half_width,
                             cur_pt.y + normal.y * half_width,
@@ -367,6 +368,7 @@ pub fn stroke_to_path(path: &Path, style: &StrokeStyle) -> Path {
                             cur_pt.y,
                         );
                         stroked_path.close();
+
                         join_line(&mut stroked_path, style, end_point, normal, start_normal);
                     } else {
                         join_line(&mut stroked_path, style, end_point, last_normal, start_normal);
