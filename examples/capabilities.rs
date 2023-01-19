@@ -60,9 +60,9 @@ fn main() {
     let path = pb.finish();
 
     let decoder = png::Decoder::new(File::open("photo.png").unwrap());
-    let (info, mut reader) = decoder.read_info().unwrap();
-    let mut buf = vec![0; info.buffer_size()];
-    reader.next_frame(&mut buf).unwrap();
+    let mut reader = decoder.read_info().unwrap();
+    let mut buf = vec![0; reader.output_buffer_size()];
+    let info = reader.next_frame(&mut buf).unwrap();
 
     println!("{:?}", info.color_type);
 
