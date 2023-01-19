@@ -1,6 +1,8 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
-
-fn bench_raqote(c: &mut Criterion) {
+#![feature(test)]
+extern crate test;
+use test::bench::Bencher;
+#[bench]
+fn bench_raqote(b: &mut Bencher) {
     use raqote::*;
 
     let mut dt = DrawTarget::new(250, 250);
@@ -19,10 +21,7 @@ fn bench_raqote(c: &mut Criterion) {
         antialias: AntialiasMode::None,
     };
 
-    c.bench_function("fill screen raqote", |b| b.iter(|| {
+    b.iter(|| {
         dt.fill(&path, &src, &draw_opt);
-    }));
+    });
 }
-
-criterion_group!(benches, bench_raqote);
-criterion_main!(benches);
