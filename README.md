@@ -1,6 +1,6 @@
 ## raqote
-[![Build Status](https://travis-ci.org/jrmuizel/raqote.svg?branch=master)](https://travis-ci.org/jrmuizel/raqote)
-[![Crates.io](https://img.shields.io/crates/v/raqote.svg)](https://crates.io/crates/raqote)
+[![Build Status](https://github.com/jrmuizel/raqote/actions/workflows/rust.yml/badge.svg)](https://github.com/jrmuizel/raqote/actions)
+[![crates.io](https://img.shields.io/crates/v/raqote.svg)](https://crates.io/crates/raqote)
 [![Documentation](https://docs.rs/raqote/badge.svg)](https://docs.rs/raqote)
 
 
