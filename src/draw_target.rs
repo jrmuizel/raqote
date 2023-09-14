@@ -8,7 +8,6 @@ use crate::geom::*;
 use crate::path_builder::*;
 
 pub use crate::path_builder::Winding;
-use lyon_geom::cubic_to_quadratic::cubic_to_quadratics;
 use lyon_geom::CubicBezierSegment;
 
 #[cfg(feature = "text")]
@@ -500,7 +499,7 @@ impl<Backing : AsRef<[u32]> + AsMut<[u32]>> DrawTarget<Backing> {
                 ctrl2: cpt2,
                 to: pt,
             };
-            cubic_to_quadratics(&c, 0.01, &mut |q| {
+            c.for_each_quadratic_bezier(0.01, &mut |q| {
                 let curve = [q.from, q.ctrl, q.to];
                 self.add_quad(curve);
             });
