@@ -20,6 +20,12 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+  semver:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Check semver
+      uses: obi1kenobi/cargo-semver-checks-action@v2
   miri:
     name: "Miri"
     runs-on: ubuntu-latest
