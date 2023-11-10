@@ -795,7 +795,7 @@ impl<Backing : AsRef<[u32]> + AsMut<[u32]>> DrawTarget<Backing> {
                 positions.push(Point::new(original_start_x, new_y));
 
                 // Indicate this is a new line character to skip rendering
-                ids.push(u32::MAX);
+                ids.push(NEW_LINE);
 
                 // Reset the bounds to begin drawing on new line
                 start = fk::vec2f(original_start_x, new_y);
