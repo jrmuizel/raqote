@@ -17,7 +17,9 @@ use crate::blitter::RasterBlitter;
 use crate::path_builder::Winding;
 use crate::geom::intrect;
 
-use std::ptr::NonNull;
+use core::ptr::NonNull;
+
+use alloc::vec::Vec;
 
 // One reason to have separate Edge/ActiveEdge is reduce the
 // memory usage of inactive edges. On the other hand
@@ -313,7 +315,7 @@ impl Rasterizer {
         // how do we deal with edges to the right and left of the canvas?
         let e = self.edge_arena.alloc(ActiveEdge::new());
         if end.y < start.y {
-            std::mem::swap(&mut start, &mut end);
+            core::mem::swap(&mut start, &mut end);
             e.winding = -1;
         } else {
             e.winding = 1;

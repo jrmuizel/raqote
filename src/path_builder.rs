@@ -5,6 +5,8 @@ use lyon_geom::QuadraticBezierSegment;
 
 use crate::{Point, Transform, Vector};
 
+use alloc::vec::Vec;
+
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Winding {
     EvenOdd,

@@ -12,14 +12,17 @@ keywords = ["2d", "graphics"]
 categories = ["graphics"]
 
 [dependencies]
-euclid = "0.22"
+euclid = { version = "0.22", default-features = false, features = ["libm"] }
 font-kit = { version = "0.11", optional = true }
-lyon_geom = "1.0"
+lyon_geom = { version = "1.0", default-features = false }
 pathfinder_geometry = { version = "0.5", optional = true }
 png = { version = "0.17", optional = true }
-typed-arena = "2.0"
+typed-arena = { version = "2.0", default-features = false }
 sw-composite = "0.7.15"
+num-traits = { version = "0.2.17", default-features = false, features = ["libm"] }
 
 [features]
-default = ["text", "png"]
+default = ["std", "text", "png"]
+std = ["typed-arena/std", "euclid/std"]
 text = ["font-kit", "pathfinder_geometry"]
+png = ["dep:png", "std"]

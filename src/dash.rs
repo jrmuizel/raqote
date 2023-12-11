@@ -2,6 +2,8 @@ use crate::path_builder::*;
 
 use crate::Point;
 
+use alloc::vec::Vec;
+
 use lyon_geom::LineSegment;
 
 #[derive(Clone, Copy)]
