@@ -4,6 +4,11 @@
 use crate::path_builder::{Path, PathBuilder, PathOp};
 use crate::{Point, Vector};
 
+use alloc::vec::Vec;
+
+#[cfg(not(feature = "std"))]
+use num_traits::Float;
+
 #[derive(Clone, PartialEq, Debug)]
 pub struct StrokeStyle {
     pub width: f32,
@@ -242,7 +247,7 @@ fn join_line(
     if is_interior_angle(s1_normal, s2_normal) {
         s2_normal = flip(s2_normal);
         s1_normal = flip(s1_normal);
-        std::mem::swap(&mut s1_normal, &mut s2_normal);
+        core::mem::swap(&mut s1_normal, &mut s2_normal);
     }
 
     // XXX: joining uses `pt` which can cause seams because it lies halfway on a line and the

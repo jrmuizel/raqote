@@ -10,6 +10,11 @@ use crate::path_builder::*;
 pub use crate::path_builder::Winding;
 use lyon_geom::CubicBezierSegment;
 
+use alloc::{vec, vec::Vec};
+
+#[cfg(not(feature = "std"))]
+use num_traits::Float;
+
 #[cfg(feature = "text")]
 mod fk {
     pub use font_kit::canvas::{Canvas, Format, RasterizationOptions};
@@ -1072,7 +1077,7 @@ impl<Backing : AsRef<[u32]> + AsMut<[u32]>> DrawTarget<Backing> {
         let len = buf.len();
         // we want to return an [u8] slice instead of a [u32] slice. This is a safe thing to
         // do because requirements of a [u32] slice are stricter.
-        unsafe { std::slice::from_raw_parts(p as *const u8, len * std::mem::size_of::<u32>()) }
+        unsafe { core::slice::from_raw_parts(p as *const u8, len * core::mem::size_of::<u32>()) }
     }
 
     /// Returns a mut reference to the underlying pixel data as individual bytes with the order BGRA
@@ -1083,7 +1088,7 @@ impl<Backing : AsRef<[u32]> + AsMut<[u32]>> DrawTarget<Backing> {
         let len = buf.len();
         // we want to return an [u8] slice instead of a [u32] slice. This is a safe thing to
         // do because requirements of a [u32] slice are stricter.
-        unsafe { std::slice::from_raw_parts_mut(p as *mut u8, len * std::mem::size_of::<u32>()) }
+        unsafe { core::slice::from_raw_parts_mut(p as *mut u8, len * core::mem::size_of::<u32>()) }
     }
 
     /// Take ownership of the buffer backing the DrawTarget
@@ -1094,7 +1099,7 @@ impl<Backing : AsRef<[u32]> + AsMut<[u32]>> DrawTarget<Backing> {
     /// Saves the current pixel to a png file at `path`
     #[cfg(feature = "png")]
     pub fn write_png<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), png::EncodingError> {
-        let file = File::create(path)?;
+        let file = std::fs::File::create(path)?;
 
         let w = &mut BufWriter::new(file);
 

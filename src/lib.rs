@@ -98,6 +98,13 @@ Produces:
 
 #![warn(missing_copy_implementations)]
 
+#![no_std]
+
+extern crate alloc;
+
+#[cfg(feature = "std")]
+extern crate std;
+
 mod blitter;
 mod dash;
 mod draw_target;
