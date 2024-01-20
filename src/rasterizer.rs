@@ -135,7 +135,7 @@ pub struct ActiveEdge {
     // Shift is used to "scale" how fast we move along the quadratic curve.
     // The key is that we scale dx and dy by the same amount so it doesn't need to have a physical unit
     // as long as it doesn't overshoot.
-    // shift isdiv_fixed16_fixed16 probably also needed to balance number of bits that we need and make sure we don't
+    // shift is probably also needed to balance number of bits that we need and make sure we don't
     // overflow the 32 bits we have.
     // It looks like some of quantities are stored in a "sliding fixed point" representation where the
     // point depends on the shift.
@@ -358,13 +358,16 @@ impl Rasterizer {
             self.bounds_right = self.bounds_right.max(dot2_to_int(edge.control_x + 3));
 
             // Based on Skia
-            // we'll iterate t from 0..1 (0-256)
-            // range of A is 4 times coordinate-range
+            // We'll iterate via forward difference.
+            // The second derivative is constant over the quadratic curve. We evaluate the derivative
+            // (the slope) at each step by adding the second derivative to the slope of the previous step.
+            // Similarly, the new position can be evaluated by adding the slope to the previous position.
+            // The range of A is 4 times coordinate-range
             // we can get more accuracy here by using the input points instead of the rounded versions
             // A is derived from `dot2_to_dot16(2 * (from - 2 * ctrl + to))`, it is the second derivative of the
             // quadratic bézier.
-            let mut A = (edge.x1 - edge.control_x - edge.control_x + edge.x2) << (15 - SAMPLE_SHIFT);
-            let mut B = edge.control_x - edge.x1; // The derivative at the start of the curve is 2 * (ctrl - from).
+            let A = (edge.x1 - edge.control_x - edge.control_x + edge.x2) << (15 - SAMPLE_SHIFT);
+            let B = 2 * (edge.control_x - edge.x1); // The derivative at the start of the curve.
             //let mut C = edge.x1;
             let mut shift = compute_curve_steps(&edge);
 
@@ -375,19 +378,19 @@ impl Rasterizer {
             }
             e.shift = shift;
             e.count = 1 << shift;
-            e.dx = 2 * (A >> shift) + 2 * B * (1 << (16 - SAMPLE_SHIFT));
+            e.dx = 2 * (A >> shift) + dot2_to_dot16(B);
             e.ddx = 2 * (A >> (shift - 1));
 
-            A = (edge.y1 - edge.control_y - edge.control_y + edge.y2) << (15 - SAMPLE_SHIFT);
-            B = edge.control_y - edge.y1;
+            let A = (edge.y1 - edge.control_y - edge.control_y + edge.y2) << (15 - SAMPLE_SHIFT);
+            let B = 2 * (edge.control_y - edge.y1);
             //C = edge.y1;
-            e.dy = 2 * (A >> shift) + 2 * B * (1 << (16 - SAMPLE_SHIFT));
+            e.dy = 2 * (A >> shift) + dot2_to_dot16(B);
             e.ddy = 2 * (A >> (shift - 1));
 
             // compute the first next_x,y
             e.count -= 1;
             e.next_x = (e.fullx) + (e.dx >> e.shift);
-            e.next_y = (cury * (1 << (16 - SAMPLE_SHIFT))) + (e.dy >> e.shift);
+            e.next_y = dot2_to_dot16(cury) + (e.dy >> e.shift);
             e.dx += e.ddx;
             e.dy += e.ddy;
 
@@ -403,10 +406,12 @@ impl Rasterizer {
                 e.next_y = dot2_to_dot16(edge.y2);
                 e.next_x = dot2_to_dot16(edge.x2);
             }
-            e.slope_x = (e.next_x - (e.fullx)) / dot16_to_dot2(e.next_y - dot2_to_dot16(cury));
+            e.slope_x = (e.next_x - e.fullx) / dot16_to_dot2(e.next_y - dot2_to_dot16(cury));
         } else {
             e.shift = 0;
-            e.slope_x = (edge.x2 - edge.x1) * (1 << (16 - SAMPLE_SHIFT)) / (edge.y2 - edge.y1);
+            // We do `dot2_to_dot16(a)/b` instead of `dot2_to_dot16(a / b)` to sacrifice
+            // higher bits instead of lower ones.
+            e.slope_x = dot2_to_dot16(edge.x2 - edge.x1) / (edge.y2 - edge.y1);
         }
 
         if cury < 0 {
