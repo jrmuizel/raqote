@@ -956,4 +956,60 @@ mod tests {
             &checkerboard[..]
         );
     }
+
+    #[test]
+    fn mask_composite_position() {
+        let mask = Mask {
+            width: 2,
+            height: 2,
+            data: vec![0xff, 0xff, 0xff, 0xff],
+        };
+        let source = Source::Solid(SolidSource {
+            r: 0xff,
+            g: 0,
+            b: 0,
+            a: 0xff,
+        });
+        let zeros = SolidSource {
+            r: 0,
+            g: 0,
+            b: 0,
+            a: 0,
+        };
+        let red = 0xffff0000;
+        let width: i32 = 4;
+        let height: i32 = 4;
+
+        let mut dt = DrawTarget::new(width, height);
+        let pos = |offset: (usize, usize), (x, y): (usize, usize)| {
+            offset.0 + x + (offset.1 + y) * width as usize
+        };
+
+        dt.mask(&source, 0, 0, &mask);
+        assert_eq!(dt.get_data()[pos((0, 0), (0, 0))], red);
+        assert_eq!(dt.get_data()[pos((0, 0), (0, 1))], red);
+        assert_eq!(dt.get_data()[pos((0, 0), (1, 0))], red);
+        assert_eq!(dt.get_data()[pos((0, 0), (1, 1))], red);
+
+        dt.clear(zeros);
+        dt.mask(&source, 1, 0, &mask);
+        assert_eq!(dt.get_data()[pos((1, 0), (0, 0))], red);
+        assert_eq!(dt.get_data()[pos((1, 0), (0, 1))], red);
+        assert_eq!(dt.get_data()[pos((1, 0), (1, 0))], red);
+        assert_eq!(dt.get_data()[pos((1, 0), (1, 1))], red);
+
+        dt.clear(zeros);
+        dt.mask(&source, 0, 1, &mask);
+        assert_eq!(dt.get_data()[pos((0, 1), (0, 0))], red);
+        assert_eq!(dt.get_data()[pos((0, 1), (0, 1))], red);
+        assert_eq!(dt.get_data()[pos((0, 1), (1, 0))], red);
+        assert_eq!(dt.get_data()[pos((0, 1), (1, 1))], red);
+
+        dt.clear(zeros);
+        dt.mask(&source, 1, 1, &mask);
+        assert_eq!(dt.get_data()[pos((1, 1), (0, 0))], red);
+        assert_eq!(dt.get_data()[pos((1, 1), (0, 1))], red);
+        assert_eq!(dt.get_data()[pos((1, 1), (1, 0))], red);
+        assert_eq!(dt.get_data()[pos((1, 1), (1, 1))], red);
+    }
 }
