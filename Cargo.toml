@@ -20,6 +20,9 @@ png = { version = "0.17", optional = true }
 typed-arena = "2.0"
 sw-composite = "0.7.15"
 
+[dev-dependencies]
+minifb = "0.11"
+
 [features]
 default = ["text", "png"]
 text = ["font-kit", "pathfinder_geometry"]
