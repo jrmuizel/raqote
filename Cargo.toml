@@ -13,7 +13,7 @@ categories = ["graphics"]
 
 [dependencies]
 euclid = "0.22"
-font-kit = { version = "0.12", optional = true }
+font-kit = { version = "0.13", optional = true }
 lyon_geom = "1.0"
 pathfinder_geometry = { version = "0.5", optional = true }
 png = { version = "0.17", optional = true }
