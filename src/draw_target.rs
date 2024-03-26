@@ -1002,11 +1002,18 @@ impl<Backing : AsRef<[u32]> + AsMut<[u32]>> DrawTarget<Backing> {
     pub fn composite_surface<F: Fn(&[u32], &mut [u32]), SrcBacking: AsRef<[u32]>>(&mut self, src: &DrawTarget<SrcBacking>, src_rect: IntRect, dst: IntPoint, f: F) {
         let dst_rect = intrect(0, 0, self.width, self.height);
 
-        // intersect the src_rect with the source size so that we don't go out of bounds
+        // intersect the src_rect with the source size so that we don't go out of bounds in src
         let src_rect = src_rect.intersection_unchecked(&intrect(0, 0, src.width, src.height));
 
-        let src_rect = dst_rect
-            .intersection_unchecked(&src_rect.translate(dst.to_vector())).translate(-dst.to_vector());
+        // intersect the src_rect with the dest rect so that it doesn't go out of bounds in dest
+        let dst_bounds = dst_rect.intersection_unchecked(&intrect(
+            0,
+            0,
+            self.width - dst.x,
+            self.height - dst.y,
+        ));
+        let translate_dst = dst_bounds.translate(src_rect.min.to_vector());
+        let src_rect = src_rect.intersection_unchecked(&translate_dst);
 
         // clamp requires Float so open code it
         let dst = IntPoint::new(dst.x.max(dst_rect.min.x).min(dst_rect.max.x),
