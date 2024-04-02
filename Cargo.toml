@@ -20,6 +20,11 @@ png = { version = "0.17", optional = true }
 typed-arena = "2.0"
 sw-composite = "0.7.15"
 
+[patch.crates-io]
+# patching to use latest pathfinder until pathfinder releases to crates-io
+pathfinder_simd = { git = "https://github.com/servo/pathfinder" }
+pathfinder_geometry = { git = "https://github.com/servo/pathfinder" }
+
 [features]
 default = ["text", "png"]
 text = ["font-kit", "pathfinder_geometry"]
