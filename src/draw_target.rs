@@ -29,6 +29,8 @@ use crate::{IntRect, IntPoint, Point, Transform, Vector};
 
 use euclid::vec2;
 
+const NEW_LINE: u32 = u32::MAX;
+
 #[derive(Clone)]
 pub struct Mask {
     pub width: i32,
@@ -782,10 +784,24 @@ impl<Backing : AsRef<[u32]> + AsMut<[u32]>> DrawTarget<Backing> {
         src: &Source,
         options: &DrawOptions,
     ) {
+        let original_start_x = start.x;
         let mut start = fk::vec2f(start.x, start.y);
         let mut ids = Vec::new();
         let mut positions = Vec::new();
         for c in text.chars() {
+            if c == '\n' {
+                // Skip to the next line
+                let new_y = start.y() + point_size;
+                positions.push(Point::new(original_start_x, new_y));
+
+                // Indicate this is a new line character to skip rendering
+                ids.push(NEW_LINE);
+
+                // Reset the bounds to begin drawing on new line
+                start = fk::vec2f(original_start_x, new_y);
+                continue;
+            }
+
             let id = font.glyph_for_char(c).unwrap();
             ids.push(id);
             positions.push(Point::new(start.x(), start.y()));
@@ -810,6 +826,11 @@ impl<Backing : AsRef<[u32]> + AsMut<[u32]>> DrawTarget<Backing> {
         };
         let mut combined_bounds = euclid::Rect::zero();
         for (id, position) in ids.iter().zip(positions.iter()) {
+            if *id == NEW_LINE {
+                // This is a new line character, ignore
+                continue;
+            }
+
             let bounds = font.raster_bounds(
                 *id,
                 point_size,
@@ -839,6 +860,12 @@ impl<Backing : AsRef<[u32]> + AsMut<[u32]>> DrawTarget<Backing> {
             let mut position = self.transform.transform_point(*position);
             position.x -= combined_bounds.origin.x as f32;
             position.y -= combined_bounds.origin.y as f32;
+
+            if *id == NEW_LINE {
+                // This is a new line character, ignore
+                continue;
+            }
+
             font.rasterize_glyph(
                 &mut canvas,
                 *id,
